@@ -3,17 +3,14 @@ FastAPI Template Application
 This is a template for FastAPI applications following best practices.
 """
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException
 from starlette.responses import RedirectResponse
 from tortoise.exceptions import BaseORMException
 from contextlib import asynccontextmanager
-from dotenv import load_dotenv
-
-load_dotenv('.env')
-
+from neontology import init_neontology
 from src.config import  settings
 from src.database import init_db, close_db
 from src.modules.auth.router import router as user_router
@@ -28,9 +25,9 @@ from src.exceptions import (
 async def lifespan(app: FastAPI):
     """Manage application lifespan events."""
     await init_db()
+    init_neontology(settings.neo4j_config) 
     yield
     await close_db()
-
 # Initialize FastAPI app
 app = FastAPI(
     title=settings.APP_NAME,

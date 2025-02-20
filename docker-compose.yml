@@ -10,7 +10,7 @@ services:
     environment:
       - NODE_ENV=production
       - HOSTNAME=0.0.0.0
-    restart: unless-stopped
+    restart: on-failure:5
     networks:
       - app_network
 

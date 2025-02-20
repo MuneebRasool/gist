@@ -16,6 +16,7 @@ from .service import UserService
 from src.dependencies import get_current_user, require_auth
 from .exceptions import EmailAlreadyExistsException, UserNotFoundException
 from src.models.user import User
+from src.models.graph.task import TaskNode
 
 # Create main router for auth module
 router = APIRouter(tags=["auth"],prefix="/auth")
@@ -45,6 +46,18 @@ async def verify_email(verification_data: VerificationRequest):
 async def login(login_data: LoginRequest):
     """Login user and return JWT token"""
     return await UserService.authenticate_user(login_data.email, login_data.password)
+
+@router.post("/graph")
+async def graph():
+    """Graph user and return JWT token"""
+    task = TaskNode(taskname="test", description="test")
+    return task.create()
+
+@router.get("/graph")
+async def graph():
+    """Graph user and return JWT token"""
+    tasks = TaskNode.match_nodes()
+    return tasks
 
 
 # User management routes
