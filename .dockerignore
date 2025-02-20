@@ -1,0 +1,42 @@
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# Dependencies
+**/node_modules
+**/__pycache__
+**/.pytest_cache
+**/.coverage
+**/.DS_Store
+**/.venv
+**/venv
+
+# Environment
+**/.env
+**/.env.*
+**/.python-version
+
+# Development
+**/.vscode
+**/.idea
+**/README.md
+**/LICENSE
+
+# Build outputs
+**/dist
+**/build
+**/.next
+**/.vercel
+**/coverage
+
+# Logs
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/pnpm-debug.log*
+
+# Cache
+**/.eslintcache
+**/.npm
+**/.pnpm-store
