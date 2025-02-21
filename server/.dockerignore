@@ -12,9 +12,7 @@
 **/.venv
 **/venv
 
-# Environment
-**/.env
-**/.env.*
+
 **/.python-version
 
 # Development
