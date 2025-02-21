@@ -15,7 +15,7 @@ import {
 	AlertDialogTitle,
 } from '../ui/alert-dialog';
 import ProfileDropdown from './ProfileDropdown';
-import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 const FloatingFooter = () => {
 	const [open, setOpen] = useState(false);
@@ -33,7 +33,7 @@ const FloatingFooter = () => {
 	}, []);
 
 	return (
-		<>
+		<TooltipProvider>
 			<div
 				className={`fixed ${isVisible ? 'bottom-3' : '-bottom-full'} left-1/2 -translate-x-1/2 transform rounded-full border bg-card/95 p-2 shadow-lg backdrop-blur transition-all duration-300 ease-in-out hover:shadow-xl supports-[backdrop-filter]:bg-card/60 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
 			>
@@ -86,7 +86,7 @@ const FloatingFooter = () => {
 					</AlertDialogFooter>
 				</AlertDialogContent>
 			</AlertDialog>
-		</>
+		</TooltipProvider>
 	);
 };
 
