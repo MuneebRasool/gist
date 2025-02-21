@@ -11,6 +11,7 @@ from .schemas import (
     LoginRequest,
     Token,
     VerificationRequest,
+    GoogleAuthRequest,
 )
 from .service import UserService
 from src.dependencies import get_current_user, require_auth
@@ -40,6 +41,12 @@ async def verify_email(verification_data: VerificationRequest):
     return await UserService.verify_email(
         verification_data.email, verification_data.code
     )
+
+
+@router.post("/google", response_model=Token)
+async def google_auth(auth_data: GoogleAuthRequest):
+    """Handle Google authentication"""
+    return await UserService.handle_google_auth(auth_data.user_data)
 
 
 @router.post("/login", response_model=Token)

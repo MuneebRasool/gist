@@ -1,5 +1,6 @@
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
+import GoogleProvider from 'next-auth/providers/google';
 import { compare } from 'bcrypt';
 import { NEXTAUTH_SECRET } from '@/config';
 import { AuthService } from '@/services/auth.service';
@@ -36,6 +37,10 @@ export const authOptions: NextAuthOptions = {
 		signIn: '/login',
 	},
 	providers: [
+		GoogleProvider({
+			clientId: process.env.GOOGLE_CLIENT_ID!,
+			clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+		}),
 		CredentialsProvider({
 			name: 'Credentials',
 			credentials: {
@@ -50,7 +55,7 @@ export const authOptions: NextAuthOptions = {
 				const res = await AuthService.login(credentials.email, credentials.password);
 
 				if (res.error) {
-					return null;
+					throw new Error(res.error.message);
 				}
 
 				return {
@@ -64,6 +69,32 @@ export const authOptions: NextAuthOptions = {
 		}),
 	],
 	callbacks: {
+		async signIn({ user, account }) {
+			if (account?.provider === 'google') {
+				try {
+					const response = await AuthService.googleAuth({
+						id_token: account.id_token!,
+						user_data: {
+							email: user.email,
+							name: user.name,
+							picture: user.image || undefined,
+						},
+					});
+					if (response.data) {
+						user.id = response.data.user.id;
+						user.token = response.data.access_token;
+						user.avatar = response.data.user.avatar ?? '';
+						user.email = response.data.user.email;
+						user.name = response.data.user.name;
+						return true;
+					}
+				} catch (error) {
+					console.error('Google auth error:', error);
+					return false;
+				}
+			}
+			return true;
+		},
 		session: ({ session, token }) => {
 			return {
 				...session,

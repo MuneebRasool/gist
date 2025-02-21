@@ -29,7 +29,6 @@ export class ApiClient {
 			const response: AxiosResponse<T> = await client.request(config);
 			return { data: response.data };
 		} catch (err) {
-			console.log(err);
 			if (isAxiosError(err)) {
 				if (err.response?.status === 422) {
 					const message = Object.values(err.response?.data.data).join(', ');
