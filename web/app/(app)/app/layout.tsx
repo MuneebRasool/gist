@@ -1,6 +1,6 @@
 import FloatingFooter from '@/components/app/FloatingNavbar';
 
-export default async function DashBoardLayout({
+export default function DashBoardLayout({
 	children,
 }: Readonly<{
 	children: React.ReactNode;
