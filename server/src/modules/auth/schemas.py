@@ -2,7 +2,7 @@
 Pydantic schemas for auth module
 """
 
-from typing import Optional, Literal
+from typing import Optional, Literal, Dict
 from datetime import datetime
 from pydantic import ConfigDict
 from pydantic import BaseModel, EmailStr, Field, field_validator
@@ -96,3 +96,10 @@ class VerificationRequest(BaseModel):
     code: str = Field(
         ..., min_length=6, max_length=6, description="6-digit verification code"
     )
+
+
+class GoogleAuthRequest(BaseModel):
+    """Schema for Google authentication"""
+    
+    id_token: str = Field(..., description="Google ID token")
+    user_data: Dict = Field(..., description="Google user data")

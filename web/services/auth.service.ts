@@ -1,5 +1,5 @@
 import { ApiClient } from '@/lib/api-client';
-import { LoginResponse, RegisterRequest, UserDto, UserUpdateRequest } from '@/types/auth';
+import { LoginResponse, RegisterRequest, UserDto, UserUpdateRequest, GoogleAuthRequest } from '@/types/auth';
 
 /**
  * Auth service
@@ -51,5 +51,13 @@ export class AuthService {
 	 */
 	static async deleteCurrentUser() {
 		return await ApiClient.delete<boolean>('/api/auth/users/me');
+	}
+
+	/**
+	 * Authenticate with Google
+	 * @param data Google auth data
+	 */
+	static async googleAuth(data: GoogleAuthRequest) {
+		return await ApiClient.post<LoginResponse>('/api/auth/google', data);
 	}
 }

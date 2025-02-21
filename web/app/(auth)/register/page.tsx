@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { registerSchema } from '@/validations';
 import { AuthService } from '@/services/auth.service';
+import GoogleSignin from '@/components/auth/GoogleSignin';
 
 export default function RegisterPage() {
 	const [isLoading, setIsLoading] = React.useState(false);
@@ -121,7 +122,7 @@ export default function RegisterPage() {
 					</Form>
 				</CardContent>
 				<CardFooter className='flex flex-col space-y-3 pt-3'>
-					{/* <div className='relative w-full'>
+					<div className='relative w-full'>
 						<div className='absolute inset-0 flex items-center'>
 							<div className='w-full border-t border-muted' />
 						</div>
@@ -129,7 +130,7 @@ export default function RegisterPage() {
 							<span className='bg-background px-3 text-muted-foreground'>Or continue with</span>
 						</div>
 					</div>
-					<GoogleSignin /> */}
+					<GoogleSignin />
 					<p className='text-center text-sm text-muted-foreground'>
 						Already have an account?{' '}
 						<Link href='/login' className='font-medium text-primary underline underline-offset-4 hover:text-primary/90'>

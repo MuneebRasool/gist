@@ -13,7 +13,9 @@ const GoogleSignin = () => {
 			className='h-11 w-full font-medium'
 			onClick={async () => {
 				setIsLoading(true);
-				await signIn('google');
+				await signIn('google', {
+					callbackUrl: '/app',
+				});
 				setIsLoading(false);
 			}}
 			disabled={isLoading}

@@ -23,3 +23,12 @@ export type RegisterRequest = {
 	avatar?: string;
 	password: string;
 };
+
+export type GoogleAuthRequest = {
+	id_token: string;
+	user_data: {
+		email: string;
+		name: string;
+		picture?: string;
+	};
+};

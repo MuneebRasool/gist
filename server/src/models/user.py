@@ -25,6 +25,8 @@ class User(models.Model):
 
     def verify_password(self, password: str) -> bool:
         """Verify a password against its hash."""
+        if not self.password_hash:
+            return False
         return bcrypt.checkpw(password.encode("utf-8"), self.password_hash.encode("utf-8"))
 
     @staticmethod

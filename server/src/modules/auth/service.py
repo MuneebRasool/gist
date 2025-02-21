@@ -2,7 +2,7 @@
 Service layer for auth module
 """
 
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Dict
 from datetime import timedelta, datetime, UTC
 import secrets
 from fastapi import HTTPException, status
@@ -15,6 +15,7 @@ from .constants import (
     INVALID_CREDENTIALS_ERROR,
     INACTIVE_USER_ERROR,
     UNVERIFIED_USER_ERROR,
+    REQUIRE_GOOGLE_AUTH_ERROR
 )
 
 
@@ -37,6 +38,18 @@ class UserService:
             HTTPException: If authentication fails
         """
         user = await UserService.get_user_by_email(email)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=INVALID_CREDENTIALS_ERROR,
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        if not user.password_hash:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=REQUIRE_GOOGLE_AUTH_ERROR,
+                headers={"WWW-Authenticate": "Bearer"},
+            )
         if not user or not user.verify_password(password):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -162,3 +175,38 @@ class UserService:
             return False
         await user.delete()
         return True
+
+    @staticmethod
+    async def handle_google_auth(user_data: Dict) -> Token:
+        """Handle Google authentication"""
+        email = user_data.get("email")
+        if not email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email not provided in Google data",
+            )
+
+        # Check if user exists
+        user = await UserService.get_user_by_email(email)
+        
+        if not user:
+            # Create new user with Google data
+            user = await User.create(
+                name=user_data.get("name", ""),
+                email=email,
+                avatar=user_data.get("picture"),
+                is_active=True,
+                verified=True,  # Google accounts are pre-verified
+            )
+        elif not user.verified:
+            # If user exists but not verified, mark as verified since it's Google auth
+            user.verified = True
+            await user.save()
+
+        # Create access token
+        access_token = create_access_token(
+            data={"sub": str(user.id)},
+            expires_delta=timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS),
+        )
+
+        return Token(access_token=access_token, user=UserResponse.model_validate(user))

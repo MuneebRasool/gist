@@ -15,7 +15,6 @@ import { PasswordInput } from '@/components/ui/password-input';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { loginSchema } from '@/validations';
-import GoogleIcon from '@/assets/GoogleIcon';
 import GoogleSignin from '@/components/auth/GoogleSignin';
 
 export default function LoginPage() {
@@ -38,9 +37,9 @@ export default function LoginPage() {
 			redirect: false,
 		});
 		if (res?.error) {
-			toast.error('Invalid email or password');
+			toast.error(res.error || 'An error occurred');
 		} else {
-			router.push('/');
+			router.push('/app');
 			toast.success('Logged in successfully');
 		}
 		setIsLoading(false);
@@ -94,7 +93,7 @@ export default function LoginPage() {
 					</Form>
 				</CardContent>
 				<CardFooter className='flex flex-col space-y-6 pt-3'>
-					{/* <div className='relative w-full'>
+					<div className='relative w-full'>
 						<div className='absolute inset-0 flex items-center'>
 							<div className='w-full border-t border-muted' />
 						</div>
@@ -102,7 +101,7 @@ export default function LoginPage() {
 							<span className='bg-background px-3 text-muted-foreground'>Or continue with</span>
 						</div>
 					</div>
-					<GoogleSignin /> */}
+					<GoogleSignin />
 					<p className='text-center text-sm text-muted-foreground'>
 						Don&apos;t have an account?{' '}
 						<Link
