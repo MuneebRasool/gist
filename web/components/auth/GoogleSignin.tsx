@@ -14,7 +14,7 @@ const GoogleSignin = () => {
 			onClick={async () => {
 				setIsLoading(true);
 				await signIn('google', {
-					callbackUrl: '/',
+					callbackUrl: '/app',
 				});
 				setIsLoading(false);
 			}}

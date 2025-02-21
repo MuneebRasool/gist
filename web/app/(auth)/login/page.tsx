@@ -39,7 +39,7 @@ export default function LoginPage() {
 		if (res?.error) {
 			toast.error(res.error || 'An error occurred');
 		} else {
-			router.push('/');
+			router.push('/app');
 			toast.success('Logged in successfully');
 		}
 		setIsLoading(false);

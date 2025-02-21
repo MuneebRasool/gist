@@ -10,8 +10,11 @@ const nunito = Nunito({
 });
 
 export const metadata: Metadata = {
-	title: 'FastAPI + Next.js',
-	description: 'FastAPI + Next.js',
+	title: 'Gist',
+	description: 'Gist a task management app',
+	appleWebApp: {
+		title: 'Gist',
+	},
 };
 
 export default async function RootLayout({
