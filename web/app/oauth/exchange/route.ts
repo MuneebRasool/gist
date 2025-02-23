@@ -1,3 +1,4 @@
+import { envConfig } from '@/config';
 import { NylasAuthService } from '@/services/nylas/auth.service';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -11,7 +12,7 @@ export const GET = async (req: NextRequest) => {
 		if (res.error) {
 			return NextResponse.json({ status: 'error', errorMessage: res.error.message });
 		}
-		return NextResponse.redirect(`${req.nextUrl.origin}/app/settings`);
+		return NextResponse.redirect(`${envConfig.APP_URL}/app/settings`);
 	} catch (error) {
 		return NextResponse.json({
 			status: 'error',
