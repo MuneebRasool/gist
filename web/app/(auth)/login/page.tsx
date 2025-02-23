@@ -49,9 +49,7 @@ export default function LoginPage() {
 		<div className='flex min-h-screen items-center justify-center p-2 sm:p-4'>
 			<Card className='w-full max-w-lg rounded-lg'>
 				<CardHeader className='space-y-3 pb-8'>
-					<CardTitle className='bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-center text-3xl font-bold text-transparent'>
-						Welcome back
-					</CardTitle>
+					<CardTitle className='text-center text-3xl font-bold'>Welcome back</CardTitle>
 					<CardDescription className='text-center text-base'>
 						Enter your credentials to access your account
 					</CardDescription>
@@ -106,7 +104,7 @@ export default function LoginPage() {
 						Don&apos;t have an account?{' '}
 						<Link
 							href='/register'
-							className='font-medium text-primary underline underline-offset-4 hover:text-primary/90'
+							className='font-medium text-muted-foreground underline underline-offset-4 hover:text-foreground'
 						>
 							Create an account
 						</Link>

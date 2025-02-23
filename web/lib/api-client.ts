@@ -1,4 +1,4 @@
-import { apiUrl } from '@/config';
+import { envConfig } from '@/config';
 import axios, { AxiosRequestConfig, AxiosResponse, isAxiosError } from 'axios';
 import { getServerSession } from 'next-auth';
 import { getSession } from 'next-auth/react';
@@ -20,7 +20,7 @@ export class ApiClient {
 			const session = isServer ? await getServerSession(authOptions) : await getSession();
 
 			const client = axios.create({
-				baseURL: apiUrl,
+				baseURL: envConfig.API_URL,
 				headers: {
 					'Content-Type': 'application/json',
 					Authorization: `Bearer ${session?.user.token}`,

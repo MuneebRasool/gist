@@ -14,6 +14,8 @@ from neontology import init_neontology
 from src.config import  settings
 from src.database import init_db, close_db
 from src.modules.auth.router import router as user_router
+from src.modules.nylas.router import router as nylas_router
+from src.modules.nylas.email_router import router as nylas_email_router
 from src.exceptions import (
     http_exception_handler,
     validation_exception_handler,
@@ -54,7 +56,8 @@ app.add_middleware(
 
 # Include routers with API versioning
 app.include_router(user_router, prefix=settings.API_V1_PREFIX)
-
+app.include_router(nylas_router, prefix=settings.API_V1_PREFIX)
+app.include_router(nylas_email_router, prefix=settings.API_V1_PREFIX)
 
 @app.get("/")
 async def root():

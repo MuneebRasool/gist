@@ -48,12 +48,6 @@ logs/
 .coverage
 htmlcov/
 
-# Migrations
-migrations/*
-!migrations/__init__.py
-!migrations/models/
-migrations/models/*
-!migrations/models/__init__.py
 
 # OS
 .DS_Store
