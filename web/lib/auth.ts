@@ -1,8 +1,7 @@
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
-import { compare } from 'bcrypt';
-import { NEXTAUTH_SECRET } from '@/config';
+import { envConfig } from '@/config';
 import { AuthService } from '@/services/auth.service';
 
 declare module 'next-auth' {
@@ -29,7 +28,7 @@ declare module 'next-auth/jwt' {
 }
 
 export const authOptions: NextAuthOptions = {
-	secret: NEXTAUTH_SECRET,
+	secret: envConfig.NEXTAUTH_SECRET,
 	session: {
 		strategy: 'jwt',
 	},
@@ -38,8 +37,8 @@ export const authOptions: NextAuthOptions = {
 	},
 	providers: [
 		GoogleProvider({
-			clientId: process.env.GOOGLE_CLIENT_ID!,
-			clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+			clientId: envConfig.GOOGLE_CLIENT_ID!,
+			clientSecret: envConfig.GOOGLE_CLIENT_SECRET!,
 		}),
 		CredentialsProvider({
 			name: 'Credentials',

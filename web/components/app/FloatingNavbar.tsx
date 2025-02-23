@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Home, Plus } from 'lucide-react';
 import Link from 'next/link';
-import { signOut } from 'next-auth/react';
+import { signOut, useSession } from 'next-auth/react';
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -16,26 +16,21 @@ import {
 } from '../ui/alert-dialog';
 import ProfileDropdown from './ProfileDropdown';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import { useNylasStatusStore } from '@/store';
 
 const FloatingFooter = () => {
 	const [open, setOpen] = useState(false);
-	const [isVisible, setIsVisible] = useState(true);
-	const lastScrollY = useRef(0);
+	const { checkConnection } = useNylasStatusStore();
+	const { data } = useSession();
+	console.log(data?.user.token);
+
 	useEffect(() => {
-		const handleScroll = () => {
-			const currentScrollY = window.scrollY;
-			setIsVisible(currentScrollY <= lastScrollY.current);
-			lastScrollY.current = currentScrollY;
-		};
-
-		window.addEventListener('scroll', handleScroll, { passive: true });
-		return () => window.removeEventListener('scroll', handleScroll);
-	}, []);
-
+		checkConnection();
+	}, [checkConnection, data?.user.id]);
 	return (
 		<TooltipProvider>
 			<div
-				className={`fixed ${isVisible ? 'bottom-3' : '-bottom-full'} left-1/2 -translate-x-1/2 transform rounded-full border bg-card/95 p-2 shadow-lg backdrop-blur transition-all duration-300 ease-in-out hover:shadow-xl supports-[backdrop-filter]:bg-card/60 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
+				className={`fixed bottom-3 left-1/2 -translate-x-1/2 transform rounded-full border bg-card/95 p-2 opacity-100 shadow-lg backdrop-blur transition-all duration-300 ease-in-out hover:shadow-xl supports-[backdrop-filter]:bg-card/60`}
 			>
 				<nav className='relative flex items-center gap-8 px-4'>
 					<Link href='/app'>

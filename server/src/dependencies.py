@@ -25,13 +25,10 @@ async def get_current_user(
 ) -> User:
     """
     Get the current authenticated user from the JWT token.
-
     Args:
         credentials: HTTP Bearer token
-
     Returns:
         User: Current authenticated user
-
     Raises:
         HTTPException: If user is not found or token is invalid
     """
@@ -71,29 +68,6 @@ async def get_user_or_404(user_id: str) -> User:
     return user
 
 
-def require_auth(func):
-    """
-    Decorator to require authentication for a route.
-
-    Usage:
-        @router.get("/protected")
-        @require_auth
-        async def protected_route(current_user: User = Depends(get_current_user)):
-            return {"message": "This is protected", "user": current_user}
-    """
-
-    @wraps(func)
-    async def wrapper(*args, **kwargs):
-        return await func(*args, **kwargs)
-
-    # Add dependency to the route
-    if not hasattr(wrapper, "dependencies"):
-        wrapper.dependencies = []
-    wrapper.dependencies.append(Depends(get_current_user))
-
-    return wrapper
-
-
 # Optional: Get current user without requiring authentication
 # Useful for routes that work differently for authenticated vs non-authenticated users
 async def get_optional_user(
@@ -102,16 +76,13 @@ async def get_optional_user(
     """
     Get the current user if authenticated, otherwise return None.
     Useful for routes that work differently for authenticated vs non-authenticated users.
-
     Args:
         credentials: Optional HTTP Bearer token
-
     Returns:
         Optional[User]: Current user if authenticated, None otherwise
     """
     if not credentials:
         return None
-
     try:
         return await get_current_user(credentials)
     except HTTPException:

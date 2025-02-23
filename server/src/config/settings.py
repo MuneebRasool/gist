@@ -44,6 +44,12 @@ POSTGRES_DB: str = config.get("POSTGRES_DB", "db_name")
 POSTGRES_HOST: str = config.get("POSTGRES_HOST", "localhost")
 POSTGRES_PORT: int = int(config.get("POSTGRES_PORT", "5432"))
 
+# Nylas Configuration
+NYLAS_CLIENT_ID: Optional[str] = config.get("NYLAS_CLIENT_ID")
+NYLAS_API_KEY: Optional[str] = config.get("NYLAS_API_KEY")
+NYLAS_API_URI: Optional[str] = config.get("NYLAS_API_URI")
+NYLAS_CALLBACK_URI: Optional[str] = config.get("NYLAS_CALLBACK_URI")
+
 
 # Tortoise ORM Config
 TORTOISE_ORM = {

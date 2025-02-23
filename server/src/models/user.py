@@ -4,6 +4,7 @@ User model for the application.
 
 from tortoise import fields, models
 import bcrypt
+from src.utils.encryption import encryption
 
 
 class User(models.Model):
@@ -20,8 +21,22 @@ class User(models.Model):
     verified = fields.BooleanField(default=False)
     verification_code = fields.CharField(max_length=6, null=True)
     verification_code_expires_at = fields.DatetimeField(null=True)
+    nylas_email = fields.CharField(max_length=255, null=True)
+    nylas_grant_id = fields.TextField(null=True, description="Encrypted Nylas grant ID")
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
+
+    async def set_nylas_grant_id(self, grant_id: str) -> None:
+        """Encrypt and store Nylas grant ID."""
+        if not grant_id:
+            return
+        self.nylas_grant_id = encryption.encrypt(grant_id)
+
+    def get_nylas_grant_id(self) -> str | None:
+        """Decrypt and return Nylas grant ID."""
+        if not self.nylas_grant_id:
+            return None
+        return encryption.decrypt(self.nylas_grant_id)
 
     def verify_password(self, password: str) -> bool:
         """Verify a password against its hash."""

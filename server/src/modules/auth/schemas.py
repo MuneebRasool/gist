@@ -17,6 +17,7 @@ class UserBase(BaseModel):
     name: str = Field(..., min_length=3)
     email: EmailStr
     avatar: Optional[str] = None
+    nylas_email: Optional[str] = None
 
     @field_validator("id", mode="before")
     @classmethod

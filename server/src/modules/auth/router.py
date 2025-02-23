@@ -14,10 +14,9 @@ from .schemas import (
     GoogleAuthRequest,
 )
 from .service import UserService
-from src.dependencies import get_current_user, require_auth
+from src.dependencies import get_current_user
 from .exceptions import EmailAlreadyExistsException, UserNotFoundException
 from src.models.user import User
-from src.models.graph.task import TaskNode
 
 # Create main router for auth module
 router = APIRouter(tags=["auth"],prefix="/auth")
@@ -54,17 +53,6 @@ async def login(login_data: LoginRequest):
     """Login user and return JWT token"""
     return await UserService.authenticate_user(login_data.email, login_data.password)
 
-@router.post("/graph")
-async def graph():
-    """Graph user and return JWT token"""
-    task = TaskNode(taskname="test", description="test")
-    return task.create()
-
-@router.get("/graph")
-async def graph():
-    """Graph user and return JWT token"""
-    tasks = TaskNode.match_nodes()
-    return tasks
 
 
 # User management routes
@@ -72,7 +60,6 @@ users_router = APIRouter(prefix="/users")
 
 
 @users_router.get("/me", response_model=UserResponse)
-@require_auth
 async def get_current_user_info(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
@@ -81,7 +68,6 @@ async def get_current_user_info(
 
 
 @users_router.patch("/me", response_model=UserResponse)
-@require_auth
 async def update_current_user(
     user_data: UserUpdate, current_user: Annotated[User, Depends(get_current_user)]
 ):
@@ -99,7 +85,6 @@ async def update_current_user(
 
 
 @users_router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
-@require_auth
 async def delete_current_user(current_user: Annotated[User, Depends(get_current_user)]):
     """Delete current user"""
     await UserService.delete_user(current_user.id)
