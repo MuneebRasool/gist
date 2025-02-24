@@ -44,6 +44,7 @@ async def extract_task_batch(
         }
         
     except Exception as e:
+        print(e)
         raise HTTPException(
             status_code=500,
             detail=f"Failed to process emails: {str(e)}"
@@ -62,6 +63,7 @@ async def classify_spams(
         result = await agent_service.classify_spams(request.emails)
         return result
     except Exception as e:
+        print(e)
         raise HTTPException(
             status_code=500,
             detail=f"Failed to classify spam emails: {str(e)}"

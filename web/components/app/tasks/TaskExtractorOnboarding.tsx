@@ -21,7 +21,7 @@ export const TaskExtractorOnboarding = ({ userId }: { userId: string }) => {
 	const fetchEmails = async () => {
 		try {
 			setLoading(true);
-			const response = await EmailService.getEmails({ limit: 10 });
+			const response = await EmailService.getEmails({ limit: 30 });
 			if (response.error) {
 				toast.error(response.error.message);
 			} else if (!response.data) {
