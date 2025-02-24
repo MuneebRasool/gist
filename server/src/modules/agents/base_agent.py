@@ -1,4 +1,4 @@
-import openai
+from openai import OpenAI
 import os
 
 class BaseAgent:
@@ -6,16 +6,24 @@ class BaseAgent:
     Base class for all agents.
     """
     
-    def __init__(self, model="gpt-4"):
+    def __init__(
+            self, 
+            model="gpt-4o",
+            base_url=os.getenv("LLM_BASE_URL"),
+            api_key=os.getenv('LLM_API_KEY'),
+            tools=[]
+    ):
         self.model = model
-        self.api_key = os.getenv("OPENAI_API_KEY")
-        openai.api_key = self.api_key
+        self.client = OpenAI(
+            base_url=base_url,
+            api_key=api_key,
+        )
 
     def execute(self, system_prompt: str, user_input: str) -> str:
         """
         Makes an LLM call with the given prompt and input.
         """
-        response = openai.chat.completions.create(
+        response = self.client.chat.completions.create(
             model=self.model,
             messages=[
                 {"role": "system", "content": system_prompt},
