@@ -1,4 +1,4 @@
-from openai import OpenAI
+from openai import AsyncOpenAI
 from src.config import settings
 
 class BaseAgent:
@@ -14,25 +14,25 @@ class BaseAgent:
             tools=[]
     ):
         self.model = model
-        self.client = OpenAI(
+        self.client = AsyncOpenAI(
             base_url=base_url,
             api_key=api_key,
         )
 
-    def execute(self, system_prompt: str, user_input: str) -> str:
+    async def execute(self, system_prompt: str, user_input: str) -> str:
         """
         Makes an LLM call with the given prompt and input.
         """
-        response = self.client.chat.completions.create(
+        response = await self.client.chat.completions.create(
             model=self.model,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_input}
             ]
         )
-        return response["choices"][0]["message"]["content"]
+        return response.choices[0].message.content
 
-    def process(self, *args, **kwargs):
+    async def process(self, *args, **kwargs):
         """
         This method should be implemented in subclasses.
         """

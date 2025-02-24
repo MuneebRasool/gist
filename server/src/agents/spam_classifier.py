@@ -6,9 +6,10 @@ class SpamClassifier(BaseAgent):
     Agent to classify emails as Spam or Not Spam.
     """
 
-    def process(self, email_body: str):
+    async def process(self, email_body: str):
         """
         Calls LLM to classify spam.
         """
-        system_prompt = FileUtils.read_file_content("server/src/prompts/v1/spam_classifier.md")
-        return self.execute(system_prompt, email_body)
+        system_prompt = FileUtils.read_file_content("src/prompts/v1/spam_classifier.md")
+        result = await self.execute(system_prompt, email_body)
+        return result

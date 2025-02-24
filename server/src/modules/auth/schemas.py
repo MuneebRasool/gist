@@ -2,7 +2,7 @@
 Pydantic schemas for auth module
 """
 
-from typing import Optional, Literal, Dict
+from typing import Optional, Literal, Dict,List
 from datetime import datetime
 from pydantic import ConfigDict
 from pydantic import BaseModel, EmailStr, Field, field_validator
@@ -18,6 +18,7 @@ class UserBase(BaseModel):
     email: EmailStr
     avatar: Optional[str] = None
     nylas_email: Optional[str] = None
+    personality: Optional[List[str]] = None
 
     @field_validator("id", mode="before")
     @classmethod

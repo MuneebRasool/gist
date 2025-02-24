@@ -29,13 +29,13 @@ async def extract_task_batch(
         tasks = [
             agent_service.extract_and_save_tasks(
             user_id=current_user.id,
-            emails=request.emails
-            ),
-            agent_service.summarize_user_personality(
+            email=email
+            ) for email in request.emails
+        ]
+        tasks.append(agent_service.summarize_user_personality(
             user_id=current_user.id,
             emails=request.emails
-            )
-        ]
+        ))
         await asyncio.gather(*tasks)
 
         return {

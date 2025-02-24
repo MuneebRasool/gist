@@ -9,6 +9,7 @@ from src.models.user import User
 from src.modules.tasks.service import TaskService
 from src.modules.tasks.schemas import TaskCreate
 import json
+import asyncio
 
 class AgentService:
     def __init__(self):
@@ -28,14 +29,20 @@ class AgentService:
             dict: Results of processing including tasks and personality insights
         """
         # Filter out spam emails first
-        non_spam_emails = []
+        async def classify_email(email):
+            is_spam = await self.spam_classifier.process(email.body)
+            return (email, is_spam.lower() == 'spam')
+
+        tasks = [classify_email(email) for email in emails[:20]]  # Process top 20 emails
+        results = await asyncio.gather(*tasks)
+        
         spam_emails = []
-        for email in emails[:20]:  # Process top 20 emails
-            is_spam = await self.spam_classifier.process(email['body'])
-            if not is_spam.lower() == 'spam':
-                non_spam_emails.append(email)
-            else :
+        non_spam_emails = []
+        for email, is_spam in results:
+            if is_spam:
                 spam_emails.append(email)
+            else:
+                non_spam_emails.append(email)
 
         return {
             "spam": spam_emails,
@@ -50,8 +57,8 @@ class AgentService:
         Returns: 
             dict: Results of processing
         """
-        email_bodies = [email['body'] for email in emails]
-        personality_task = self.personality_summarizer.process(email_bodies)
+        email_bodies = [email.body for email in emails]
+        personality_task = await self.personality_summarizer.process(email_bodies)
         user = await User.get(id=user_id)
         if user.personality is None:
             user.personality = []
@@ -68,7 +75,7 @@ class AgentService:
         Returns:
             TaskNode: Task node created from the email
         """
-        tasks_json = await self.task_extractor.process(email['body'])
+        tasks_json = await self.task_extractor.process(email.body)
         # Remove JSON code block markers if present
         tasks_json = tasks_json.replace('```json', '').replace('```', '').strip()
         
@@ -83,8 +90,8 @@ class AgentService:
             task = await TaskService.create_task(task_data=TaskCreate(
                 task=item.get("task"),
                 deadline=item.get("deadline"),
-                messageId=email['id'],
-                userId=user_id
+                messageId=email.id,
+                userId=str(user_id),
             ))
             saved_tasks.append(task)
 

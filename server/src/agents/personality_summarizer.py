@@ -11,5 +11,5 @@ class PersonalitySummarizer(BaseAgent):
         Calls LLM to analyze email content and summarize personality.
         """
         combined_text = " ".join(user_emails)
-        system_prompt = FileUtils.read_file_content("server/src/prompts/v1/personality_summarizer.md")
+        system_prompt = FileUtils.read_file_content("src/prompts/v1/personality_summarizer.md")
         return self.execute(system_prompt, combined_text)

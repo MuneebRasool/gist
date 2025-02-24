@@ -2,6 +2,7 @@ from datetime import datetime, UTC
 from typing import List, Optional
 from src.models.graph.task import TaskNode
 from .schemas import TaskCreate, TaskUpdate
+import uuid
 
 class TaskService:
     @staticmethod
@@ -11,33 +12,36 @@ class TaskService:
             task=task_data.task,
             userId=task_data.userId,
             messageId=task_data.messageId,
-            deadline=task_data.deadline
+            deadline=task_data.deadline if task_data.deadline else "No Deadline",
+            task_id=str(uuid.uuid4()) 
         )
-        await task.save()
+        task.create()
         return task
 
     @staticmethod
     async def get_task(task_id: str) -> Optional[TaskNode]:
         """Get a task by task_id"""
-        task = await TaskNode.match({"task_id": task_id}).first()
+        task = TaskNode.match({"task_id": task_id}).model_dump()
         return task
 
     @staticmethod
     async def get_task_by_message_id(message_id: str) -> Optional[TaskNode]:
         """Get a task by message ID"""
-        task = await TaskNode.match({"messageId": message_id}).first()
-        return task
+        tasks = TaskNode.match_nodes()
+        filtered_tasks = [task for task in tasks if task.messageId == message_id]
+        return filtered_tasks[0].model_dump() if filtered_tasks else None
 
     @staticmethod
     async def get_tasks_by_user(user_id: str) -> List[TaskNode]:
         """Get all tasks for a specific user"""
-        tasks = await TaskNode.match({"userId": user_id}).all()
-        return tasks
+        tasks = TaskNode.match_nodes()
+        filtered_tasks = [task for task in tasks if task.userId == user_id]
+        return [task.model_dump() for task in filtered_tasks] if filtered_tasks else []
 
     @staticmethod
     async def update_task(task_id: str, task_data: TaskUpdate) -> Optional[TaskNode]:
         """Update a task by task_id"""
-        task = await TaskNode.match({"task_id": task_id}).first()
+        task = TaskNode.match({"task_id": task_id})
         if not task:
             return None
 
@@ -46,15 +50,15 @@ class TaskService:
             setattr(task, key, value)
         
         task.updatedAt = datetime.now(UTC)
-        await task.save()
+        task.merge()
         return task
 
     @staticmethod
     async def delete_task(task_id: str) -> bool:
         """Delete a task by task_id"""
-        task = await TaskNode.match({"task_id": task_id}).first()
+        task = TaskNode.match(task_id)
         if not task:
             return False
         
-        await task.delete()
+        task.delete(task_id)
         return True

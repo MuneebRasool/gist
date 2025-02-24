@@ -1,5 +1,6 @@
 'use client';
 import GmailConnect from '@/components/app/settings/GmailConnect';
+import UserInfo from '@/components/app/settings/UserInfo';
 import { Separator } from '@/components/ui/separator';
 import { Settings2 } from 'lucide-react';
 import React from 'react';
@@ -17,6 +18,7 @@ const Settings = () => {
 				</div>
 			</div>
 			<Separator />
+			<UserInfo />
 			<GmailConnect />
 			<Separator />
 		</div>
