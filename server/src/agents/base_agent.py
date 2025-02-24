@@ -1,5 +1,5 @@
 from openai import OpenAI
-import os
+from src.config import settings
 
 class BaseAgent:
     """
@@ -9,8 +9,8 @@ class BaseAgent:
     def __init__(
             self, 
             model="gpt-4o",
-            base_url=os.getenv("LLM_BASE_URL"),
-            api_key=os.getenv('LLM_API_KEY'),
+            base_url= settings.LLM_BASE_URL, 
+            api_key= settings.LLM_API_KEY,
             tools=[]
     ):
         self.model = model

@@ -50,6 +50,9 @@ NYLAS_API_KEY: Optional[str] = config.get("NYLAS_API_KEY")
 NYLAS_API_URI: Optional[str] = config.get("NYLAS_API_URI")
 NYLAS_CALLBACK_URI: Optional[str] = config.get("NYLAS_CALLBACK_URI")
 
+LLM_BASE_URL: Optional[str] = config.get("LLM_BASE_URL", "https://api.openai.com/v1")
+LLM_API_KEY: Optional[str] = config.get('LLM_API_KEY')
+
 
 # Tortoise ORM Config
 TORTOISE_ORM = {

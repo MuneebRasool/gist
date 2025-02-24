@@ -1,4 +1,5 @@
-from modules.agents.base_agent import BaseAgent
+from src.agents.base_agent import BaseAgent
+from src.utils.file_utils import FileUtils
 
 class SpamClassifier(BaseAgent):
     """
@@ -9,5 +10,5 @@ class SpamClassifier(BaseAgent):
         """
         Calls LLM to classify spam.
         """
-        system_prompt = "Classify this email as 'Spam' or 'Not Spam'."
+        system_prompt = FileUtils.read_file_content("server/src/prompts/v1/spam_classifier.md")
         return self.execute(system_prompt, email_body)
