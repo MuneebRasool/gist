@@ -10,6 +10,7 @@ export type UserDto = {
 	email: string;
 	avatar?: string;
 	nylas_email?: string;
+	personality?: string[];
 };
 
 export type UserUpdateRequest = {

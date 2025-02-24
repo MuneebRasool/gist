@@ -1,0 +1,30 @@
+/**
+ * Task creation request
+ */
+export interface TaskCreate {
+	task: string;
+	messageId?: string;
+	deadline?: string;
+	userId: string;
+}
+
+/**
+ * Task update request
+ */
+export interface TaskUpdate {
+	task?: string;
+	deadline?: string;
+}
+
+/**
+ * Task response
+ */
+export interface TaskResponse {
+	task_id: string;
+	task: string;
+	deadline?: string;
+	messageId?: string;
+	userId: string;
+	createdAt: string;
+	updatedAt: string;
+}

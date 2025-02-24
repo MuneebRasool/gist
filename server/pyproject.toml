@@ -12,6 +12,7 @@ dependencies = [
     "fastapi[standard]>=0.115.8",
     "neontology>=2.0.5",
     "nylas>=6.7.0",
+    "openai>=1.64.0",
     "pydantic-settings>=2.7.1",
     "python-dotenv>=1.0.1",
     "python-jose[cryptography]>=3.4.0",

@@ -22,7 +22,6 @@ const FloatingFooter = () => {
 	const [open, setOpen] = useState(false);
 	const { checkConnection } = useNylasStatusStore();
 	const { data } = useSession();
-	console.log(data?.user.token);
 
 	useEffect(() => {
 		checkConnection();

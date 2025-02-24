@@ -99,3 +99,23 @@ class NylasService:
             
         except Exception as e:
             raise Exception(f"{str(e)}")
+
+    async def get_message(self, grant_id: str, message_id: str) -> Dict[str, Any]:
+        """
+        Get a message by ID.
+        Args:
+            grant_id: The grant ID to get messages for
+            message_id: The ID of the message to get
+        Returns:
+            Dict containing message data
+        Raises:
+            Exception: If fetching message fails
+        """
+        try:
+            message = self.client.messages.find(
+                identifier=grant_id,
+                message_id=message_id
+            )
+            return message.data.to_dict()
+        except Exception as e:
+            raise Exception(f"{str(e)}")
