@@ -4,6 +4,14 @@ export type GetEmailOptions = {
 	unread?: boolean;
 	starred?: boolean;
 	in_folder?: string;
+	/**
+	 * received_after is a Unix timestamp in seconds.
+	 */
+	received_after?: number;
+	/**
+	 * received_before is a Unix timestamp in seconds.
+	 */
+	received_before?: number;
 	subject?: string;
 };
 

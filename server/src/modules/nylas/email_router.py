@@ -20,10 +20,11 @@ async def get_messages(
     starred: Optional[bool] = None,
     in_folder: Optional[str] = None,
     subject: Optional[str] = None,
+    received_after: Optional[int] = None,
+    received_before: Optional[int] = None,
 ) -> MessageList:
     """
     Get email messages for the authenticated user.
-    
     Args:
         limit: Number of messages to return (1-100)
         offset: Cursor for pagination
@@ -31,7 +32,8 @@ async def get_messages(
         starred: Filter by starred status
         in_folder: Filter by folder ID
         subject: Filter by subject containing text
-        
+        received_after: Filter by received date after unix timestamp
+        received_before: Filter by received date before unix timestamp
     Returns:
         MessageList containing messages and next cursor
     """
@@ -50,6 +52,10 @@ async def get_messages(
             params["starred"] = starred
         if in_folder:
             params["in_folder"] = in_folder
+        if received_after:
+            params["received_after"] = received_after
+        if received_before:
+            params["received_before"] = received_before
         if subject:
             params["q"] = subject  # Using 'q' for subject search as per Nylas API
 
