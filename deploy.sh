@@ -1,0 +1,21 @@
+#!/bin/bash
+
+set -e  # Exit on any error
+
+REPO="gist"
+REPO_PATH="$HOME/$REPO"
+
+cd $REPO_PATH || exit 1
+
+echo "Pulling the latest changes from the repository..."
+if ! sudo git pull; then
+    echo "Failed to pull latest changes"
+    exit 1
+fi
+
+echo "Building and deploying services using Docker Compose..."
+if ! sudo docker compose up --build -d; then
+    echo "Failed to build and deploy services"
+    exit 1
+fi
+
