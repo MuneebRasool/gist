@@ -47,13 +47,15 @@ const UserInfo = () => {
 	return (
 		<>
 			<Card className='w-full border-none bg-transparent shadow-none'>
-				<CardHeader className='pb-4'>
+				<CardHeader className='px-2 pb-4'>
 					<div className='flex items-center justify-between'>
-						<CardTitle className='text-2xl font-bold'>Profile Information</CardTitle>
+						<CardTitle className='text-xl font-semibold'>
+							<h3>Profile Information</h3>
+						</CardTitle>
 					</div>
 					<CardDescription>Manage your profile and view personality insights</CardDescription>
 				</CardHeader>
-				<CardContent>
+				<CardContent className='px-2'>
 					<div className='flex items-start space-x-6'>
 						<Avatar className='h-20 w-20'>
 							<AvatarImage src={user.avatar} alt={user.name} />

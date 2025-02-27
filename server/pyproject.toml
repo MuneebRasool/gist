@@ -10,6 +10,7 @@ dependencies = [
     "bcrypt>=4.2.1",
     "fastapi-mail>=1.4.2",
     "fastapi[standard]>=0.115.8",
+    "langsmith>=0.3.11",
     "neontology>=2.0.5",
     "nylas>=6.7.0",
     "openai>=1.64.0",

@@ -31,11 +31,11 @@ const GmailConnect = () => {
 	};
 	return (
 		<Card className='w-full border-none bg-background shadow-none'>
-			<CardHeader className='px-0 py-4'>
-				<CardTitle>Gmail Integration</CardTitle>
+			<CardHeader className='px-2 py-4'>
+				<CardTitle className='font-montserrat text-xl font-semibold'>Gmail Integration</CardTitle>
 				<CardDescription>Connect Your Gmail</CardDescription>
 			</CardHeader>
-			<CardContent className='px-0'>
+			<CardContent className='px-2'>
 				<div className='flex flex-col gap-2'>
 					<div>
 						{isLoading ? (

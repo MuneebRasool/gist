@@ -23,6 +23,7 @@ export interface TaskResponse {
 	task_id: string;
 	task: string;
 	deadline?: string;
+	priority: 'high' | 'medium' | 'low';
 	messageId?: string;
 	userId: string;
 	createdAt: string;

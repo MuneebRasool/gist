@@ -80,16 +80,17 @@ class AgentService:
         tasks_json = tasks_json.replace('```json', '').replace('```', '').strip()
         
         try:
-            items = json.loads(tasks_json).get("items", [])
+            items = json.loads(tasks_json)
         except json.JSONDecodeError:
             # Handle invalid JSON string
             return []
-            
+        
         saved_tasks = []
         for item in items:
             task = await TaskService.create_task(task_data=TaskCreate(
-                task=item.get("task"),
-                deadline=item.get("deadline"),
+                task=item.get("title"),
+                deadline=item.get("due_date"),
+                priority=item.get("priority"),
                 messageId=email.id,
                 userId=str(user_id),
             ))

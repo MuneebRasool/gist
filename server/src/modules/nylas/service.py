@@ -30,6 +30,7 @@ class NylasService:
         return self.client.auth.url_for_oauth2({
             "client_id": self.client_id,
             "redirect_uri": self.callback_uri,
+            "provider": "google",
         })
 
     async def exchange_code_for_token(self, code: str) -> Optional[CodeExchangeResponse]:

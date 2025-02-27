@@ -12,6 +12,7 @@ class TaskService:
             task=task_data.task,
             userId=task_data.userId,
             messageId=task_data.messageId,
+            priority=task_data.priority,
             deadline=task_data.deadline if task_data.deadline else "No Deadline",
             task_id=str(uuid.uuid4()) 
         )
