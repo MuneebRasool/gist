@@ -13,9 +13,9 @@ if ! sudo git pull; then
     exit 1
 fi
 
-echo "Building and deploying services using Docker Compose..."
-if ! sudo docker compose up --build -d; then
+echo "Building and deploying services using Docker Compose with Bake..."
+export COMPOSE_BAKE=true
+if ! sudo -E docker compose up --build -d; then
     echo "Failed to build and deploy services"
     exit 1
 fi
-

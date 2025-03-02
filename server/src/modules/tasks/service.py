@@ -1,65 +1,129 @@
 from datetime import datetime, UTC
 from typing import List, Optional
-from src.models.graph.task import TaskNode
+from src.models.graph.nodes import TaskNode, EmailNode, UserNode
 from .schemas import TaskCreate, TaskUpdate
 import uuid
+from neomodel import db
 
 class TaskService:
     @staticmethod
-    async def create_task(task_data: TaskCreate) -> TaskNode:
-        """Create a new task"""
+    async def create_task(task_data: TaskCreate,user_id:str) -> TaskNode:
+        """
+        Create a new task and connect it to the corresponding email
+        """
+        # First get the email node
+        email = TaskService.ensure_graph_nodes(user_id, task_data.messageId)
+        
+        # Create task node
+        print('creating tasks')
         task = TaskNode(
+            task_id=str(uuid.uuid4()),
             task=task_data.task,
-            userId=task_data.userId,
-            messageId=task_data.messageId,
             priority=task_data.priority,
-            deadline=task_data.deadline if task_data.deadline else "No Deadline",
-            task_id=str(uuid.uuid4()) 
-        )
-        task.create()
+            deadline=task_data.deadline if task_data.deadline else "No Deadline"
+        ).save()
+        
+        # Connect task to email
+        email.tasks.connect(task)
+        task.messageId = task_data.messageId
         return task
+
+    @staticmethod
+    def ensure_graph_nodes(user_id: str, message_id: str) -> EmailNode:
+        """
+        Ensure User and Email nodes exist in the graph database
+        Returns the EmailNode (creates if doesn't exist)
+        """
+        # Ensure user node exists
+        try:
+            user_node = UserNode.nodes.get(userid=user_id)
+        except UserNode.DoesNotExist:
+            user_node = UserNode(userid=user_id).save()
+            
+        # Ensure email node exists and is connected to user
+        try:
+            email_node = EmailNode.nodes.get(messageId=message_id)
+        except EmailNode.DoesNotExist:
+            email_node = EmailNode(messageId=message_id).save()
+            user_node.emails.connect(email_node)
+            
+        return email_node
+    
 
     @staticmethod
     async def get_task(task_id: str) -> Optional[TaskNode]:
         """Get a task by task_id"""
-        task = TaskNode.match({"task_id": task_id}).model_dump()
-        return task
+        try:
+            task = TaskNode.nodes.get(task_id=task_id)
+            return task
+        except TaskNode.DoesNotExist:
+            return None
 
     @staticmethod
-    async def get_task_by_message_id(message_id: str) -> Optional[TaskNode]:
-        """Get a task by message ID"""
-        tasks = TaskNode.match_nodes()
-        filtered_tasks = [task for task in tasks if task.messageId == message_id]
-        return filtered_tasks[0].model_dump() if filtered_tasks else None
+    async def get_task_by_message_id(message_id: str) -> List[TaskNode]:
+        """Get all tasks associated with a message ID"""
+        query = """
+        MATCH (e:EmailNode {messageId: $message_id})-[:CONTAINS_TASK]->(t:TaskNode)
+        RETURN t
+        """
+        results, _ = db.cypher_query(query, {'message_id': message_id})
+        return [TaskNode.inflate(row[0]) for row in results]
 
     @staticmethod
     async def get_tasks_by_user(user_id: str) -> List[TaskNode]:
-        """Get all tasks for a specific user"""
-        tasks = TaskNode.match_nodes()
-        filtered_tasks = [task for task in tasks if task.userId == user_id]
-        return [task.model_dump() for task in filtered_tasks] if filtered_tasks else []
+        """Get all tasks for a specific user through the user->email->task relationship"""
+        query = """
+        MATCH (u:UserNode {userid: $user_id})-[:HAS_EMAIL]->(e:EmailNode)-[:CONTAINS_TASK]->(t:TaskNode)
+        RETURN t
+        """
+        results, _ = db.cypher_query(query, {'user_id': user_id})
+        return [TaskNode.inflate(row[0]) for row in results]
 
     @staticmethod
     async def update_task(task_id: str, task_data: TaskUpdate) -> Optional[TaskNode]:
         """Update a task by task_id"""
-        task = TaskNode.match({"task_id": task_id})
-        if not task:
+        try:
+            task = TaskNode.nodes.get(task_id=task_id)
+            
+            update_data = task_data.model_dump(exclude_unset=True)
+            for key, value in update_data.items():
+                setattr(task, key, value)
+            
+            task.updatedAt = datetime.now(UTC)
+            task.save()
+            return task
+        except TaskNode.DoesNotExist:
             return None
-
-        update_data = task_data.model_dump(exclude_unset=True)
-        for key, value in update_data.items():
-            setattr(task, key, value)
-        
-        task.updatedAt = datetime.now(UTC)
-        task.merge()
-        return task
 
     @staticmethod
     async def delete_task(task_id: str) -> bool:
         """Delete a task by task_id"""
-        task = TaskNode.match(task_id)
-        if not task:
+        try:
+            task = TaskNode.nodes.get(task_id=task_id)
+            # This will also remove all relationships
+            task.delete()
+            return True
+        except TaskNode.DoesNotExist:
             return False
-        
-        task.delete(task_id)
-        return True
+
+    @staticmethod
+    async def add_task_dependency(task_id: str, depends_on_task_id: str) -> bool:
+        """Add a dependency relationship between tasks"""
+        try:
+            task = TaskNode.nodes.get(task_id=task_id)
+            depends_on_task = TaskNode.nodes.get(task_id=depends_on_task_id)
+            
+            task.depends_on.connect(depends_on_task)
+            return True
+        except TaskNode.DoesNotExist:
+            return False
+
+    @staticmethod
+    async def get_task_dependencies(task_id: str) -> List[TaskNode]:
+        """Get all tasks that this task depends on"""
+        query = """
+        MATCH (t:Task {task_id: $task_id})-[:DEPENDS_ON]->(d:Task)
+        RETURN d
+        """
+        results, _ = db.cypher_query(query, {'task_id': task_id})
+        return [TaskNode.inflate(row[0]) for row in results]
