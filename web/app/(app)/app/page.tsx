@@ -2,9 +2,7 @@
 
 import { useNylasStatusStore } from '@/store';
 import GmailConnect from '@/components/app/settings/GmailConnect';
-import { TaskExtractorOnboarding } from '@/components/app/tasks/TaskExtractorOnboarding';
 import { useTasksStore } from '@/store/tasks';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CalendarDays } from 'lucide-react';
 import { useEffect } from 'react';
 import { useSession } from 'next-auth/react';
@@ -12,8 +10,8 @@ import Loading from '@/app/loading';
 import TaskCard from '@/components/app/tasks/TaskCard';
 
 export default function HomePage() {
-	const { isConnected, isLoading } = useNylasStatusStore();
-	const { tasks, fetchTasks } = useTasksStore();
+	const { isConnected, isLoading: emailStatusLoading } = useNylasStatusStore();
+	const { tasks, fetchTasks, isLoading } = useTasksStore();
 	const { data: session } = useSession();
 
 	useEffect(() => {
@@ -22,7 +20,7 @@ export default function HomePage() {
 		}
 	}, [session?.user?.id, fetchTasks]);
 
-	if (isLoading) {
+	if (isLoading || emailStatusLoading) {
 		return <Loading />;
 	}
 
@@ -36,14 +34,6 @@ export default function HomePage() {
 		);
 	}
 
-	if (tasks.length === 0) {
-		return (
-			<div className='container mx-auto py-8'>
-				<TaskExtractorOnboarding userId={session?.user?.id ?? ''} />
-			</div>
-		);
-	}
-
 	return (
 		<div className='container mx-auto py-8'>
 			<h1 className='mb-6 text-2xl font-bold'>Your Tasks</h1>
@@ -52,6 +42,17 @@ export default function HomePage() {
 					<TaskCard key={task.task_id} task={task} />
 				))}
 			</div>
+			{tasks.length === 0 && (
+				<div className='flex flex-col items-center gap-6 py-8'>
+					<CalendarDays className='h-16 w-16 text-primary' />
+					<div className='text-center'>
+						<h3 className='text-lg font-semibold'>No Tasks Found</h3>
+						<p className='text-sm text-muted-foreground'>
+							No tasks found. New tasks will appear here once they are extracted from your emails.
+						</p>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }

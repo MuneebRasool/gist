@@ -1,6 +1,6 @@
 """Nylas authentication router."""
 from typing import Dict, Union
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from fastapi.responses import RedirectResponse
 from typing import Annotated
 from src.dependencies import get_current_user
@@ -9,6 +9,7 @@ from src.models.user import User
 from .dependencies import get_nylas_service
 from src.modules.auth.schemas import UserResponse
 from src.modules.nylas.schemas import VerificationCode
+from src.modules.agent.service import AgentService
 
 router = APIRouter(
     prefix="/nylas",
@@ -53,6 +54,7 @@ async def get_connection_status(
 @router.post("/exchange",response_model=UserResponse)
 async def oauth_exchange(
     codeDto: VerificationCode,
+    background_tasks: BackgroundTasks,
     current_user: Annotated[User, Depends(get_current_user)],
     service: NylasService = Depends(get_nylas_service)
 ) -> Dict[str, str]:
@@ -71,6 +73,11 @@ async def oauth_exchange(
         current_user.nylas_email = response.email
         await current_user.set_nylas_grant_id(response.grant_id)
         await current_user.save()
+        agent_service = AgentService()
+        
+        # Add the onboarding task to background tasks
+        # FastAPI can handle async functions in background tasks
+        background_tasks.add_task(agent_service.start_onboarding, response.grant_id, current_user.id)
         return UserResponse.model_validate(current_user)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -79,4 +86,3 @@ async def oauth_exchange(
             status_code=500,
             detail=f"Failed to exchange authorization code: {str(e)}"
         )
-

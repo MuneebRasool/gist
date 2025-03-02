@@ -10,7 +10,6 @@ from starlette.exceptions import HTTPException
 from starlette.responses import RedirectResponse
 from tortoise.exceptions import BaseORMException
 from contextlib import asynccontextmanager
-from neontology import init_neontology
 from src.config import  settings
 from src.database import init_db, close_db
 from src.modules.auth.router import router as user_router
@@ -24,12 +23,13 @@ from src.exceptions import (
     generic_exception_handler,
     database_exception_handler,
 )
+from neomodel import config as neo_config
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage application lifespan events."""
     await init_db()
-    init_neontology(settings.neo4j_config) 
+    neo_config.DATABASE_URL = settings.NEO4J_URL
     yield
     await close_db()
 # Initialize FastAPI app

@@ -5,7 +5,6 @@ Load environment variables and define app-wide settings.
 
 from typing import List, Optional
 from dotenv import load_dotenv,dotenv_values
-from neontology import Neo4jConfig
 
 load_dotenv('.env')
 config = dotenv_values('.env')
@@ -27,9 +26,10 @@ DATABASE_URL: str = config.get(
 )
 
 # Neo4j Configuration
-NEO4J_URI: str = config.get("NEO4J_URI", "bolt://localhost:7687")
+NEO4J_URL: str = config.get("NEO4J_URL", "neo4j+s://test:test@localhost:7687")
 NEO4J_USERNAME: str = config.get("NEO4J_USERNAME", "neo4j")
 NEO4J_PASSWORD: str = config.get("NEO4J_PASSWORD", "password")
+NEO4J_HOST: str = config.get("NEO4J_HOST", "neo4j+s://localhost:7687")
 
 # SMTP Configuration
 SMTP_USERNAME: Optional[str] = config.get("SMTP_USERNAME")
@@ -76,5 +76,3 @@ TORTOISE_ORM = {
     },
 }
 
-
-neo4j_config = Neo4jConfig(uri=NEO4J_URI, username=NEO4J_USERNAME, password=NEO4J_PASSWORD)

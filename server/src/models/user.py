@@ -49,7 +49,26 @@ class User(models.Model):
     def hash_password(password: str) -> str:
         """Hash a password for storing."""
         return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
-
+    
+    @staticmethod
+    async def get_by_grant_id(grant_id: str):
+        """Get a user by Nylas grant ID."""
+        all_users = await User.filter(nylas_grant_id__not_isnull=True).all()
+        for user in all_users:
+            if user.get_nylas_grant_id() == grant_id:
+                return user
+        return None
+    
+    @staticmethod
+    async def get_all_users_by_grant_id(grant_id:str):
+        """Get all users by Nylas grant ID."""
+        all_users = await User.filter(nylas_grant_id__not_isnull=True).all()
+        users = []
+        for user in all_users:
+            if user.get_nylas_grant_id() == grant_id:
+                users.append(user)
+        return users
+    
     class Meta:
         table = "users"
 

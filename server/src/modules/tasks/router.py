@@ -1,14 +1,16 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status,Depends
 from typing import List
 from .schemas import TaskCreate, TaskUpdate, TaskResponse
 from .service import TaskService
+from src.dependencies import get_current_user
+from src.models.user import User
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
 @router.post("/", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)
-async def create_task(task_data: TaskCreate):
+async def create_task(task_data: TaskCreate, current_user: User = Depends(get_current_user),):
     """Create a new task"""
-    task = await TaskService.create_task(task_data)
+    task = await TaskService.create_task(task_data, current_user.id)
     return task
 
 @router.get("/id/{task_id}", response_model=TaskResponse)
@@ -22,16 +24,16 @@ async def get_task(task_id: str):
         )
     return task
 
-@router.get("/message/{message_id}", response_model=TaskResponse)
+@router.get("/message/{message_id}", response_model=List[TaskResponse])
 async def get_task_by_message_id(message_id: str):
     """Get a task by message ID"""
-    task = await TaskService.get_task_by_message_id(message_id)
-    if not task:
+    tasks = await TaskService.get_task_by_message_id(message_id)
+    if not tasks:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Task with message ID {message_id} not found"
         )
-    return task
+    return [task.__dict__ for task in tasks]
 
 @router.get("/user/{user_id}", response_model=List[TaskResponse])
 async def get_user_tasks(user_id: str):

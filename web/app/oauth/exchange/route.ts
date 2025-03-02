@@ -12,7 +12,7 @@ export const GET = async (req: NextRequest) => {
 		if (res.error) {
 			return NextResponse.json({ status: 'error', errorMessage: res.error.message });
 		}
-		return NextResponse.redirect(`${envConfig.APP_URL}/app/settings`);
+		return NextResponse.redirect(`${envConfig.APP_URL}/app`);
 	} catch (error) {
 		return NextResponse.json({
 			status: 'error',

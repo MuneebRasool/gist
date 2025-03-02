@@ -1,70 +1,37 @@
-"""
-Router for agent-related endpoints.
-"""
-from fastapi import APIRouter, Depends, HTTPException
-from .schemas import ProcessEmailsRequest, SpamClassificationResponse
-import asyncio
-from src.dependencies import get_current_user
-from src.models.user import User
+from fastapi import APIRouter, Request,Response, BackgroundTasks
 from src.modules.agent.service import AgentService
 
 router = APIRouter(prefix="/agent", tags=["agent"])
 
 
+@router.get("/webhook")
+async def webhook_challenge(request: Request):
+    # Handle initial webhook verification challenge
+    challenge = request.query_params.get("challenge")
+    if challenge:
+        return Response(content=challenge)
+    return Response(status_code=200)
 
-@router.post("/extract-task-batch")
-async def extract_task_batch(
-    request: ProcessEmailsRequest,
-    current_user: User = Depends(get_current_user)
-):
+@router.post("/webhook")
+async def nylas_webhook(request: Request,background_tasks: BackgroundTasks):
     """
-    Process batch of non spam emails when user first connects their Gmail.
+    Webhook endpoint for Nylas to call when a user receives an email message.
+    
     This endpoint:
-    1. Extract tasks from emails
-    2. store it in graph database
+    1. Receives webhook events from Nylas
+    2. Processes new email messages
+    3. Extracts tasks from non-spam emails
     """
     try:
+        webhook_data = await request.json()
         agent_service = AgentService()
-        # user asyncio and run the tasks concurrently
-        tasks = [
-            agent_service.extract_and_save_tasks(
-            user_id=current_user.id,
-            email=email
-            ) for email in request.emails
-        ]
-        tasks.append(agent_service.summarize_user_personality(
-            user_id=current_user.id,
-            emails=request.emails
-        ))
-        await asyncio.gather(*tasks)
-
-        return {
-            "success": True,
-            "message": "Batch of emails processed successfully",
-        }
+        print("Webhook data received")
+        background_tasks.add_task(agent_service.handle_webhook_event, webhook_data)
         
+        return "Webhook processed successfully"
     except Exception as e:
-        print(e)
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to process emails: {str(e)}"
-        )
-
-@router.post("/classify-spams", response_model= SpamClassificationResponse)
-async def classify_spams(
-    request: ProcessEmailsRequest,
-    current_user: User = Depends(get_current_user)
-):
-    """
-    Classify spam emails from a batch of emails.
-    """
-    try:
-        agent_service = AgentService()
-        result = await agent_service.classify_spams(request.emails)
-        return result
-    except Exception as e:
-        print(e)
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to classify spam emails: {str(e)}"
-        )
+        print(f"Webhook error: {str(e)}")
+        return {
+            "success": False,
+            "message": f"Failed to process webhook: {str(e)}"
+        }
