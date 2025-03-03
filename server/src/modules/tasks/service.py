@@ -39,7 +39,7 @@ class TaskService:
         """
         # Ensure user node exists
         try:
-            user_node = UserNode.nodes.get(userid=user_id)
+            user_node = UserNode.nodes.get(userid=str(user_id))
         except UserNode.DoesNotExist:
             user_node = UserNode(userid=user_id).save()
             
@@ -79,8 +79,12 @@ class TaskService:
         MATCH (u:UserNode {userid: $user_id})-[:HAS_EMAIL]->(e:EmailNode)-[:CONTAINS_TASK]->(t:TaskNode)
         RETURN t
         """
-        results, _ = db.cypher_query(query, {'user_id': user_id})
-        return [TaskNode.inflate(row[0]) for row in results]
+        try:
+            results, _ = db.cypher_query(query, {'user_id': user_id})
+            return [TaskNode.inflate(row[0]) for row in results]
+        except Exception as e:
+            print(f"Error getting tasks for user {user_id}: {str(e)}")
+            return []
 
     @staticmethod
     async def update_task(task_id: str, task_data: TaskUpdate) -> Optional[TaskNode]:
