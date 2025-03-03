@@ -10,5 +10,5 @@ class CostFeaturesExtractor(BaseAgent):
         """
         Calls LLM to extract tasks from an email.
         """
-        system_prompt = FileUtils.read_file_content("src/prompts/v1/task_extractor.md")
+        system_prompt = FileUtils.read_file_content("src/prompts/v1/task_cost_features_extractor.md")
         return self.execute(system_prompt, task_context, response_format="json")
