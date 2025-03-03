@@ -24,6 +24,9 @@ export interface TaskResponse {
 	task: string;
 	deadline?: string;
 	priority: 'high' | 'medium' | 'low';
+	relevance_score?: number;
+	utility_score?: number;
+	cost_score?: number;
 	messageId?: string;
 	userId: string;
 	createdAt: string;

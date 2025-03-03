@@ -22,6 +22,9 @@ class TaskResponse(BaseModel):
     messageId: Optional[str] = Field(None, description="Message ID this task was extracted from")
     deadline: Optional[str] = Field(None, description="Optional deadline for the task")
     priority: Optional[str] = Field(None, description="Priority of the task")
+    relevance_score: Optional[float] = Field(None, description="Relevance score of the task")
+    utility_score: Optional[float] = Field(None, description="Utility score of the task")
+    cost_score: Optional[float] = Field(None, description="Cost score of the task")
     createdAt: datetime = Field(..., description="When the task was created")
     updatedAt: datetime = Field(..., description="When the task was last updated")
     

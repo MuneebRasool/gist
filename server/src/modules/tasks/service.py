@@ -78,6 +78,7 @@ class TaskService:
         query = """
         MATCH (u:UserNode {userid: $user_id})-[:HAS_EMAIL]->(e:EmailNode)-[:CONTAINS_TASK]->(t:TaskNode)
         RETURN t
+        ORDER BY t.relevance_score DESC
         """
         try:
             results, _ = db.cypher_query(query, {'user_id': user_id})

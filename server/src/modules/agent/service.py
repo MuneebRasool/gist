@@ -78,9 +78,9 @@ class AgentService:
         await user.save()
         return personality_task
     
-    async def extract_tasks(self, email: dict):
+    async def extract_tasks(self, email_body: str):
          # Extract tasks from email
-        tasks_json = await self.task_extractor.process(email.body)
+        tasks_json = await self.task_extractor.process(email_body)
         # Remove JSON code block markers if present
 
         return tasks_json

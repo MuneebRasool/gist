@@ -73,6 +73,11 @@ const TaskCard = ({ task }: { task: TaskResponse }) => {
 									{task.priority}
 								</Badge>
 							)}
+							{task.relevance_score && (
+								<Badge className={`rounded-full capitalize `}>
+									{task.relevance_score}
+								</Badge>
+							)}
 							{task.deadline && (
 								<CardDescription className='flex items-center gap-2 text-sm font-medium text-muted-foreground'>
 									<CalendarDays className='h-4 w-4 text-primary' />
