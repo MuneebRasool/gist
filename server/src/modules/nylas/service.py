@@ -61,7 +61,7 @@ class NylasService:
     async def get_messages(
         self, 
         grant_id: str, 
-        limit: int = 10,
+        limit: int = 5,
         offset: Optional[str] = None,
         query_params: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:

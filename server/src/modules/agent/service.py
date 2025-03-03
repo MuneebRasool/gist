@@ -11,16 +11,23 @@ from src.modules.tasks.schemas import TaskCreate
 from src.modules.nylas.service import NylasService
 from src.models.graph.nodes import UserNode, EmailNode,TaskNode
 from .schemas import EmailData
-import json
 import asyncio
 import datetime
 import uuid
+
+from ...agents.task_cost_features_extractor import CostFeaturesExtractor
+from ...agents.task_utility_features_extractor import UtilityFeaturesExtractor
+from ...utils.get_text_from_html import get_text_from_html
+from ...utils.get_utility_score import get_relevance_score
+
 
 class AgentService:
     def __init__(self):
         self.spam_classifier = SpamClassifier()
         self.task_extractor = TaskExtractor()
         self.personality_summarizer = PersonalitySummarizer()
+        self.utility_features_extractor = UtilityFeaturesExtractor()
+        self.cost_features = CostFeaturesExtractor()
 
     async def classify_spams(self, emails: List[dict]) -> dict:
         """
@@ -71,40 +78,69 @@ class AgentService:
         await user.save()
         return personality_task
     
-    async def extract_tasks(self, email: dict):
+    async def extract_tasks(self, email_body: str):
          # Extract tasks from email
-        tasks_json = await self.task_extractor.process(email.body)
+        tasks_json = await self.task_extractor.process(email_body)
         # Remove JSON code block markers if present
-        tasks_json = tasks_json.replace('```json', '').replace('```', '').strip()
-        
-        try:
-            return json.loads(tasks_json)
-        except json.JSONDecodeError:
-            return []
 
-    async def extract_and_save_tasks(self, user_id: str, email: dict):
+        return tasks_json
+
+    async def extract_and_save_tasks(
+            self,
+            user_id: str,
+            email: dict,
+            user_persona: str = ''
+    ):
         """
         Extract tasks from email and save them to the database
         Args:
             user_id: The ID of the user
             email: Email object containing id, subject, body, etc.
+            user_persona: Optional user persona information
         Returns:
             bool: True if tasks were successfully extracted and saved
         """
-        items = await self.extract_tasks(email)
+        email_body, email_id = email.body, email.id
+        task_items = await self.extract_tasks(email_body)
+        tasks = task_items.get("tasks", [])
         
-        if len(items) == 0:
+        if len(tasks) == 0:
             print("No tasks found in email")
             return True
         else:
-            print(f"Found {len(items)} tasks in email")
+            print(f"Found {len(tasks)} tasks in email")
+
+        context = f"""
+                    user persona: {user_persona}
+                    email: {email_body}
+                """
         
-        for item in items:
+        for item in tasks:
+            task_context = context + f"\ntask: {item}"
+
+            utility_task_features_coroutine = self.utility_features_extractor.process(task_context)
+            cost_task_features_coroutine = self.cost_features.process(task_context)
+
+            # Gather results
+            utility_result, cost_result = await asyncio.gather(
+                utility_task_features_coroutine,
+                cost_task_features_coroutine
+            )
+
+            utility_features = utility_result.get('utility_features', {})
+            cost_features = cost_result.get('cost_features', {})
+
+            # Calculate relevance score
+            relevance_score, utility_score, cost_score = get_relevance_score(utility_features, cost_features)
+
             await TaskService.create_task(task_data=TaskCreate(
                 task=item.get("title"),
                 deadline=item.get("due_date"),
                 priority=item.get("priority"),
-                messageId=email.id,  # This will be used to connect task to email
+                messageId=email_id,
+                relevance_score=relevance_score,
+                utility_score=utility_score.get('total_utility_score'),
+                cost_score=cost_score.get('total_cost_score')
             ), user_id=user_id)
         return True
     
@@ -144,9 +180,10 @@ class AgentService:
             # Convert the list of dictionaries to EmailData objects
             emails = []
             for email in emails_raw:
+                parsed_email_body = get_text_from_html(email.get("body", ""))
                 emails.append(EmailData(
                     id=email.get("id"),
-                    body=email.get("body", ""),
+                    body=parsed_email_body,
                     subject=email.get("subject"),
                     from_=email.get("from")
                 ))
@@ -154,6 +191,7 @@ class AgentService:
             # Classify emails into spam and non-spam
             print("Classifying emails")
             classified_emails = await self.classify_spams(emails)
+
             non_spam_emails = classified_emails.get("non_spam", [])
 
             # Process non-spam emails
@@ -206,6 +244,7 @@ class AgentService:
                 # Extract relevant fields from the message
                 message_id = message_data.get("id")
                 body = message_data.get("body", "")
+                parsed_body = get_text_from_html(body)
                 subject = message_data.get("subject", "")
                 from_data = message_data.get("from", [{}])
                 grant_id = message_data.get("grant_id")
@@ -228,7 +267,7 @@ class AgentService:
                 # Create EmailData object
                 email = EmailData(
                     id=message_id,
-                    body=body,
+                    body=parsed_body,
                     subject=subject,
                     from_=from_data
                 )

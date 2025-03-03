@@ -20,7 +20,10 @@ class TaskService:
             task_id=str(uuid.uuid4()),
             task=task_data.task,
             priority=task_data.priority,
-            deadline=task_data.deadline if task_data.deadline else "No Deadline"
+            deadline=task_data.deadline if task_data.deadline else "No Deadline",
+            utility_score=task_data.utility_score,
+            cost_score=task_data.cost_score,
+            relevance_score=task_data.relevance_score,
         ).save()
         
         # Connect task to email
@@ -36,7 +39,7 @@ class TaskService:
         """
         # Ensure user node exists
         try:
-            user_node = UserNode.nodes.get(userid=user_id)
+            user_node = UserNode.nodes.get(userid=str(user_id))
         except UserNode.DoesNotExist:
             user_node = UserNode(userid=user_id).save()
             
@@ -75,9 +78,14 @@ class TaskService:
         query = """
         MATCH (u:UserNode {userid: $user_id})-[:HAS_EMAIL]->(e:EmailNode)-[:CONTAINS_TASK]->(t:TaskNode)
         RETURN t
+        ORDER BY t.relevance_score DESC
         """
-        results, _ = db.cypher_query(query, {'user_id': user_id})
-        return [TaskNode.inflate(row[0]) for row in results]
+        try:
+            results, _ = db.cypher_query(query, {'user_id': user_id})
+            return [TaskNode.inflate(row[0]) for row in results]
+        except Exception as e:
+            print(f"Error getting tasks for user {user_id}: {str(e)}")
+            return []
 
     @staticmethod
     async def update_task(task_id: str, task_data: TaskUpdate) -> Optional[TaskNode]:

@@ -6,7 +6,8 @@ from neomodel import (
     RelationshipFrom,
     One,
     ZeroOrMore,
-    OneOrMore
+    OneOrMore,
+    FloatProperty
 )
 from datetime import datetime, UTC
 
@@ -37,6 +38,9 @@ class TaskNode(StructuredNode):
     task = StringProperty(required=True)
     deadline = StringProperty(default=None)
     priority = StringProperty(default=None)
+    relevance_score = FloatProperty(default=0.0)
+    utility_score = FloatProperty(default=0.0)
+    cost_score = FloatProperty(default=0.0)
     createdAt = DateTimeProperty(default=lambda: datetime.now(UTC))
     updatedAt = DateTimeProperty(default=lambda: datetime.now(UTC))
     

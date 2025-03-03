@@ -10,4 +10,4 @@ class TaskExtractor(BaseAgent):
         Calls LLM to extract tasks from an email.
         """
         system_prompt = FileUtils.read_file_content("src/prompts/v1/task_extractor.md")
-        return self.execute(system_prompt, email_body)
+        return self.execute(system_prompt, email_body, response_format="json")
