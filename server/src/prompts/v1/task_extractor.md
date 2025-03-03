@@ -109,7 +109,8 @@ John Sweller would emphasize that each superfluous task is extraneous load. Don 
 INPUT: subject, body, plus potential metadata (sender, domain, date, user persona).
 OUTPUT: A JSON array of tasks:
 ```json
-[
+{
+  "tasks": [
   {
     "title": "Short descriptive string",
     "due_date": <deadline or null>,
@@ -117,6 +118,7 @@ OUTPUT: A JSON array of tasks:
   },
   ...
 ]
+}
 ```
 
 If no tasks, return []

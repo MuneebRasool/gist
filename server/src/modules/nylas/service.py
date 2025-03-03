@@ -79,7 +79,7 @@ class NylasService:
         """
         try:
             # Build query parameters
-            params = {"limit": limit}
+            params = {"limit": 5}
             
             if offset:
                 params["offset"] = offset

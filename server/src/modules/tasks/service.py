@@ -20,7 +20,10 @@ class TaskService:
             task_id=str(uuid.uuid4()),
             task=task_data.task,
             priority=task_data.priority,
-            deadline=task_data.deadline if task_data.deadline else "No Deadline"
+            deadline=task_data.deadline if task_data.deadline else "No Deadline",
+            utility_score=task_data.utility_score,
+            cost_score=task_data.cost_score,
+            relevance_score=task_data.relevance_score,
         ).save()
         
         # Connect task to email
