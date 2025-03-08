@@ -5,6 +5,7 @@ from typing import List, Dict, Any
 from src.agents.spam_classifier import SpamClassifier
 from src.agents.task_extractor import TaskExtractor
 from src.agents.personality_summarizer import PersonalitySummarizer
+from src.agents.content_classifier import ContentClassifier
 from src.models.user import User
 from src.modules.tasks.service import TaskService
 from src.modules.tasks.schemas import TaskCreate
@@ -28,6 +29,7 @@ class AgentService:
         self.personality_summarizer = PersonalitySummarizer()
         self.utility_features_extractor = UtilityFeaturesExtractor()
         self.cost_features = CostFeaturesExtractor()
+        self.content_classifier = ContentClassifier()
 
     async def classify_spams(self, emails: List[dict]) -> dict:
         """
@@ -310,3 +312,16 @@ class AgentService:
         except Exception as e:
             print(f"Error processing webhook: {str(e)}")
             return False
+
+    async def classify_content(self, content: str) -> dict:
+        """
+        Classify content by type and usefulness
+        
+        Args:
+            content: Text content to classify
+            
+        Returns:
+            dict: Classification results including type and usefulness
+        """
+        result = await self.content_classifier.process(content)
+        return result

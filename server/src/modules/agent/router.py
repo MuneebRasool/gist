@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Request,Response, BackgroundTasks
 from src.modules.agent.service import AgentService
+from src.modules.agent.schemas import ContentClassificationResponse, ContentClassificationRequest
 
 router = APIRouter(prefix="/agent", tags=["agent"])
 
@@ -34,4 +35,42 @@ async def nylas_webhook(request: Request,background_tasks: BackgroundTasks):
         return {
             "success": False,
             "message": f"Failed to process webhook: {str(e)}"
+        }
+
+@router.post("/classify-content", response_model=ContentClassificationResponse)
+async def classify_content(request_data: ContentClassificationRequest):
+    """
+    Classify content by type and usefulness
+    
+    This endpoint:
+    1. Receives content in the request body
+    2. Classifies the content by type and usefulness
+    3. Returns the classification results
+    """
+    try:
+        content = request_data.content
+        
+        if not content:
+            return {
+                "success": False,
+                "message": "No content provided",
+                "types": ["UNKNOWN"],
+                "useful": "NO"
+            }
+            
+        agent_service = AgentService()
+        result = await agent_service.classify_content(content)
+        
+        return {
+            "success": True,
+            "message": "Content classified successfully",
+            **result
+        }
+    except Exception as e:
+        print(f"Content classification error: {str(e)}")
+        return {
+            "success": False,
+            "message": f"Failed to classify content: {str(e)}",
+            "types": ["ERROR"],
+            "useful": "NO"
         }
