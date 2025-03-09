@@ -27,26 +27,18 @@ class BaseAgent:
         tool_schemas=[]
 ) -> str:
         """
-            Makes an LLM call with the given prompt and input.
-            Handles tool calling when tool_schemas are provided.
+            Execute a request to the LLM API
             
             Args:
-                system_prompt: The system prompt to provide context
-                user_input: The user query or input
-                response_format: The desired response format ("string" or "json")
-                tool_schemas: List of tool schemas for function calling
+                system_prompt: The system prompt
+                user_input: The user input prompt
+                response_format: The expected response format, either "string" or "json"
+                tool_schemas: Optional list of tool schemas for function calling
                 
             Returns:
                 The LLM response as a string or JSON object
         """
-        print("\n---------------------------------------")
-        print(f"🔷 LLM CALL: Model={self.model}, Format={response_format}")
-        print(f"🔷 System prompt length: {len(system_prompt)} chars")
-        print(f"🔷 User input length: {len(user_input)} chars")
-        print(f"🔷 Tool schemas: {len(tool_schemas) if tool_schemas else 0}")
-        
         try:
-            print("🔷 Sending request to LLM API...")
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
@@ -58,12 +50,10 @@ class BaseAgent:
                 response_format={"type": "json_object"} if response_format == "json" else None
             )
             
-            print(f"🔷 LLM response received: {len(response.choices[0].message.content) if hasattr(response.choices[0].message, 'content') and response.choices[0].message.content else 'No content'} chars")
-            
             message = response.choices[0].message
             
             if hasattr(message, 'tool_calls') and message.tool_calls:
-                print(f"🔷 Tool calls detected: {len(message.tool_calls)}")
+                print(f"Tool calls detected: {len(message.tool_calls)}")
                 tool_results = []
                 
                 for tool_call in message.tool_calls:
@@ -71,59 +61,54 @@ class BaseAgent:
                         function_name = tool_call.function.name
                         function_args = json.loads(tool_call.function.arguments)
                         
-                        print(f"🔷 Executing tool: {function_name}")
                         tool_result = await self._execute_tool_function(function_name, function_args)
                         
                         tool_results.append({
                             "tool_call_id": tool_call.id,
-                            "function_name": function_name,
-                            "result": tool_result
+                            "role": "tool",
+                            "name": function_name,
+                            "content": json.dumps(tool_result)
                         })
                     except Exception as e:
-                        print(f"❌ Tool execution error: {str(e)}")
+                        print(f"Error executing tool {function_name}: {str(e)}")
                         tool_results.append({
                             "tool_call_id": tool_call.id,
-                            "error": str(e)
+                            "role": "tool",
+                            "name": function_name,
+                            "content": json.dumps({"error": str(e)})
                         })
                 
-                print("🔷 Sending follow-up request with tool results...")
-                follow_up_response = await self.client.chat.completions.create(
+                # Create new messages list with original system prompt, user input and tool results
+                new_messages = [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_input},
+                    {"role": "assistant", "content": message.content or "", "tool_calls": message.tool_calls},
+                    *tool_results
+                ]
+                
+                # Call the API again with the tool results
+                second_response = await self.client.chat.completions.create(
                     model=self.model,
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_input},
-                        message,
-                        *[{
-                            "role": "tool", 
-                            "tool_call_id": result["tool_call_id"],
-                            "content": json.dumps(result["result"]) if "result" in result else f"Error: {result['error']}"
-                        } for result in tool_results]
-                    ],
+                    messages=new_messages,
                     response_format={"type": "json_object"} if response_format == "json" else None
                 )
                 
-                exact_response = follow_up_response.choices[0].message.content
-                print(f"🔷 Follow-up response received: {len(exact_response)} chars")
+                result = second_response.choices[0].message.content
             else:
-                exact_response = message.content
-            
-            if response_format == "json":
+                result = message.content
+                
+            # Convert JSON string to Python object if response_format is "json"
+            if response_format == "json" and result:
                 try:
-                    print("🔷 Parsing JSON response...")
-                    exact_response = exact_response.replace('```json', '').replace('```', '').strip()
-                    exact_response = json.loads(exact_response)
-                    print("🔷 JSON parsing successful")
-                except json.JSONDecodeError as json_err:
-                    print(f"❌ JSON parse error: {str(json_err)}")
-                    return {}
+                    return json.loads(result)
+                except json.JSONDecodeError as e:
+                    print(f"Failed to parse JSON response: {str(e)}")
+                    return {"error": "Failed to parse API response"}
             
-            print("🔷 LLM execution completed successfully")
-            print("---------------------------------------\n")
-            return exact_response
+            return result
             
         except Exception as e:
-            print(f"❌ LLM execution error: {str(e)}")
-            import traceback
-            traceback.print_exc()
-            print("---------------------------------------\n")
-            raise
+            print(f"LLM API error: {str(e)}")
+            if response_format == "json":
+                return {"error": f"API error: {str(e)}"}
+            return f"Error: {str(e)}"

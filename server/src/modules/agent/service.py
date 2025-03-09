@@ -367,7 +367,7 @@ class AgentService:
             
             # Validate the result structure
             if not isinstance(result, dict):
-                print(f"Invalid domain inference result (not a dict): {result}")
+                print(f"Invalid domain inference result: {result}")
                 return {
                     "questions": [
                         {"question": "What is your profession?", "options": ["Software Engineer", "Designer", "Manager", "Other"]},
@@ -379,7 +379,7 @@ class AgentService:
                 
             # Ensure questions is a list and each item has question and options fields
             if "questions" not in result or not isinstance(result["questions"], list):
-                print(f"Missing or invalid 'questions' field in domain inference result: {result}")
+                print(f"Missing or invalid 'questions' field in result")
                 result["questions"] = [
                     {"question": "What is your profession?", "options": ["Software Engineer", "Designer", "Manager", "Other"]},
                     {"question": "What industry do you work in?", "options": ["Technology", "Healthcare", "Finance", "Education", "Other"]},
@@ -390,10 +390,10 @@ class AgentService:
                 validated_questions = []
                 for q in result["questions"]:
                     if not isinstance(q, dict) or "question" not in q or "options" not in q:
-                        print(f"Invalid question format in domain inference result: {q}")
+                        print(f"Invalid question format: {q}")
                         continue
                     if not isinstance(q["question"], str) or not isinstance(q["options"], list):
-                        print(f"Invalid types in question format: {q}")
+                        print(f"Invalid types in question format")
                         continue
                     # Check that all options are strings
                     valid_options = [opt for opt in q["options"] if isinstance(opt, str)]
@@ -413,8 +413,7 @@ class AgentService:
                 
             # Ensure summary is a string
             if "summary" not in result or not isinstance(result["summary"], str):
-                # Don't log an error since the domain inference prompt is designed to return only domain and questions
-                # This is an expected case, so we silently add a summary based on the domain
+                # Use domain if available
                 if "domain" in result and isinstance(result["domain"], str):
                     result["summary"] = f"Based on your email domain, we've identified you're likely in the {result['domain']} field. These questions will help us personalize your experience."
                 else:
@@ -432,110 +431,29 @@ class AgentService:
                 "summary": f"Error processing domain inference: {str(e)}"
             }
 
-    async def summarize_onboarding_data(self, user_id: str, onboarding_data: OnboardingSubmitRequest) -> str:
+    async def summarize_onboarding_data(self, onboarding_data: dict) -> dict:
         """
-        Process onboarding data and generate personality summary
+        Generate a personality summary based on onboarding form data
         
         Args:
-            user_id: The ID of the user
-            onboarding_data: Onboarding data including questions, answers, and email ratings
+            onboarding_data: Dictionary containing onboarding form data
             
         Returns:
-            str: Personality summary
+            dict: Summary results with a personality analysis
         """
-        print("\n---------------------------------------")
-        print("🟠 AGENT SERVICE: Starting summarize_onboarding_data")
-        print(f"🟠 User ID: {user_id}")
-        print(f"🟠 Questions: {len(onboarding_data.questions)}")
-        print(f"🟠 Answers: {len(onboarding_data.answers)}")
-        print(f"🟠 Email ratings: {len(onboarding_data.emailRatings)}")
-        print(f"🟠 Emails: {len(onboarding_data.ratedEmails)}")
-        
         try:
-            # Prepare data for the LLM
-            print("🟠 AGENT SERVICE: Preparing data for LLM")
-            prompt_data = {
-                "domain": onboarding_data.domain,
-                "questions": [],
-                "emails": []
-            }
+            result = await self.personality_summarizer.process_onboarding(onboarding_data)
             
-            # Format questions and answers
-            print("🟠 AGENT SERVICE: Formatting questions and answers")
-            for question in onboarding_data.questions:
-                q_text = question.question
-                if q_text in onboarding_data.answers:
-                    prompt_data["questions"].append({
-                        "question": q_text,
-                        "answer": onboarding_data.answers[q_text],
-                        "options": question.options
-                    })
-            print(f"🟠 AGENT SERVICE: Formatted {len(prompt_data['questions'])} questions with answers")
-            
-            # Format rated emails
-            print("🟠 AGENT SERVICE: Formatting rated emails")
-            for email in onboarding_data.ratedEmails:
-                try:
-                    if email.id in onboarding_data.emailRatings:
-                        sender_name = "Unknown"
-                        if email.from_ and len(email.from_) > 0:
-                            sender_name = email.from_[0].name or email.from_[0].email or "Unknown"
-                        
-                        prompt_data["emails"].append({
-                            "subject": email.subject or "",
-                            "snippet": email.snippet or "",
-                            "from": sender_name,
-                            "rating": onboarding_data.emailRatings[email.id]
-                        })
-                except Exception as email_err:
-                    print(f"❌ AGENT SERVICE: Error processing email {email.id}: {str(email_err)}")
-                    # Continue processing other emails
-            
-            print(f"🟠 AGENT SERVICE: Formatted {len(prompt_data['emails'])} emails with ratings")
-            
-            # Convert to JSON for the prompt
-            try:
-                formatted_data = json.dumps(prompt_data, indent=2)
-                print(f"🟠 AGENT SERVICE: JSON data prepared (length: {len(formatted_data)})")
-                # Print a sample of the formatted data (first 200 chars)
-                if len(formatted_data) > 200:
-                    print(f"🟠 Data sample: {formatted_data[:200]}...")
-                else:
-                    print(f"🟠 Data: {formatted_data}")
-            except Exception as json_err:
-                print(f"❌ AGENT SERVICE: Error creating JSON: {str(json_err)}")
-                raise
-            
-            # Get personality summary from LLM
-            print("🟠 AGENT SERVICE: Calling personality_summarizer.process_onboarding")
-            try:
-                personality_summary = await self.personality_summarizer.process_onboarding(formatted_data)
-                print(f"🟠 AGENT SERVICE: Received summary from LLM: {personality_summary[:100]}...")
-            except Exception as llm_err:
-                print(f"❌ AGENT SERVICE: Error from LLM: {str(llm_err)}")
-                raise
-            
-            # Save to user profile
-            print(f"🟠 AGENT SERVICE: Saving summary to user profile {user_id}")
-            try:
-                user = await User.get(id=user_id)
-                if not user.personality:
-                    user.personality = []
+            if not isinstance(result, dict) or "summary" not in result:
+                print(f"Invalid summary result: {result}")
+                return {
+                    "summary": "We couldn't generate a personalized summary based on your responses. Our team will review your information and create a more accurate profile for you soon."
+                }
                 
-                user.personality.append(personality_summary)
-                await user.save()
-                print("🟠 AGENT SERVICE: Summary saved to user profile")
-            except Exception as db_err:
-                print(f"❌ AGENT SERVICE: Database error: {str(db_err)}")
-                raise
+            return result
             
-            print("🟠 AGENT SERVICE: Processing completed successfully")
-            print("---------------------------------------\n")
-            return personality_summary
         except Exception as e:
-            print("❌ AGENT SERVICE: Error in summarize_onboarding_data")
-            print(f"❌ Error message: {str(e)}")
-            import traceback
-            traceback.print_exc()
-            print("---------------------------------------\n")
-            raise Exception(f"Failed to process onboarding data: {str(e)}")
+            print(f"Error summarizing onboarding data: {str(e)}")
+            return {
+                "summary": f"Error processing onboarding data: {str(e)}"
+            }

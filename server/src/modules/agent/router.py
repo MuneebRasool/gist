@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request, Response, BackgroundTasks, Depends, HTTP
 from fastapi.exceptions import RequestValidationError
 # from pydantic import ValidationError
 from src.modules.agent.service import AgentService
-from src.modules.agent.schemas import ContentClassificationResponse, ContentClassificationRequest, DomainInferenceRequest, DomainInferenceResponse, OnboardingSubmitRequest, PersonalitySummaryResponse
+from src.modules.agent.schemas import ContentClassificationResponse, ContentClassificationRequest, DomainInferenceRequest, DomainInferenceResponse, OnboardingSubmitRequest, PersonalitySummaryResponse, QuestionWithOptions
 from src.models.user import User
 from src.dependencies import get_current_user
 # from src.modules.nylas.service import get_nylas_service
@@ -82,111 +82,76 @@ async def classify_content(request_data: ContentClassificationRequest):
         }
 
 @router.post("/infer-domain", response_model=DomainInferenceResponse)
-async def infer_domain(request_data: DomainInferenceRequest):
+async def infer_domain(request: DomainInferenceRequest):
     """
-    Infer user's profession and context from their email domain
-    
-    This endpoint:
-    1. Receives an email address in the request body
-    2. Analyzes the domain to generate relevant questions
-    3. Returns questions and a summary about the user's likely context
+    Infer the user's professional domain based on their email
     """
     try:
-        email = request_data.email
+        if not request.email:
+            raise HTTPException(status_code=400, detail="Email is required")
         
-        if not email or '@' not in email:
-            return {
-                "success": False,
-                "message": "Invalid email address provided",
-                "questions": [
-                    {"question": "What is your profession?", "options": ["Software Engineer", "Designer", "Manager", "Other"]},
-                    {"question": "What industry do you work in?", "options": ["Technology", "Healthcare", "Finance", "Education", "Other"]},
-                    {"question": "What are your main responsibilities?", "options": ["Coding", "Design", "Management", "Customer Support", "Other"]}
-                ],
-                "summary": "Unable to infer information from the provided email address."
-            }
-            
+        # Basic email validation
+        if '@' not in request.email:
+            raise HTTPException(status_code=400, detail="Invalid email format")
+        
         agent_service = AgentService()
-        result = await agent_service.infer_user_domain(email)
+        result = await agent_service.infer_user_domain(request.email)
         
-        # Return the validated results
-        return {
-            "success": True,
-            "message": "Domain inference completed successfully",
-            "questions": result["questions"],
-            "summary": result["summary"]
-        }
+        if not result:
+            return HTTPException(status_code=500, detail="Failed to infer domain")
+        
+        questions = result.get("questions", [])
+        
+        # Transform the questions to match the response model
+        formatted_questions = []
+        for q in questions:
+            if not isinstance(q, dict) or "question" not in q or "options" not in q:
+                continue
+            
+            formatted_questions.append(
+                QuestionWithOptions(
+                    question=q["question"],
+                    options=q["options"]
+                )
+            )
+        
+        # Return formatted response with required fields
+        return DomainInferenceResponse(
+            success=True,
+            message="Domain inference completed successfully",
+            questions=formatted_questions,
+            summary=result.get("summary", "No summary provided")
+        )
+            
+    except HTTPException as e:
+        raise e
     except Exception as e:
-        print(f"Domain inference error: {str(e)}")
-        return {
-            "success": False,
-            "message": f"Failed to infer domain: {str(e)}",
-            "questions": [
-                {"question": "What is your profession?", "options": ["Software Engineer", "Designer", "Manager", "Other"]},
-                {"question": "What industry do you work in?", "options": ["Technology", "Healthcare", "Finance", "Education", "Other"]},
-                {"question": "What are your main responsibilities?", "options": ["Coding", "Design", "Management", "Customer Support", "Other"]}
-            ],
-            "summary": "Unable to process the request due to an error."
-        }
+        print(f"Error in domain inference endpoint: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error inferring domain: {str(e)}")
 
 @router.post("/submit-onboarding", response_model=PersonalitySummaryResponse)
-async def submit_onboarding(
-    request_data: OnboardingSubmitRequest,
-    current_user: User = Depends(get_current_user)
-):
+async def submit_onboarding(request: OnboardingSubmitRequest):
     """
-    Submit onboarding data including domain questions and email ratings
-    
-    This endpoint:
-    1. Receives form answers and email ratings from onboarding
-    2. Generates a personality summary
-    3. Saves the personality summary to the user's profile
+    Process onboarding information to generate a personality summary
     """
-    print("\n---------------------------------------")
-    print("🟢 SUBMIT ONBOARDING: Request received")
-    print(f"🟢 User ID: {current_user.id if current_user else 'Not authenticated'}")
-    print(f"🟢 Questions count: {len(request_data.questions)}")
-    print(f"🟢 Answers count: {len(request_data.answers)}")
-    print(f"🟢 Domain: {request_data.domain or 'Not provided'}")
-    print(f"🟢 Email ratings count: {len(request_data.emailRatings)}")
-    print(f"🟢 Rated emails count: {len(request_data.ratedEmails)}")
-    
     try:
-        if not current_user:
-            print("❌ SUBMIT ONBOARDING: Authentication failed - no current user")
-            raise HTTPException(status_code=401, detail="User not authenticated")
-            
-        print("🟢 SUBMIT ONBOARDING: Authentication successful")
+        if not request:
+            raise HTTPException(status_code=400, detail="Request data is required")
+        
         agent_service = AgentService()
+        result = await agent_service.summarize_onboarding_data(request)
         
-        # Log data for debugging
-        print(f"🟢 SUBMIT ONBOARDING: Processing data with {len(request_data.questions)} questions and {len(request_data.ratedEmails)} emails")
+        if not result or "summary" not in result:
+            raise HTTPException(status_code=500, detail="Failed to process onboarding data")
         
-        # Generate and save personality summary
-        print("🟢 SUBMIT ONBOARDING: Calling agent_service.summarize_onboarding_data")
-        summary = await agent_service.summarize_onboarding_data(
-            user_id=current_user.id,
-            onboarding_data=request_data
+        return PersonalitySummaryResponse(
+            success=True,
+            message="Onboarding data processed successfully", 
+            personalitySummary=result.get("summary", "")
         )
-        
-        print(f"🟢 SUBMIT ONBOARDING: Summary generated: {summary[:100]}...")
-        print("---------------------------------------\n")
-        
-        return {
-            "success": True,
-            "message": "Onboarding data processed successfully",
-            "personalitySummary": summary
-        }
+            
+    except HTTPException as e:
+        raise e
     except Exception as e:
-        print("❌ SUBMIT ONBOARDING: Error occurred")
-        print(f"❌ Error: {str(e)}")
-        # Print more detailed error information
-        import traceback
-        traceback.print_exc()
-        print("---------------------------------------\n")
-        
-        return {
-            "success": False,
-            "message": f"Failed to process onboarding data: {str(e)}",
-            "personalitySummary": None
-        }
+        print(f"Error processing onboarding data: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error processing onboarding data: {str(e)}")
