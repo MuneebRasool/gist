@@ -71,5 +71,6 @@ export interface DomainInferenceResponse {
 	success: boolean;
 	message: string;
 	questions: QuestionWithOptions[];
-	summary: string;
+	summary?: string;
+	domain?: string;
 }

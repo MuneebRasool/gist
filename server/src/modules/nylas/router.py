@@ -10,6 +10,12 @@ from .dependencies import get_nylas_service
 from src.modules.auth.schemas import UserResponse
 from src.modules.nylas.schemas import VerificationCode
 from src.modules.agent.service import AgentService
+from src.config.settings import (
+    NYLAS_CLIENT_ID,
+    NYLAS_API_KEY,
+    NYLAS_API_URI,
+    NYLAS_CALLBACK_URI,
+)
 
 router = APIRouter(
     prefix="/nylas",
@@ -27,11 +33,20 @@ async def nylas_auth(
     Redirects user to Nylas authentication page.
     """
     try:
+        # Debug print for environment variables
+        print("=== Nylas Environment Variables Debug ===")
+        print(f"NYLAS_CLIENT_ID: {NYLAS_CLIENT_ID or 'Not set'}")
+        print(f"NYLAS_API_KEY: {'Set (hidden)' if NYLAS_API_KEY else 'Not set'}")
+        print(f"NYLAS_API_URI: {NYLAS_API_URI or 'Not set'}")
+        print(f"NYLAS_CALLBACK_URI: {NYLAS_CALLBACK_URI or 'Not set'}")
+        print("=======================================")
+        
         auth_url = service.get_auth_url()
         return {
             "url" : auth_url
         }
     except Exception as e:
+        print(f"Error generating auth URL: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail=f"Failed to generate auth URL: {str(e)}"

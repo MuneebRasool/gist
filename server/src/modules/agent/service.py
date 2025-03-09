@@ -412,8 +412,12 @@ class AgentService:
                 
             # Ensure summary is a string
             if "summary" not in result or not isinstance(result["summary"], str):
-                print(f"Missing or invalid 'summary' field in domain inference result: {result}")
-                result["summary"] = "No summary available for this email domain."
+                # Don't log an error since the domain inference prompt is designed to return only domain and questions
+                # This is an expected case, so we silently add a summary based on the domain
+                if "domain" in result and isinstance(result["domain"], str):
+                    result["summary"] = f"Based on your email domain, we've identified you're likely in the {result['domain']} field. These questions will help us personalize your experience."
+                else:
+                    result["summary"] = "No summary available for this email domain."
             
             return result
         except Exception as e:
