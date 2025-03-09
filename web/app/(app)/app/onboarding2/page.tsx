@@ -28,8 +28,10 @@ const OnboardingEmailRatingPage = () => {
     const fetchEmails = async () => {
       try {
         setIsLoading(true);
+        // Use the existing getEmails method instead of getMessages
         const response = await EmailService.getEmails({
           limit: 10,
+          // Add other parameters if needed
         });
         
         if (response.error) {
@@ -135,7 +137,7 @@ const OnboardingEmailRatingPage = () => {
           subject: email.subject || '',
           // Ensure the 'from' field is always correctly formatted for the API
           from: Array.isArray(email.from) && email.from.length > 0 
-            ? email.from.map(participant => ({
+            ? email.from.map((participant: {name?: string, email?: string}) => ({
                 name: participant.name || '',
                 email: participant.email || ''
               }))
