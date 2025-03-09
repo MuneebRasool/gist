@@ -109,7 +109,7 @@ const OnboardingPage = () => {
       setIsCompleted(true);
       toast.success('Profile information saved successfully!');
       
-      router.push('/app/onboarding2');
+      router.push('/app/mark-emails');
     } catch (error) {
       console.error('Error submitting onboarding answers:', error);
       toast.error('Failed to save information. Please try again.');
