@@ -364,6 +364,8 @@ class AgentService:
         """
         try:
             result = await self.domain_inference_agent.process(email)
+
+            print(f"Domain inference result on other side: {result}")
             
             # Validate the result structure
             if not isinstance(result, dict):
@@ -378,7 +380,7 @@ class AgentService:
                 }
                 
             # Ensure questions is a list and each item has question and options fields
-            if "questions" not in result or not isinstance(result["questions"], list):
+            if "questions" not in result or not isinstance(result["questions"], list) or len(result["questions"]) == 0:
                 print(f"Missing or invalid 'questions' field in result")
                 result["questions"] = [
                     {"question": "What is your profession?", "options": ["Software Engineer", "Designer", "Manager", "Other"]},
@@ -386,31 +388,40 @@ class AgentService:
                     {"question": "What are your main responsibilities?", "options": ["Coding", "Design", "Management", "Customer Support", "Other"]}
                 ]
             else:
-                # Validate each question has the correct structure
-                validated_questions = []
+                # Minimal validation - just ensure basic structure and types
+                valid_questions = []
                 for q in result["questions"]:
-                    if not isinstance(q, dict) or "question" not in q or "options" not in q:
-                        print(f"Invalid question format: {q}")
+                    print(f"Processing question: {q}")
+                    
+                    # Make sure it's a dict with required keys
+                    if not isinstance(q, dict):
+                        print(f"Skipping question - not a dictionary: {q}")
                         continue
-                    if not isinstance(q["question"], str) or not isinstance(q["options"], list):
-                        print(f"Invalid types in question format")
+                        
+                    # Ensure question has both question and options fields
+                    if "question" not in q or "options" not in q:
+                        print(f"Skipping question - missing required fields: {q}")
                         continue
-                    # Check that all options are strings
-                    valid_options = [opt for opt in q["options"] if isinstance(opt, str)]
-                    validated_questions.append({
-                        "question": q["question"],
-                        "options": valid_options if valid_options else ["Option 1", "Option 2", "Option 3", "Other"]
-                    })
+                        
+                    # Ensure options is a list
+                    if not isinstance(q["options"], list):
+                        print(f"Fixing options - not a list for question: {q['question']}")
+                        q["options"] = ["Option 1", "Option 2", "Option 3"]
+                    
+                    valid_questions.append(q)
                 
-                if not validated_questions:
+                # Check if we have at least one valid question after validation
+                if not valid_questions:
+                    print("No valid questions after validation, using defaults")
                     result["questions"] = [
                         {"question": "What is your profession?", "options": ["Software Engineer", "Designer", "Manager", "Other"]},
                         {"question": "What industry do you work in?", "options": ["Technology", "Healthcare", "Finance", "Education", "Other"]},
                         {"question": "What are your main responsibilities?", "options": ["Coding", "Design", "Management", "Customer Support", "Other"]}
                     ]
                 else:
-                    result["questions"] = validated_questions
-                
+                    # Use the validated questions
+                    result["questions"] = valid_questions
+            
             # Ensure summary is a string
             if "summary" not in result or not isinstance(result["summary"], str):
                 # Use domain if available
@@ -431,18 +442,22 @@ class AgentService:
                 "summary": f"Error processing domain inference: {str(e)}"
             }
 
-    async def summarize_onboarding_data(self, onboarding_data: dict) -> dict:
+    async def summarize_onboarding_data(self, onboarding_data) -> dict:
         """
         Generate a personality summary based on onboarding form data
         
         Args:
-            onboarding_data: Dictionary containing onboarding form data
+            onboarding_data: OnboardingSubmitRequest object containing onboarding form data
             
         Returns:
             dict: Summary results with a personality analysis
         """
         try:
-            result = await self.personality_summarizer.process_onboarding(onboarding_data)
+            # Convert the OnboardingSubmitRequest object to a JSON string
+            import json
+            onboarding_json = onboarding_data.json() if hasattr(onboarding_data, 'json') else json.dumps(onboarding_data)
+            
+            result = await self.personality_summarizer.process_onboarding(onboarding_json)
             
             if not isinstance(result, dict) or "summary" not in result:
                 print(f"Invalid summary result: {result}")
