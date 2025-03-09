@@ -28,10 +28,8 @@ const OnboardingEmailRatingPage = () => {
     const fetchEmails = async () => {
       try {
         setIsLoading(true);
-        // Use the existing getEmails method instead of getMessages
         const response = await EmailService.getEmails({
           limit: 10,
-          // Add other parameters if needed
         });
         
         if (response.error) {
