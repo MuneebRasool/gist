@@ -16,101 +16,12 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { loginSchema } from '@/validations';
 import GoogleSignin from '@/components/auth/GoogleSignin';
+import SignInForm from '@/components/auth/SignInForm';
 
 export default function LoginPage() {
-	const [isLoading, setIsLoading] = React.useState(false);
-	const router = useRouter();
-
-	const form = useForm<z.infer<typeof loginSchema>>({
-		resolver: zodResolver(loginSchema),
-		defaultValues: {
-			email: '',
-			password: '',
-		},
-	});
-
-	async function onSubmit(values: z.infer<typeof loginSchema>) {
-		setIsLoading(true);
-		const res = await signIn('credentials', {
-			email: values.email,
-			password: values.password,
-			redirect: false,
-		});
-		if (res?.error) {
-			toast.error(res.error || 'An error occurred');
-		} else {
-			router.push('/app');
-			toast.success('Logged in successfully');
-		}
-		setIsLoading(false);
-	}
-
 	return (
-		<div className='flex min-h-screen items-center justify-center p-2 sm:p-4'>
-			<Card className='w-full max-w-lg rounded-lg'>
-				<CardHeader className='space-y-3 pb-8'>
-					<CardTitle className='text-center text-3xl font-bold'>Welcome back</CardTitle>
-					<CardDescription className='text-center text-base'>
-						Enter your credentials to access your account
-					</CardDescription>
-				</CardHeader>
-				<CardContent className='space-y-6 p-6'>
-					<Form {...form}>
-						<form onSubmit={form.handleSubmit(onSubmit)} className='space-y-5'>
-							<FormField
-								control={form.control}
-								name='email'
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel className='text-base'>Email</FormLabel>
-										<FormControl>
-											<Input placeholder='example@email.com' {...field} />
-										</FormControl>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
-							<FormField
-								control={form.control}
-								name='password'
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel className='text-base'>Password</FormLabel>
-										<FormControl>
-											<PasswordInput placeholder='Enter your password' {...field} />
-										</FormControl>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
-							<Button type='submit' className='w-full text-base font-medium' disabled={isLoading}>
-								{isLoading && <Loader2 className='mr-2 h-5 w-5 animate-spin' />}
-								Sign In
-							</Button>
-						</form>
-					</Form>
-				</CardContent>
-				<CardFooter className='flex flex-col space-y-6 pt-3'>
-					<div className='relative w-full'>
-						<div className='absolute inset-0 flex items-center'>
-							<div className='w-full border-t border-muted' />
-						</div>
-						<div className='relative flex justify-center text-sm'>
-							<span className='bg-background px-3 text-muted-foreground'>Or continue with</span>
-						</div>
-					</div>
-					<GoogleSignin />
-					<p className='text-center text-sm text-muted-foreground'>
-						Don&apos;t have an account?{' '}
-						<Link
-							href='/register'
-							className='font-medium text-muted-foreground underline underline-offset-4 hover:text-foreground'
-						>
-							Create an account
-						</Link>
-					</p>
-				</CardFooter>
-			</Card>
-		</div>
+		<main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-rose-50 to-slate-100 p-4">
+			<SignInForm />
+		</main>
 	);
 }

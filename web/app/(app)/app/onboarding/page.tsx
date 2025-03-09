@@ -6,11 +6,9 @@ import { AgentService } from '@/services/agent.service';
 import { QuestionWithOptions } from '@/types/agent';
 import { useOnboardingStore } from '@/store/onboarding.store';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const OnboardingPage = () => {
   const router = useRouter();
@@ -51,17 +49,13 @@ const OnboardingPage = () => {
         }
         
         if (response.data) {
-          // Set questions from response
           setQuestions(response.data.questions || []);
           
-          // Handle case where summary is missing
           if (response.data.summary) {
             setSummary(response.data.summary);
           } else if (response.data.domain) {
-            // If there's a domain field but no summary, create a simple summary from the domain
             setSummary(`Based on your email, we've personalized some questions for your ${response.data.domain} context.`);
           } else {
-            // Default summary if neither exists
             setSummary('Please answer these questions to help us personalize your experience.');
           }
         }
@@ -76,11 +70,11 @@ const OnboardingPage = () => {
     
     fetchDomainInference();
   }, [email, router, setIsLoading, setQuestions, setSummary]);
-  
+
   const handleOptionSelect = (question: string, option: string) => {
     setAnswer(question, option);
   };
-  
+
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
@@ -110,13 +104,11 @@ const OnboardingPage = () => {
         }
       } catch (error) {
         console.error('Error saving to localStorage:', error);
-        // Continue even if localStorage fails
       }
       
       setIsCompleted(true);
       toast.success('Profile information saved successfully!');
       
-      // Redirect to second onboarding step
       router.push('/app/onboarding2');
     } catch (error) {
       console.error('Error submitting onboarding answers:', error);
@@ -125,75 +117,118 @@ const OnboardingPage = () => {
       setIsSubmitting(false);
     }
   };
-  
+
   if (isLoading) {
     return (
-      <div className="flex h-[calc(100vh-80px)] w-full flex-col items-center justify-center">
-        <Loader2 size={40} className="animate-spin text-primary" />
-        <p className="mt-4 text-lg font-medium">Loading your personalized onboarding...</p>
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center gap-5 rounded-2xl bg-white/80 p-8 shadow-lg backdrop-blur-sm"
+        >
+          <Loader2 size={48} className="animate-spin text-indigo-500" />
+          <p className="text-lg font-medium text-gray-700">Loading your personalized experience...</p>
+        </motion.div>
       </div>
     );
   }
-  
+
   return (
-    <div className="container mx-auto py-8">
-      <Card className="max-w-3xl mx-auto">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold">Welcome to GIST</CardTitle>
-          <CardDescription>
-            Please answer a few questions to help us personalize your experience
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {questions.length > 0 ? (
-            <div className="space-y-8">
-              {summary && (
-                <div className="mb-6 rounded-lg bg-muted p-4">
-                  <p className="text-sm text-muted-foreground">{summary}</p>
-                </div>
-              )}
-              
-              {questions.map((question: QuestionWithOptions, index: number) => (
-                <div key={index} className="space-y-4">
-                  <h3 className="text-lg font-medium">{question.question}</h3>
-                  <RadioGroup
-                    value={answers[question.question] || ''}
-                    onValueChange={(value) => handleOptionSelect(question.question, value)}
-                    className="space-y-2"
-                  >
-                    {question.options.map((option: string, optIndex: number) => (
-                      <div key={optIndex} className="flex items-center space-x-2">
-                        <RadioGroupItem id={`q${index}-opt${optIndex}`} value={option} />
-                        <Label htmlFor={`q${index}-opt${optIndex}`}>{option}</Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-center text-muted-foreground">No questions available. Please try again later.</p>
-          )}
-        </CardContent>
-        <CardFooter className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">
-            Step 1 of 2: Profile Information
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="w-full max-w-xl"
+      >
+        <div className="overflow-hidden rounded-3xl bg-white/90 shadow-xl backdrop-blur-sm">
+          <div className="border-b border-gray-100 bg-gradient-to-r from-indigo-50 to-blue-50 px-8 py-6">
+            <h2 className="text-2xl font-semibold text-gray-800">Welcome to GIST</h2>
+            <p className="mt-1 text-sm text-gray-600">Please answer a few questions to help us personalize your experience</p>
           </div>
-          <Button 
-            onClick={handleSubmit} 
-            disabled={isSubmitting || questions.length === 0} 
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
-                Saving...
-              </>
-            ) : (
-              'Continue to Next Step'
+          
+          <div className="p-8">
+            {summary && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="mb-8 rounded-xl bg-blue-50/50 p-4 text-sm leading-relaxed text-gray-700"
+              >
+                {summary}
+              </motion.div>
             )}
-          </Button>
-        </CardFooter>
-      </Card>
+            
+            <div className="space-y-8">
+              <AnimatePresence>
+                {questions.map((question: QuestionWithOptions, index: number) => (
+                  <motion.div 
+                    key={index}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 * (index + 1) }}
+                    className="space-y-4"
+                  >
+                    <h3 className="text-base font-medium text-gray-700">{question.question}</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      {question.options.map((option: string, optIndex: number) => (
+                        <motion.div
+                          key={optIndex}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          <Button
+                            variant="outline"
+                            className={`h-14 w-full rounded-xl border-2 text-base font-medium transition-all duration-200 ${
+                              answers[question.question] === option 
+                                ? 'border-indigo-300 bg-gradient-to-r from-indigo-50 to-blue-50 text-indigo-700 shadow-sm' 
+                                : 'border-gray-200 bg-white text-gray-600 hover:border-indigo-200 hover:bg-indigo-50/30 hover:text-indigo-600'
+                            }`}
+                            onClick={() => handleOptionSelect(question.question, option)}
+                          >
+                            <span className="block truncate px-2" title={option}>
+                              {option}
+                            </span>
+                          </Button>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+
+              <div className="mt-10 flex items-center justify-between pt-4">
+                <div className="text-sm font-medium text-indigo-500">
+                  Step 1 of 2: Profile Information
+                </div>
+                <motion.div
+                  whileHover={!isSubmitting && questions.every(q => answers[q.question]) ? { scale: 1.03 } : {}}
+                  whileTap={!isSubmitting && questions.every(q => answers[q.question]) ? { scale: 0.97 } : {}}
+                >
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={isSubmitting || questions.length === 0 || !questions.every(q => answers[q.question])}
+                    className={`h-12 rounded-xl px-8 text-base font-medium transition-all duration-300 ${
+                      isSubmitting || questions.length === 0 || !questions.every(q => answers[q.question])
+                        ? 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-400'
+                        : 'bg-gradient-to-r from-indigo-500 to-blue-500 text-white hover:from-indigo-600 hover:to-blue-600'
+                    }`}
+                  >
+                    {isSubmitting ? (
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Saving...</span>
+                      </div>
+                    ) : (
+                      'Continue to Next Step'
+                    )}
+                  </Button>
+                </motion.div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </motion.div>
     </div>
   );
 };
