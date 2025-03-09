@@ -46,6 +46,30 @@ export interface ContentClassificationRequest {
 export interface ContentClassificationResponse {
 	success: boolean;
 	message: string;
-	types: string[];
-	useful: string;
+	type: string;
+}
+
+/**
+ * Domain inference request
+ */
+export interface DomainInferenceRequest {
+	email: string;
+}
+
+/**
+ * Question with options structure
+ */
+export interface QuestionWithOptions {
+	question: string;
+	options: string[];
+}
+
+/**
+ * Domain inference response
+ */
+export interface DomainInferenceResponse {
+	success: boolean;
+	message: string;
+	questions: QuestionWithOptions[];
+	summary: string;
 }

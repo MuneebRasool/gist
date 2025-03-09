@@ -19,5 +19,18 @@ class ContentClassificationRequest(BaseModel):
 class ContentClassificationResponse(BaseModel):
     success: bool
     message: str
-    types: List[str]
-    useful: str
+    type: str
+
+class DomainInferenceRequest(BaseModel):
+    email: str
+
+class QuestionWithOptions(BaseModel):
+    question: str
+    options: List[str]
+
+class DomainInferenceResponse(BaseModel):
+    success: bool
+    message: str
+    questions: List[QuestionWithOptions]
+    summary: str
+

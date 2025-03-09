@@ -6,6 +6,7 @@ from src.agents.spam_classifier import SpamClassifier
 from src.agents.task_extractor import TaskExtractor
 from src.agents.personality_summarizer import PersonalitySummarizer
 from src.agents.content_classifier import ContentClassifier
+from src.agents.email_domain_inferencer import DomainInferenceAgent
 from src.models.user import User
 from src.modules.tasks.service import TaskService
 from src.modules.tasks.schemas import TaskCreate
@@ -30,6 +31,7 @@ class AgentService:
         self.utility_features_extractor = UtilityFeaturesExtractor()
         self.cost_features = CostFeaturesExtractor()
         self.content_classifier = ContentClassifier()
+        self.domain_inference_agent = DomainInferenceAgent()
 
     async def classify_spams(self, emails: List[dict]) -> dict:
         """
@@ -321,7 +323,106 @@ class AgentService:
             content: Text content to classify
             
         Returns:
-            dict: Classification results including type and usefulness
+            dict: Classification results with a type (1=Library, 2=Main Focus-View, 3=Drawer)
         """
-        result = await self.content_classifier.process(content)
-        return result
+        try:
+            # Remove any newlines or control characters that might cause JSON parsing issues
+            cleaned_content = content.replace('\n', ' ').replace('\r', '').strip()
+            result = await self.content_classifier.process(cleaned_content)
+            
+            # Validate the result structure
+            if not isinstance(result, dict):
+                print(f"Invalid content classification result (not a dict): {result}")
+                return {"type": "3"}  # Default to Drawer
+                
+            # Ensure type is a string and is one of the valid values
+            if "type" not in result or not isinstance(result["type"], str):
+                print(f"Missing or invalid 'type' field in content classification result: {result}")
+                result["type"] = "3"  # Default to Drawer
+            
+            # Validate that type is one of the expected values
+            valid_types = ["1", "2", "3"]
+            if result["type"] not in valid_types:
+                print(f"Invalid type value in content classification result: {result['type']}")
+                result["type"] = "3"  # Default to Drawer
+                
+            return result
+        except Exception as e:
+            print(f"Error classifying content: {str(e)}")
+            return {"type": "3"}  # Default to Drawer
+
+    async def infer_user_domain(self, email: str) -> dict:
+        """
+        Infer user's profession and context from their email domain
+        
+        Args:
+            email: User's email address
+            
+        Returns:
+            dict: Domain inference results including questions and summary
+        """
+        try:
+            result = await self.domain_inference_agent.process(email)
+            
+            # Validate the result structure
+            if not isinstance(result, dict):
+                print(f"Invalid domain inference result (not a dict): {result}")
+                return {
+                    "questions": [
+                        {"question": "What is your profession?", "options": ["Software Engineer", "Designer", "Manager", "Other"]},
+                        {"question": "What industry do you work in?", "options": ["Technology", "Healthcare", "Finance", "Education", "Other"]},
+                        {"question": "What are your main responsibilities?", "options": ["Coding", "Design", "Management", "Customer Support", "Other"]}
+                    ],
+                    "summary": "Unable to process the email domain properly."
+                }
+                
+            # Ensure questions is a list and each item has question and options fields
+            if "questions" not in result or not isinstance(result["questions"], list):
+                print(f"Missing or invalid 'questions' field in domain inference result: {result}")
+                result["questions"] = [
+                    {"question": "What is your profession?", "options": ["Software Engineer", "Designer", "Manager", "Other"]},
+                    {"question": "What industry do you work in?", "options": ["Technology", "Healthcare", "Finance", "Education", "Other"]},
+                    {"question": "What are your main responsibilities?", "options": ["Coding", "Design", "Management", "Customer Support", "Other"]}
+                ]
+            else:
+                # Validate each question has the correct structure
+                validated_questions = []
+                for q in result["questions"]:
+                    if not isinstance(q, dict) or "question" not in q or "options" not in q:
+                        print(f"Invalid question format in domain inference result: {q}")
+                        continue
+                    if not isinstance(q["question"], str) or not isinstance(q["options"], list):
+                        print(f"Invalid types in question format: {q}")
+                        continue
+                    # Check that all options are strings
+                    valid_options = [opt for opt in q["options"] if isinstance(opt, str)]
+                    validated_questions.append({
+                        "question": q["question"],
+                        "options": valid_options if valid_options else ["Option 1", "Option 2", "Option 3", "Other"]
+                    })
+                
+                if not validated_questions:
+                    result["questions"] = [
+                        {"question": "What is your profession?", "options": ["Software Engineer", "Designer", "Manager", "Other"]},
+                        {"question": "What industry do you work in?", "options": ["Technology", "Healthcare", "Finance", "Education", "Other"]},
+                        {"question": "What are your main responsibilities?", "options": ["Coding", "Design", "Management", "Customer Support", "Other"]}
+                    ]
+                else:
+                    result["questions"] = validated_questions
+                
+            # Ensure summary is a string
+            if "summary" not in result or not isinstance(result["summary"], str):
+                print(f"Missing or invalid 'summary' field in domain inference result: {result}")
+                result["summary"] = "No summary available for this email domain."
+            
+            return result
+        except Exception as e:
+            print(f"Error inferring domain: {str(e)}")
+            return {
+                "questions": [
+                    {"question": "What is your profession?", "options": ["Software Engineer", "Designer", "Manager", "Other"]},
+                    {"question": "What industry do you work in?", "options": ["Technology", "Healthcare", "Finance", "Education", "Other"]},
+                    {"question": "What are your main responsibilities?", "options": ["Coding", "Design", "Management", "Customer Support", "Other"]}
+                ],
+                "summary": f"Error processing domain inference: {str(e)}"
+            }
