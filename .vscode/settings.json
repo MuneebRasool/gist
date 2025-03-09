@@ -1,0 +1,19 @@
+{
+    "sqltools.connections": [
+        {
+            "pgOptions": {
+                "ssl": {
+                    "rejectUnauthorized": false
+                }
+            },
+            "previewLimit": 50,
+            "server": "opengig-mvp-dev.cjqs28kcyzhx.ap-south-1.rds.amazonaws.com",
+            "port": 5432,
+            "driver": "PostgreSQL",
+            "name": "opengig_mvp_dev",
+            "username": "opengig_mvp_dev",
+            "database": "gistdev",
+            "password": "Database2025"
+        }
+    ]
+}
