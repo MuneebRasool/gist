@@ -120,13 +120,21 @@ const OnboardingPage = () => {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      <div className="flex min-h-screen items-center justify-center">
         <motion.div 
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="flex flex-col items-center gap-5 rounded-2xl bg-white/80 p-8 shadow-lg backdrop-blur-sm"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex flex-col items-center gap-6"
         >
-          <Loader2 size={48} className="animate-spin text-indigo-500" />
+          <div className="relative h-16 w-16">
+            <motion.div
+              animate={{ 
+                rotate: 360,
+                transition: { duration: 1.5, repeat: Infinity, ease: "linear" }
+              }}
+              className="absolute inset-0 rounded-full border-2 border-gray-200 border-t-gray-600"
+            />
+          </div>
           <p className="text-lg font-medium text-gray-700">Loading your personalized experience...</p>
         </motion.div>
       </div>
@@ -134,31 +142,19 @@ const OnboardingPage = () => {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
+    <div className="flex min-h-screen items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
         className="w-full max-w-xl"
       >
-        <div className="overflow-hidden rounded-3xl bg-white/90 shadow-xl backdrop-blur-sm">
-          <div className="border-b border-gray-100 bg-gradient-to-r from-indigo-50 to-blue-50 px-8 py-6">
-            <h2 className="text-2xl font-semibold text-gray-800">Welcome to GIST</h2>
-            <p className="mt-1 text-sm text-gray-600">Please answer a few questions to help us personalize your experience</p>
+        <div className="overflow-hidden rounded-3xl bg-white/95 shadow-sm backdrop-blur-sm">
+          <div className="border-b border-gray-100 px-8 py-6">
+            <h2 className="text-2xl font-semibold text-gray-800">You are,</h2>
           </div>
           
           <div className="p-8">
-            {summary && (
-              <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="mb-8 rounded-xl bg-blue-50/50 p-4 text-sm leading-relaxed text-gray-700"
-              >
-                {summary}
-              </motion.div>
-            )}
-            
             <div className="space-y-8">
               <AnimatePresence>
                 {questions.map((question: QuestionWithOptions, index: number) => (
@@ -179,10 +175,10 @@ const OnboardingPage = () => {
                         >
                           <Button
                             variant="outline"
-                            className={`h-14 w-full rounded-xl border-2 text-base font-medium transition-all duration-200 ${
+                            className={`h-14 w-full rounded-xl border text-base font-medium transition-all duration-200 ${
                               answers[question.question] === option 
-                                ? 'border-indigo-300 bg-gradient-to-r from-indigo-50 to-blue-50 text-indigo-700 shadow-sm' 
-                                : 'border-gray-200 bg-white text-gray-600 hover:border-indigo-200 hover:bg-indigo-50/30 hover:text-indigo-600'
+                                ? 'border-gray-400 bg-gray-50 text-gray-900' 
+                                : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50/50'
                             }`}
                             onClick={() => handleOptionSelect(question.question, option)}
                           >
@@ -198,20 +194,18 @@ const OnboardingPage = () => {
               </AnimatePresence>
 
               <div className="mt-10 flex items-center justify-between pt-4">
-                <div className="text-sm font-medium text-indigo-500">
-                  Step 1 of 2: Profile Information
-                </div>
                 <motion.div
-                  whileHover={!isSubmitting && questions.every(q => answers[q.question]) ? { scale: 1.03 } : {}}
-                  whileTap={!isSubmitting && questions.every(q => answers[q.question]) ? { scale: 0.97 } : {}}
+                  whileHover={!isSubmitting && questions.every(q => answers[q.question]) ? { scale: 1.02 } : {}}
+                  whileTap={!isSubmitting && questions.every(q => answers[q.question]) ? { scale: 0.98 } : {}}
+                  className="w-full"
                 >
                   <Button
                     onClick={handleSubmit}
                     disabled={isSubmitting || questions.length === 0 || !questions.every(q => answers[q.question])}
-                    className={`h-12 rounded-xl px-8 text-base font-medium transition-all duration-300 ${
+                    className={`h-12 w-full rounded-xl text-base font-medium transition-all duration-300 ${
                       isSubmitting || questions.length === 0 || !questions.every(q => answers[q.question])
-                        ? 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-400'
-                        : 'bg-gradient-to-r from-indigo-500 to-blue-500 text-white hover:from-indigo-600 hover:to-blue-600'
+                        ? 'bg-gray-100 text-gray-400'
+                        : 'bg-gray-900 text-white hover:bg-gray-800'
                     }`}
                   >
                     {isSubmitting ? (
@@ -220,7 +214,7 @@ const OnboardingPage = () => {
                         <span>Saving...</span>
                       </div>
                     ) : (
-                      'Continue to Next Step'
+                      'Continue'
                     )}
                   </Button>
                 </motion.div>

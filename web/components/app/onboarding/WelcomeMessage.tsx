@@ -75,7 +75,7 @@ export default function WelcomeMessage() {
               transition={{ duration: 0.5, ease: 'easeInOut' }}
               className={`absolute ${isAnimatingToCorner ? '' : 'left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2'} text-center`}
             >
-              <h1 className="text-4xl font-semibold text-gray-700">Hi, I'm Gist!</h1>
+              <h1 className="text-4xl font-semibold text-gray-700">Hi, I&apos;m Gist!</h1>
             </motion.div>
 
             <motion.div
@@ -137,9 +137,9 @@ export default function WelcomeMessage() {
                 <h2 className="text-xl font-semibold text-gray-700">Hi {userName},</h2>
               </div>
               
-              <p className="mb-4 text-gray-600">It's so nice to meet you.</p>
+              <p className="mb-4 text-gray-600">It&apos;s so nice to meet you.</p>
               <p className="mb-6 text-gray-600">
-                I'd love for me to get to know you a little bit so I can better assist you.
+                I&apos;d love for me to get to know you a little bit so I can better assist you.
                 To help me with that, here are some access I need.
               </p>
 

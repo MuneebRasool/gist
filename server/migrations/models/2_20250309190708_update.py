@@ -3,7 +3,7 @@ from tortoise import BaseDBAsyncClient
 
 async def upgrade(db: BaseDBAsyncClient) -> str:
     return """
-        ALTER TABLE "users" ADD "onboarding" BOOLNOT NULL DEFAULT False;"""
+        ALTER TABLE "users" ADD "onboarding" BOOL NOT NULL DEFAULT False;"""
 
 
 async def downgrade(db: BaseDBAsyncClient) -> str:
