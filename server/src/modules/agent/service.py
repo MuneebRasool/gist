@@ -12,10 +12,11 @@ from src.modules.tasks.service import TaskService
 from src.modules.tasks.schemas import TaskCreate
 from src.modules.nylas.service import NylasService
 from src.models.graph.nodes import UserNode, EmailNode,TaskNode
-from .schemas import EmailData
+from .schemas import EmailData, OnboardingSubmitRequest
 import asyncio
 import datetime
 import uuid
+import json
 
 from ...agents.task_cost_features_extractor import CostFeaturesExtractor
 from ...agents.task_utility_features_extractor import UtilityFeaturesExtractor
@@ -206,10 +207,10 @@ class AgentService:
                     for email in non_spam_emails
                 ]
                 
-                # Start personality summarization in parallel
-                personality_task = asyncio.create_task(
-                    self.summarize_user_personality(user_id, non_spam_emails)
-                )
+                # # Start personality summarization in parallel
+                # personality_task = asyncio.create_task(
+                #     self.summarize_user_personality(user_id, non_spam_emails)
+                # )
                 
                 print("Processing emails")
                 # Wait for all task extractions to complete
@@ -217,7 +218,7 @@ class AgentService:
                 
                 print("Personality summarization started")
                 # Wait for personality summarization to complete
-                await personality_task
+                # await personality_task
                 
                 print("Onboarding process completed successfully")
 
@@ -430,3 +431,111 @@ class AgentService:
                 ],
                 "summary": f"Error processing domain inference: {str(e)}"
             }
+
+    async def summarize_onboarding_data(self, user_id: str, onboarding_data: OnboardingSubmitRequest) -> str:
+        """
+        Process onboarding data and generate personality summary
+        
+        Args:
+            user_id: The ID of the user
+            onboarding_data: Onboarding data including questions, answers, and email ratings
+            
+        Returns:
+            str: Personality summary
+        """
+        print("\n---------------------------------------")
+        print("🟠 AGENT SERVICE: Starting summarize_onboarding_data")
+        print(f"🟠 User ID: {user_id}")
+        print(f"🟠 Questions: {len(onboarding_data.questions)}")
+        print(f"🟠 Answers: {len(onboarding_data.answers)}")
+        print(f"🟠 Email ratings: {len(onboarding_data.emailRatings)}")
+        print(f"🟠 Emails: {len(onboarding_data.ratedEmails)}")
+        
+        try:
+            # Prepare data for the LLM
+            print("🟠 AGENT SERVICE: Preparing data for LLM")
+            prompt_data = {
+                "domain": onboarding_data.domain,
+                "questions": [],
+                "emails": []
+            }
+            
+            # Format questions and answers
+            print("🟠 AGENT SERVICE: Formatting questions and answers")
+            for question in onboarding_data.questions:
+                q_text = question.question
+                if q_text in onboarding_data.answers:
+                    prompt_data["questions"].append({
+                        "question": q_text,
+                        "answer": onboarding_data.answers[q_text],
+                        "options": question.options
+                    })
+            print(f"🟠 AGENT SERVICE: Formatted {len(prompt_data['questions'])} questions with answers")
+            
+            # Format rated emails
+            print("🟠 AGENT SERVICE: Formatting rated emails")
+            for email in onboarding_data.ratedEmails:
+                try:
+                    if email.id in onboarding_data.emailRatings:
+                        sender_name = "Unknown"
+                        if email.from_ and len(email.from_) > 0:
+                            sender_name = email.from_[0].name or email.from_[0].email or "Unknown"
+                        
+                        prompt_data["emails"].append({
+                            "subject": email.subject or "",
+                            "snippet": email.snippet or "",
+                            "from": sender_name,
+                            "rating": onboarding_data.emailRatings[email.id]
+                        })
+                except Exception as email_err:
+                    print(f"❌ AGENT SERVICE: Error processing email {email.id}: {str(email_err)}")
+                    # Continue processing other emails
+            
+            print(f"🟠 AGENT SERVICE: Formatted {len(prompt_data['emails'])} emails with ratings")
+            
+            # Convert to JSON for the prompt
+            try:
+                formatted_data = json.dumps(prompt_data, indent=2)
+                print(f"🟠 AGENT SERVICE: JSON data prepared (length: {len(formatted_data)})")
+                # Print a sample of the formatted data (first 200 chars)
+                if len(formatted_data) > 200:
+                    print(f"🟠 Data sample: {formatted_data[:200]}...")
+                else:
+                    print(f"🟠 Data: {formatted_data}")
+            except Exception as json_err:
+                print(f"❌ AGENT SERVICE: Error creating JSON: {str(json_err)}")
+                raise
+            
+            # Get personality summary from LLM
+            print("🟠 AGENT SERVICE: Calling personality_summarizer.process_onboarding")
+            try:
+                personality_summary = await self.personality_summarizer.process_onboarding(formatted_data)
+                print(f"🟠 AGENT SERVICE: Received summary from LLM: {personality_summary[:100]}...")
+            except Exception as llm_err:
+                print(f"❌ AGENT SERVICE: Error from LLM: {str(llm_err)}")
+                raise
+            
+            # Save to user profile
+            print(f"🟠 AGENT SERVICE: Saving summary to user profile {user_id}")
+            try:
+                user = await User.get(id=user_id)
+                if not user.personality:
+                    user.personality = []
+                
+                user.personality.append(personality_summary)
+                await user.save()
+                print("🟠 AGENT SERVICE: Summary saved to user profile")
+            except Exception as db_err:
+                print(f"❌ AGENT SERVICE: Database error: {str(db_err)}")
+                raise
+            
+            print("🟠 AGENT SERVICE: Processing completed successfully")
+            print("---------------------------------------\n")
+            return personality_summary
+        except Exception as e:
+            print("❌ AGENT SERVICE: Error in summarize_onboarding_data")
+            print(f"❌ Error message: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            print("---------------------------------------\n")
+            raise Exception(f"Failed to process onboarding data: {str(e)}")

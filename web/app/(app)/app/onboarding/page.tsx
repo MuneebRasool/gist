@@ -93,31 +93,34 @@ const OnboardingPage = () => {
         return;
       }
       
-      // For now, using the onboarding submit API endpoint
-      // This can be updated when the backend endpoint is decided
-      const response = await fetch('/api/onboarding/submit', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ answers }),
-      });
-      
-      if (!response.ok) {
-        toast.error('Failed to submit onboarding information. Please try again.');
-        return;
+      // Save answers and other onboarding data to localStorage
+      try {
+        localStorage.setItem('onboardingAnswers', JSON.stringify(answers));
+        localStorage.setItem('onboardingQuestions', JSON.stringify(questions));
+        localStorage.setItem('onboardingSummary', summary);
+        
+        if (email) {
+          localStorage.setItem('userEmail', email);
+        }
+        
+        // Store domain if available from response data
+        const response = await AgentService.inferDomain(email || '');
+        if (response.data?.domain) {
+          localStorage.setItem('domain', response.data.domain);
+        }
+      } catch (error) {
+        console.error('Error saving to localStorage:', error);
+        // Continue even if localStorage fails
       }
       
       setIsCompleted(true);
-      toast.success('Onboarding completed successfully!');
+      toast.success('Profile information saved successfully!');
       
-      // Redirect to main app after successful submission
-      setTimeout(() => {
-        router.push('/app');
-      }, 1500);
+      // Redirect to second onboarding step
+      router.push('/app/onboarding2');
     } catch (error) {
       console.error('Error submitting onboarding answers:', error);
-      toast.error('Failed to submit onboarding information. Please try again.');
+      toast.error('Failed to save information. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -172,19 +175,21 @@ const OnboardingPage = () => {
             <p className="text-center text-muted-foreground">No questions available. Please try again later.</p>
           )}
         </CardContent>
-        <CardFooter>
+        <CardFooter className="flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">
+            Step 1 of 2: Profile Information
+          </div>
           <Button 
             onClick={handleSubmit} 
             disabled={isSubmitting || questions.length === 0} 
-            className="w-full"
           >
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
-                Submitting...
+                Saving...
               </>
             ) : (
-              'Complete Onboarding'
+              'Continue to Next Step'
             )}
           </Button>
         </CardFooter>

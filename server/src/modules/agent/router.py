@@ -1,6 +1,9 @@
-from fastapi import APIRouter, Request,Response, BackgroundTasks
+from fastapi import APIRouter, Request,Response, BackgroundTasks, Depends, HTTPException
 from src.modules.agent.service import AgentService
-from src.modules.agent.schemas import ContentClassificationResponse, ContentClassificationRequest, DomainInferenceRequest, DomainInferenceResponse
+from src.modules.agent.schemas import ContentClassificationResponse, ContentClassificationRequest, DomainInferenceRequest, DomainInferenceResponse, OnboardingSubmitRequest, PersonalitySummaryResponse
+from src.models.user import User
+from src.dependencies import get_current_user
+# from src.modules.nylas.service import get_nylas_service
 
 router = APIRouter(prefix="/agent", tags=["agent"])
 
@@ -121,4 +124,66 @@ async def infer_domain(request_data: DomainInferenceRequest):
                 {"question": "What are your main responsibilities?", "options": ["Coding", "Design", "Management", "Customer Support", "Other"]}
             ],
             "summary": "Unable to process the request due to an error."
+        }
+
+@router.post("/submit-onboarding", response_model=PersonalitySummaryResponse)
+async def submit_onboarding(
+    request_data: OnboardingSubmitRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Submit onboarding data including domain questions and email ratings
+    
+    This endpoint:
+    1. Receives form answers and email ratings from onboarding
+    2. Generates a personality summary
+    3. Saves the personality summary to the user's profile
+    """
+    print("\n---------------------------------------")
+    print("🟢 SUBMIT ONBOARDING: Request received")
+    print(f"🟢 User ID: {current_user.id if current_user else 'Not authenticated'}")
+    print(f"🟢 Questions count: {len(request_data.questions)}")
+    print(f"🟢 Answers count: {len(request_data.answers)}")
+    print(f"🟢 Domain: {request_data.domain or 'Not provided'}")
+    print(f"🟢 Email ratings count: {len(request_data.emailRatings)}")
+    print(f"🟢 Rated emails count: {len(request_data.ratedEmails)}")
+    
+    try:
+        if not current_user:
+            print("❌ SUBMIT ONBOARDING: Authentication failed - no current user")
+            raise HTTPException(status_code=401, detail="User not authenticated")
+            
+        print("🟢 SUBMIT ONBOARDING: Authentication successful")
+        agent_service = AgentService()
+        
+        # Log data for debugging
+        print(f"🟢 SUBMIT ONBOARDING: Processing data with {len(request_data.questions)} questions and {len(request_data.ratedEmails)} emails")
+        
+        # Generate and save personality summary
+        print("🟢 SUBMIT ONBOARDING: Calling agent_service.summarize_onboarding_data")
+        summary = await agent_service.summarize_onboarding_data(
+            user_id=current_user.id,
+            onboarding_data=request_data
+        )
+        
+        print(f"🟢 SUBMIT ONBOARDING: Summary generated: {summary[:100]}...")
+        print("---------------------------------------\n")
+        
+        return {
+            "success": True,
+            "message": "Onboarding data processed successfully",
+            "personalitySummary": summary
+        }
+    except Exception as e:
+        print("❌ SUBMIT ONBOARDING: Error occurred")
+        print(f"❌ Error: {str(e)}")
+        # Print more detailed error information
+        import traceback
+        traceback.print_exc()
+        print("---------------------------------------\n")
+        
+        return {
+            "success": False,
+            "message": f"Failed to process onboarding data: {str(e)}",
+            "personalitySummary": None
         }
