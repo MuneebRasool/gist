@@ -19,18 +19,26 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
     )
 
 
-async def validation_exception_handler(
-    request: Request, exc: RequestValidationError | PydanticValidationError
-) -> JSONResponse:
-    """Handle request validation errors"""
-    errors: Dict[str, Any] = {}
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """
+    Handle request validation errors
+    """
+    detail = []
     for error in exc.errors():
-        loc = ".".join(str(x) for x in error["loc"])
-        errors[loc] = error["msg"]
-
+        error_message = {
+            "loc": error["loc"],
+            "msg": error["msg"],
+            "type": error["type"]
+        }
+        detail.append(error_message)
+    
+    # Log the error for debugging purposes
+    if detail:
+        print(f"Validation error: {detail[0]}")
+    
     return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content=format_error(message="Validation error", data=errors),
+        status_code=422,
+        content={"detail": detail}
     )
 
 

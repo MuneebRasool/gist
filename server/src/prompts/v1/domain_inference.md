@@ -105,12 +105,12 @@
 ---
 Return the response in JSON format with the following keys:
  {
-    "domain": <inferred domain>
+    "domain": <inferred domain>,
     "questions": [
         {
             "question": <question to ask the user>,
-            "options": ['option1', 'option2', 'option3']
+            "options": ["option1", "option2", "option3"]
         }
-    ]
-    ]   
+    ],
+    "summary": <brief summary of the inferred professional context>
  }

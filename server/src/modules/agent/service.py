@@ -5,15 +5,18 @@ from typing import List, Dict, Any
 from src.agents.spam_classifier import SpamClassifier
 from src.agents.task_extractor import TaskExtractor
 from src.agents.personality_summarizer import PersonalitySummarizer
+from src.agents.content_classifier import ContentClassifier
+from src.agents.email_domain_inferencer import DomainInferenceAgent
 from src.models.user import User
 from src.modules.tasks.service import TaskService
 from src.modules.tasks.schemas import TaskCreate
 from src.modules.nylas.service import NylasService
 from src.models.graph.nodes import UserNode, EmailNode,TaskNode
-from .schemas import EmailData
+from .schemas import EmailData, OnboardingSubmitRequest
 import asyncio
 import datetime
 import uuid
+import json
 
 from ...agents.task_cost_features_extractor import CostFeaturesExtractor
 from ...agents.task_utility_features_extractor import UtilityFeaturesExtractor
@@ -28,6 +31,8 @@ class AgentService:
         self.personality_summarizer = PersonalitySummarizer()
         self.utility_features_extractor = UtilityFeaturesExtractor()
         self.cost_features = CostFeaturesExtractor()
+        self.content_classifier = ContentClassifier()
+        self.domain_inference_agent = DomainInferenceAgent()
 
     async def classify_spams(self, emails: List[dict]) -> dict:
         """
@@ -202,10 +207,10 @@ class AgentService:
                     for email in non_spam_emails
                 ]
                 
-                # Start personality summarization in parallel
-                personality_task = asyncio.create_task(
-                    self.summarize_user_personality(user_id, non_spam_emails)
-                )
+                # # Start personality summarization in parallel
+                # personality_task = asyncio.create_task(
+                #     self.summarize_user_personality(user_id, non_spam_emails)
+                # )
                 
                 print("Processing emails")
                 # Wait for all task extractions to complete
@@ -213,7 +218,7 @@ class AgentService:
                 
                 print("Personality summarization started")
                 # Wait for personality summarization to complete
-                await personality_task
+                # await personality_task
                 
                 print("Onboarding process completed successfully")
 
@@ -310,3 +315,160 @@ class AgentService:
         except Exception as e:
             print(f"Error processing webhook: {str(e)}")
             return False
+
+    async def classify_content(self, content: str) -> dict:
+        """
+        Classify content by type and usefulness
+        
+        Args:
+            content: Text content to classify
+            
+        Returns:
+            dict: Classification results with a type (1=Library, 2=Main Focus-View, 3=Drawer)
+        """
+        try:
+            # Remove any newlines or control characters that might cause JSON parsing issues
+            cleaned_content = content.replace('\n', ' ').replace('\r', '').strip()
+            result = await self.content_classifier.process(cleaned_content)
+            
+            # Validate the result structure
+            if not isinstance(result, dict):
+                print(f"Invalid content classification result (not a dict): {result}")
+                return {"type": "3"}  # Default to Drawer
+                
+            # Ensure type is a string and is one of the valid values
+            if "type" not in result or not isinstance(result["type"], str):
+                print(f"Missing or invalid 'type' field in content classification result: {result}")
+                result["type"] = "3"  # Default to Drawer
+            
+            # Validate that type is one of the expected values
+            valid_types = ["1", "2", "3"]
+            if result["type"] not in valid_types:
+                print(f"Invalid type value in content classification result: {result['type']}")
+                result["type"] = "3"  # Default to Drawer
+                
+            return result
+        except Exception as e:
+            print(f"Error classifying content: {str(e)}")
+            return {"type": "3"}  # Default to Drawer
+
+    async def infer_user_domain(self, email: str) -> dict:
+        """
+        Infer user's profession and context from their email domain
+        
+        Args:
+            email: User's email address
+            
+        Returns:
+            dict: Domain inference results including questions and summary
+        """
+        try:
+            result = await self.domain_inference_agent.process(email)
+
+            print(f"Domain inference result on other side: {result}")
+            
+            # Validate the result structure
+            if not isinstance(result, dict):
+                print(f"Invalid domain inference result: {result}")
+                return {
+                    "questions": [
+                        {"question": "What is your profession?", "options": ["Software Engineer", "Designer", "Manager", "Other"]},
+                        {"question": "What industry do you work in?", "options": ["Technology", "Healthcare", "Finance", "Education", "Other"]},
+                        {"question": "What are your main responsibilities?", "options": ["Coding", "Design", "Management", "Customer Support", "Other"]}
+                    ],
+                    "summary": "Unable to process the email domain properly."
+                }
+                
+            # Ensure questions is a list and each item has question and options fields
+            if "questions" not in result or not isinstance(result["questions"], list) or len(result["questions"]) == 0:
+                print(f"Missing or invalid 'questions' field in result")
+                result["questions"] = [
+                    {"question": "What is your profession?", "options": ["Software Engineer", "Designer", "Manager", "Other"]},
+                    {"question": "What industry do you work in?", "options": ["Technology", "Healthcare", "Finance", "Education", "Other"]},
+                    {"question": "What are your main responsibilities?", "options": ["Coding", "Design", "Management", "Customer Support", "Other"]}
+                ]
+            else:
+                # Minimal validation - just ensure basic structure and types
+                valid_questions = []
+                for q in result["questions"]:
+                    print(f"Processing question: {q}")
+                    
+                    # Make sure it's a dict with required keys
+                    if not isinstance(q, dict):
+                        print(f"Skipping question - not a dictionary: {q}")
+                        continue
+                        
+                    # Ensure question has both question and options fields
+                    if "question" not in q or "options" not in q:
+                        print(f"Skipping question - missing required fields: {q}")
+                        continue
+                        
+                    # Ensure options is a list
+                    if not isinstance(q["options"], list):
+                        print(f"Fixing options - not a list for question: {q['question']}")
+                        q["options"] = ["Option 1", "Option 2", "Option 3"]
+                    
+                    valid_questions.append(q)
+                
+                # Check if we have at least one valid question after validation
+                if not valid_questions:
+                    print("No valid questions after validation, using defaults")
+                    result["questions"] = [
+                        {"question": "What is your profession?", "options": ["Software Engineer", "Designer", "Manager", "Other"]},
+                        {"question": "What industry do you work in?", "options": ["Technology", "Healthcare", "Finance", "Education", "Other"]},
+                        {"question": "What are your main responsibilities?", "options": ["Coding", "Design", "Management", "Customer Support", "Other"]}
+                    ]
+                else:
+                    # Use the validated questions
+                    result["questions"] = valid_questions
+            
+            # Ensure summary is a string
+            if "summary" not in result or not isinstance(result["summary"], str):
+                # Use domain if available
+                if "domain" in result and isinstance(result["domain"], str):
+                    result["summary"] = f"Based on your email domain, we've identified you're likely in the {result['domain']} field. These questions will help us personalize your experience."
+                else:
+                    result["summary"] = "No summary available for this email domain."
+            
+            return result
+        except Exception as e:
+            print(f"Error inferring domain: {str(e)}")
+            return {
+                "questions": [
+                    {"question": "What is your profession?", "options": ["Software Engineer", "Designer", "Manager", "Other"]},
+                    {"question": "What industry do you work in?", "options": ["Technology", "Healthcare", "Finance", "Education", "Other"]},
+                    {"question": "What are your main responsibilities?", "options": ["Coding", "Design", "Management", "Customer Support", "Other"]}
+                ],
+                "summary": f"Error processing domain inference: {str(e)}"
+            }
+
+    async def summarize_onboarding_data(self, onboarding_data) -> dict:
+        """
+        Generate a personality summary based on onboarding form data
+        
+        Args:
+            onboarding_data: OnboardingSubmitRequest object containing onboarding form data
+            
+        Returns:
+            dict: Summary results with a personality analysis
+        """
+        try:
+            # Convert the OnboardingSubmitRequest object to a JSON string
+            import json
+            onboarding_json = onboarding_data.json() if hasattr(onboarding_data, 'json') else json.dumps(onboarding_data)
+            
+            result = await self.personality_summarizer.process_onboarding(onboarding_json)
+            
+            if not isinstance(result, dict) or "summary" not in result:
+                print(f"Invalid summary result: {result}")
+                return {
+                    "summary": "We couldn't generate a personalized summary based on your responses. Our team will review your information and create a more accurate profile for you soon."
+                }
+                
+            return result
+            
+        except Exception as e:
+            print(f"Error summarizing onboarding data: {str(e)}")
+            return {
+                "summary": f"Error processing onboarding data: {str(e)}"
+            }

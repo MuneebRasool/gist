@@ -1,13 +1,13 @@
 'use client';
 
 import { useNylasStatusStore } from '@/store';
-import GmailConnect from '@/components/app/settings/GmailConnect';
 import { useTasksStore } from '@/store/tasks';
 import { CalendarDays } from 'lucide-react';
 import { useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Loading from '@/app/loading';
 import TaskCard from '@/components/app/tasks/TaskCard';
+import WelcomeMessage from '@/components/app/onboarding/WelcomeMessage';
 
 export default function HomePage() {
 	const { isConnected, isLoading: emailStatusLoading } = useNylasStatusStore();
@@ -26,10 +26,8 @@ export default function HomePage() {
 
 	if (!isConnected) {
 		return (
-			<div className='container mx-auto py-8'>
-				<div className='mx-auto max-w-2xl'>
-					<GmailConnect />
-				</div>
+			<div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-rose-50 to-slate-100">
+				<WelcomeMessage />
 			</div>
 		);
 	}
