@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Request,Response, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, Request, Response, BackgroundTasks, Depends, HTTPException
+from fastapi.exceptions import RequestValidationError
+# from pydantic import ValidationError
 from src.modules.agent.service import AgentService
 from src.modules.agent.schemas import ContentClassificationResponse, ContentClassificationRequest, DomainInferenceRequest, DomainInferenceResponse, OnboardingSubmitRequest, PersonalitySummaryResponse
 from src.models.user import User
@@ -7,6 +9,7 @@ from src.dependencies import get_current_user
 
 router = APIRouter(prefix="/agent", tags=["agent"])
 
+# Exception handler moved to main.py
 
 @router.get("/webhook")
 async def webhook_challenge(request: Request):

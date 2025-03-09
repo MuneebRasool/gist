@@ -121,14 +121,38 @@ const OnboardingEmailRatingPage = () => {
       
       console.log(`🔵 Preparing email data (${emails.length} emails)...`);
       // Prepare simplified email data to avoid serialization issues
-      const simplifiedEmails: SimplifiedEmail[] = emails.map(email => ({
-        id: email.id,
-        subject: email.subject,
-        from: email.from && email.from.length > 0 ? [email.from[0]] : [],
-        snippet: email.snippet,
-        date: email.date
-      }));
-      console.log('🔵 Simplified email data prepared');
+      console.log('🔵 About to process emails:', emails.length);
+      if (emails.length > 0) {
+        console.log('🔵 First email structure:', JSON.stringify(emails[0]));
+        console.log('🔵 First email "from" field:', emails[0].from);
+      }
+      
+      const simplifiedEmails: SimplifiedEmail[] = emails.map(email => {
+        // Log any problematic emails
+        if (!email.id) console.log('❌ Email missing ID:', email);
+        if (!email.from) console.log('❌ Email missing from field:', email.id);
+        
+        const simplifiedEmail = {
+          id: email.id,
+          subject: email.subject || '',
+          // Ensure the 'from' field is always correctly formatted for the API
+          from: Array.isArray(email.from) && email.from.length > 0 
+            ? email.from.map(participant => ({
+                name: participant.name || '',
+                email: participant.email || ''
+              }))
+            : [{ name: '', email: '' }], // Always provide at least an empty participant
+          snippet: email.snippet || '',
+          date: email.date || 0
+        };
+        
+        return simplifiedEmail;
+      });
+      
+      // Log the first processed email
+      if (simplifiedEmails.length > 0) {
+        console.log('🔵 First simplified email:', JSON.stringify(simplifiedEmails[0]));
+      }
       
       // Prepare onboarding data from both steps
       const onboardingData: OnboardingFormData = {
