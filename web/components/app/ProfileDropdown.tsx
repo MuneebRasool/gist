@@ -9,15 +9,11 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useTheme } from 'next-themes';
-import { Moon } from 'lucide-react';
-import { Sun } from 'lucide-react';
-import { LayoutDashboard, LogOut, Settings } from 'lucide-react';
+import { LogOut, Settings } from 'lucide-react';
 
 const ProfileDropdown = ({ setOpen }: { setOpen: (open: boolean) => void }) => {
 	const { data: session } = useSession();
 	const router = useRouter();
-	const { resolvedTheme, setTheme } = useTheme();
 
 	return (
 		<DropdownMenu>
@@ -39,15 +35,7 @@ const ProfileDropdown = ({ setOpen }: { setOpen: (open: boolean) => void }) => {
 				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent className='w-56'>
-				<DropdownMenuItem
-					className='cursor-pointer'
-					onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-				>
-					<Sun className='mr-2 size-4 rotate-0 scale-100 transition-transform dark:-rotate-90 dark:scale-0' />
-					<Moon className='absolute mr-2 size-4 rotate-90 scale-0 transition-transform dark:rotate-0 dark:scale-100' />
-					Switch Theme
-				</DropdownMenuItem>
-				<DropdownMenuItem className='cursor-pointer' onClick={() => router.push('/app/settings')}>
+				<DropdownMenuItem className='cursor-pointer' onClick={() => router.push('/app/dashboard/settings')}>
 					<Settings className='mr-2 h-4 w-4' />
 					Settings
 				</DropdownMenuItem>
