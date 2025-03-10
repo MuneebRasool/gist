@@ -116,11 +116,11 @@ export default function OnboardingEmailRatingPage() {
       localStorage.removeItem('onboardingAnswers');
       localStorage.removeItem('domain');
       
-      router.push('/app');
+      router.push('/app/dashboard');
     } catch (error) {
       console.error('Error submitting onboarding data:', error);
       toast.error('Failed to save your preferences. Please try again.');
-      router.push('/app');
+      router.push('/app/dashboard');
     } finally {
       setIsSubmitting(false);
     }
