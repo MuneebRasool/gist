@@ -8,10 +8,6 @@ Analyze the provided email content and classify it into one of the following cat
 - 2.  **Main Focus-View** → High-priority emails containing urgent tasks, deadlines, or time-sensitive information.  
 - 3.  **Drawer** → Low-priority content like newsletters, articles, advertisements, and promotional emails.  
 
-- **Library** → 1
-- **Main Focus-View** → 2
-- **Drawer** → 3
-
 ## **Analysis Approach**  
 1. **Identify Structural Patterns:**  
    - Subject line, sender, and formatting cues.  
@@ -27,7 +23,7 @@ Provide the classification in the following JSON format:
 
 ```json
 {
-  "type": "1"
+  "type": "Library"
 }
 Do not include any additional explanations beyond the JSON response.
 

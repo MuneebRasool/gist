@@ -6,15 +6,17 @@ import uuid
 from neomodel import db
 
 class TaskService:
+
     @staticmethod
-    async def create_task(task_data: TaskCreate,user_id:str) -> TaskNode:
+    async def create_task(task_data: TaskCreate, user_id: str) -> TaskNode:
         """
         Create a new task and connect it to the corresponding email
         """
         # First get the email node
         email = TaskService.ensure_graph_nodes(user_id, task_data.messageId)
         
-        # Create task node
+        
+        # Create task node with classification included
         print('creating tasks')
         task = TaskNode(
             task_id=str(uuid.uuid4()),
@@ -24,13 +26,14 @@ class TaskService:
             utility_score=task_data.utility_score,
             cost_score=task_data.cost_score,
             relevance_score=task_data.relevance_score,
+            classification=task_data.classification
         ).save()
         
         # Connect task to email
         email.tasks.connect(task)
         task.messageId = task_data.messageId
         return task
-
+    
     @staticmethod
     def ensure_graph_nodes(user_id: str, message_id: str) -> EmailNode:
         """
@@ -52,7 +55,6 @@ class TaskService:
             
         return email_node
     
-
     @staticmethod
     async def get_task(task_id: str) -> Optional[TaskNode]:
         """Get a task by task_id"""

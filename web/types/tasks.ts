@@ -29,6 +29,7 @@ export interface TaskResponse {
 	cost_score?: number;
 	messageId?: string;
 	userId: string;
+	classification?: string;
 	createdAt: string;
 	updatedAt: string;
 }

@@ -92,7 +92,6 @@ class AgentService:
             self,
             user_id: str,
             email: dict,
-            user_persona: str = ''
     ):
         """
         Extract tasks from email and save them to the database
@@ -109,16 +108,9 @@ class AgentService:
         user_personality = None
         try:
             user = await User.get(id=user_id)
-            if user and user.personality:
-                # If personality is a list, use the most recent one
-                if isinstance(user.personality, list) and len(user.personality) > 0:
-                    user_personality = user.personality[-1]
-                # If personality is a string, use it directly
-                elif isinstance(user.personality, str):
-                    user_personality = user.personality
-                # If personality is a dict, convert to string
-                elif isinstance(user.personality, dict):
-                    user_personality = str(user.personality)
+            if user and user.personality and isinstance(user.personality, dict):
+                user_personality = user.personality.get('summary', '')
+                print(f"User personality: {user_personality}")
         except Exception as e:
             print(f"Error fetching user personality: {str(e)}")
         
@@ -133,7 +125,7 @@ class AgentService:
             print(f"Found {len(tasks)} tasks in email")
 
         context = f"""
-                    user persona: {user_persona}
+                    user personality: {user_personality}
                     email: {email_body}
                 """
         
@@ -142,16 +134,20 @@ class AgentService:
 
             utility_task_features_coroutine = self.utility_features_extractor.process(task_context)
             cost_task_features_coroutine = self.cost_features.process(task_context)
+            classification_coroutine = self.classify_content(task_context)
 
             # Gather results
-            utility_result, cost_result = await asyncio.gather(
+            utility_result, cost_result, classification_result = await asyncio.gather(
                 utility_task_features_coroutine,
-                cost_task_features_coroutine
+                cost_task_features_coroutine,
+                classification_coroutine
             )
 
             utility_features = utility_result.get('utility_features', {})
             cost_features = cost_result.get('cost_features', {})
+            classification = classification_result.get('type', 'Drawer')
 
+            print("classification", classification)
             # Calculate relevance score
             relevance_score, utility_score, cost_score = get_relevance_score(utility_features, cost_features)
 
@@ -162,7 +158,8 @@ class AgentService:
                 messageId=email_id,
                 relevance_score=relevance_score,
                 utility_score=utility_score.get('total_utility_score'),
-                cost_score=cost_score.get('total_cost_score')
+                cost_score=cost_score.get('total_cost_score'),
+                classification=classification
             ), user_id=user_id)
         return True
     
@@ -368,18 +365,18 @@ class AgentService:
             # Validate the result structure
             if not isinstance(result, dict):
                 print(f"Invalid content classification result (not a dict): {result}")
-                return {"type": "3"}  # Default to Drawer
+                return {"type": "Drawer"}  # Default to Drawer
                 
             # Ensure type is a string and is one of the valid values
             if "type" not in result or not isinstance(result["type"], str):
                 print(f"Missing or invalid 'type' field in content classification result: {result}")
-                result["type"] = "3"  # Default to Drawer
+                result["type"] = "Drawer"  # Default to Drawer
             
             # Validate that type is one of the expected values
-            valid_types = ["1", "2", "3"]
+            valid_types = ["Library", "Main Focus-View", "Drawer"]
             if result["type"] not in valid_types:
                 print(f"Invalid type value in content classification result: {result['type']}")
-                result["type"] = "3"  # Default to Drawer
+                result["type"] = "Drawer"  # Default to Drawer
                 
             return result
         except Exception as e:
@@ -499,6 +496,8 @@ class AgentService:
                 # return {
                 #     "summary": "We couldn't generate a personalized summary based on your responses. Our team will review your information and create a more accurate profile for you soon."
                 # }
+
+            print(f"🟣 PERSONALITY SUMMARIZER: Summary sample: {result}...")
 
             result = {
                 "summary" : result

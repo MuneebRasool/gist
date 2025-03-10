@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Request, Response, BackgroundTasks, Depends, HTTPException
-from fastapi.exceptions import RequestValidationError
+# from fastapi.exceptions import RequestValidationError
 # from pydantic import ValidationError
 from src.modules.agent.service import AgentService
-from src.modules.agent.schemas import ContentClassificationResponse, ContentClassificationRequest, DomainInferenceRequest, DomainInferenceResponse, OnboardingSubmitRequest, PersonalitySummaryResponse, QuestionWithOptions
+from src.modules.agent.schemas import DomainInferenceRequest, DomainInferenceResponse, OnboardingSubmitRequest, PersonalitySummaryResponse, QuestionWithOptions
 from src.models.user import User
 from src.dependencies import get_current_user
 # from src.modules.nylas.service import get_nylas_service
@@ -44,43 +44,6 @@ async def nylas_webhook(request: Request,background_tasks: BackgroundTasks):
             "message": f"Failed to process webhook: {str(e)}"
         }
 
-
-@router.post("/classify-content", response_model=ContentClassificationResponse)
-async def classify_content(request_data: ContentClassificationRequest):
-    """
-    Classify content by type
-    
-    This endpoint:
-    1. Receives content in the request body
-    2. Classifies the content by type (1=Library, 2=Main Focus-View, 3=Drawer)
-    3. Returns the classification results
-    """
-    try:
-        content = request_data.content
-        
-        if not content:
-            return {
-                "success": False,
-                "message": "No content provided",
-                "type": "3"  # Default to Drawer
-            }
-            
-        agent_service = AgentService()
-        result = await agent_service.classify_content(content)
-        
-        # Return the validated results
-        return {
-            "success": True,
-            "message": "Content classified successfully",
-            "type": result["type"]
-        }
-    except Exception as e:
-        print(f"Content classification error: {str(e)}")
-        return {
-            "success": False,
-            "message": f"Failed to classify content: {str(e)}",
-            "type": "3"  # Default to Drawer
-        }
 
 @router.post("/infer-domain", response_model=DomainInferenceResponse)
 async def infer_domain(request: DomainInferenceRequest):
@@ -151,6 +114,17 @@ async def submit_onboarding(
         
         # Get the decrypted Nylas grant ID
         grant_id = current_user.get_nylas_grant_id()
+
+        # Update the user's personality
+        if current_user.personality is None:
+            current_user.personality = {}
+        
+        if isinstance(current_user.personality, dict):
+            current_user.personality["summary"] = result.get("summary", "")
+        else:
+            current_user.personality = {"summary": result.get("summary", "")}
+            
+        await current_user.save()
         
         if grant_id:
             # Add the onboarding task to background tasks
@@ -168,3 +142,6 @@ async def submit_onboarding(
     except Exception as e:
         print(f"Error processing onboarding data: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error processing onboarding data: {str(e)}")
+
+
+# route handler -> background tasks (start onboarding) -> Email Processing -> Task Creation ( create_task)

@@ -1,7 +1,7 @@
 'use client';
 
 import { useTasksStore } from '@/store/tasks';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import Loading from '@/app/loading';
 import TaskCard from '@/components/app/tasks/TaskCard';
@@ -11,7 +11,10 @@ export default function DashboardPage() {
 	const { tasks, fetchTasks, isLoading } = useTasksStore();
 	const { data: session } = useSession();
 
-	console.log(tasks);
+	// Filter tasks with classification = "main focus view"
+	const filteredTasks = useMemo(() => {
+		return tasks.filter(task => task.classification === 'Main Focus-View');
+	}, [tasks]);
 
 	useEffect(() => {
 		if (session?.user?.id) {
@@ -29,18 +32,18 @@ export default function DashboardPage() {
 
 			{/* <div className="rounded-xl bg-white/20 p-6 shadow-lg backdrop-blur-sm"> */}
 			<div className='space-y-4'>
-				{tasks.map((task) => (
+				{filteredTasks.map((task) => (
 					<TaskCard key={task.task_id} task={task} />
 				))}
-				{tasks.length === 0 && (
+				{filteredTasks.length === 0 && (
 					<div className='flex flex-col items-center gap-6 rounded-2xl bg-white/40 py-12 backdrop-blur-sm'>
 						<div className='rounded-full bg-primary/20 p-3'>
 							<Mic className='h-6 w-6 text-primary' />
 						</div>
 						<div className='text-center'>
-							<h3 className='text-lg font-semibold text-gray-800'>No Tasks Found</h3>
+							<h3 className='text-lg font-semibold text-gray-800'>No Focus Tasks Found</h3>
 							<p className='text-sm text-gray-600'>
-								No tasks found. New tasks will appear here once they are extracted from your emails.
+								No main focus tasks found. Tasks classified as main focus will appear here.
 							</p>
 						</div>
 					</div>

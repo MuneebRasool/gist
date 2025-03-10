@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, root_validator
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict
 
 class EmailData(BaseModel):
     id: str

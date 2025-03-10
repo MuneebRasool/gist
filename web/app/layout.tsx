@@ -3,6 +3,7 @@ import './globals.css';
 import Loading from './loading';
 import { Suspense } from 'react';
 import Providers from './providers';
+import FloatingFooter from '@/components/app/FloatingNavbar';
 
 export const metadata: Metadata = {
 	title: 'Gist',
@@ -12,7 +13,7 @@ export const metadata: Metadata = {
 	},
 };
 
-export default async function RootLayout({
+export default function RootLayout({
 	children,
 }: Readonly<{
 	children: React.ReactNode;
@@ -20,9 +21,12 @@ export default async function RootLayout({
 	return (
 		<html lang='en' suppressHydrationWarning>
 			<body className={`antialiased`}>
-				<Suspense fallback={<Loading />}>
-					<Providers>{children}</Providers>
-				</Suspense>
+				<Providers>
+					<Suspense fallback={<Loading />}>
+						{children}
+					</Suspense>
+					<FloatingFooter />
+				</Providers>
 			</body>
 		</html>
 	);
