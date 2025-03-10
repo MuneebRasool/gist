@@ -9,7 +9,7 @@ export default function OnboardingLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-gradient-to-r from-[#e6dcda] to-[#cfc6cb]">
+    <div className="min-h-screen bg-gradient-to-r from-[#e6dcda] via-[#cfc6cb] to-[#ced4d8]">
       <main className="flex-1">
         <div className="flex min-h-screen flex-col">
           <header className="absolute left-8 top-8 flex items-center gap-3">

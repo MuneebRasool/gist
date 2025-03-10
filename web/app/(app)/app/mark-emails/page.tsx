@@ -158,7 +158,7 @@ export default function OnboardingEmailRatingPage() {
 
   if (isLoading) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-r from-[#e6dcda] to-[#cfc6cb]">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-r from-[#e6dcda] via-[#cfc6cb] to-[#ced4d8]">
         <div className="flex flex-col items-center justify-center space-y-8">
           <div className="relative">
             <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#A5B7C8]/30 border-t-[#A5B7C8]" />
@@ -201,14 +201,17 @@ export default function OnboardingEmailRatingPage() {
       <QuestionPrompt />
       
       <AnimatePresence mode="wait">
-        <EmailCard
-          key={emails[currentEmailIndex].id}
-          email={emails[currentEmailIndex]}
-          currentRating={emailRatings[emails[currentEmailIndex].id]}
-          onRate={handleEmailRate}
-          onNext={handleNextEmail}
-          isLastEmail={currentEmailIndex === emails.length - 1}
-        />
+        {emails.length > 0 && (
+          <div key={emails[currentEmailIndex].id} className="bg-white shadow-lg rounded-2xl">
+            <EmailCard
+              email={emails[currentEmailIndex]}
+              currentRating={emailRatings[emails[currentEmailIndex].id]}
+              onRate={handleEmailRate}
+              onNext={handleNextEmail}
+              isLastEmail={currentEmailIndex === emails.length - 1}
+            />
+          </div>
+        )}
       </AnimatePresence>
       
       <ProgressIndicator

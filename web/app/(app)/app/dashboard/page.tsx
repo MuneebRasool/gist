@@ -16,6 +16,7 @@ export default function DashboardPage() {
 	useEffect(() => {
 		if (session?.user?.id) {
 			fetchTasks(session.user.id);
+			console.log('Tasks fetched:', tasks);
 		}
 	}, [session?.user?.id, fetchTasks]);
 
@@ -27,13 +28,13 @@ export default function DashboardPage() {
 		<div className="space-y-8">
 			<h1 className="text-4xl font-bold tracking-tight text-gray-900">Your Focus Today</h1>
 
-			<div className="rounded-xl bg-white/40 p-6 shadow-lg backdrop-blur-sm">
+			{/* <div className="rounded-xl bg-white/20 p-6 shadow-lg backdrop-blur-sm"> */}
 				<div className="space-y-4">
 					{tasks.map((task) => (
 						<TaskCard key={task.task_id} task={task} />
 					))}
 					{tasks.length === 0 && (
-						<div className="flex flex-col items-center gap-6 rounded-2xl bg-white/30 py-12 backdrop-blur-sm">
+						<div className="flex flex-col items-center gap-6 rounded-2xl bg-white/40 py-12 backdrop-blur-sm">
 							<div className="rounded-full bg-primary/20 p-3">
 								<Mic className="h-6 w-6 text-primary" />
 							</div>
@@ -47,6 +48,6 @@ export default function DashboardPage() {
 					)}
 				</div>
 			</div>
-		</div>
+		// </div>
 	);
 }
