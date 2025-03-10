@@ -12,12 +12,10 @@ from src.modules.tasks.service import TaskService
 from src.modules.tasks.schemas import TaskCreate
 from src.modules.nylas.service import NylasService
 from src.models.graph.nodes import UserNode, EmailNode,TaskNode
-from .schemas import EmailData, OnboardingSubmitRequest
+from .schemas import EmailData
 import asyncio
 import datetime
 import uuid
-import json
-
 from ...agents.task_cost_features_extractor import CostFeaturesExtractor
 from ...agents.task_utility_features_extractor import UtilityFeaturesExtractor
 from ...utils.get_text_from_html import get_text_from_html
@@ -83,9 +81,9 @@ class AgentService:
         await user.save()
         return personality_task
     
-    async def extract_tasks(self, email_body: str):
+    async def extract_tasks(self, email_body: str, user_personality: str = None):
          # Extract tasks from email
-        tasks_json = await self.task_extractor.process(email_body)
+        tasks_json = await self.task_extractor.process(email_body, user_personality)
         # Remove JSON code block markers if present
 
         return tasks_json
@@ -106,7 +104,26 @@ class AgentService:
             bool: True if tasks were successfully extracted and saved
         """
         email_body, email_id = email.body, email.id
-        task_items = await self.extract_tasks(email_body)
+        
+        # Fetch user personality if available
+        user_personality = None
+        try:
+            user = await User.get(id=user_id)
+            if user and user.personality:
+                # If personality is a list, use the most recent one
+                if isinstance(user.personality, list) and len(user.personality) > 0:
+                    user_personality = user.personality[-1]
+                # If personality is a string, use it directly
+                elif isinstance(user.personality, str):
+                    user_personality = user.personality
+                # If personality is a dict, convert to string
+                elif isinstance(user.personality, dict):
+                    user_personality = str(user.personality)
+        except Exception as e:
+            print(f"Error fetching user personality: {str(e)}")
+        
+        # Extract tasks using personality data if available
+        task_items = await self.extract_tasks(email_body, user_personality)
         tasks = task_items.get("tasks", [])
         
         if len(tasks) == 0:
@@ -287,29 +304,46 @@ class AgentService:
                     raise Exception("Email classified as spam, skipping processing")
                 
                 print(f"Email {message_id} classified as not spam, extracting tasks")
-                # If not spam, extract tasks
-                items = await self.extract_tasks(email)
                 
+                # Process for each user
                 for user in users:
-                    if len(items) == 0:
+                    # Fetch user personality if available
+                    user_personality = None
+                    if user.personality:
+                        # If personality is a list, use the most recent one
+                        if isinstance(user.personality, list) and len(user.personality) > 0:
+                            user_personality = user.personality[-1]
+                        # If personality is a string, use it directly
+                        elif isinstance(user.personality, str):
+                            user_personality = user.personality
+                        # If personality is a dict, convert to string
+                        elif isinstance(user.personality, dict):
+                            user_personality = str(user.personality)
+                    
+                    # Extract tasks using personality data if available
+                    task_result = await self.extract_tasks(email.body, user_personality)
+                    tasks = task_result.get("tasks", [])
+                    
+                    if len(tasks) == 0:
                         print("No tasks found in email")
-                        return True
+                        continue
                     else:
                         try:
                             user_node = UserNode.nodes.get(userid=user.id)
                         except UserNode.DoesNotExist:
                             user_node = UserNode(userid=user.id).save()
                         user_node.emails.connect(email_node)
-                        print(f"Found {len(items)} tasks in email")
+                        print(f"Found {len(tasks)} tasks in email")
                 
-                for item in items:
-                    task = TaskNode(
-                        task_id=str(uuid.uuid4()),
-                        task=item.get("title",""),
-                        deadline=item.get("due_date","No Deadline"),
-                        priority=item.get("priority","high"),
-                    ).save()
-                    email_node.tasks.connect(task)
+                        # Create task nodes for each task
+                        for task in tasks:
+                            task_node = TaskNode(
+                                task_id=str(uuid.uuid4()),
+                                task=task.get("title",""),
+                                deadline=task.get("due_date","No Deadline"),
+                                priority=task.get("priority","high"),
+                            ).save()
+                            email_node.tasks.connect(task_node)
 
                 return True
         except Exception as e:
@@ -352,97 +386,98 @@ class AgentService:
             print(f"Error classifying content: {str(e)}")
             return {"type": "3"}  # Default to Drawer
 
-    async def infer_user_domain(self, email: str) -> dict:
-        """
-        Infer user's profession and context from their email domain
+    # async def infer_user_domain(self, email: str) -> dict:
+    #     """
+    #     Infer user's profession and context from their email domain
         
-        Args:
-            email: User's email address
+    #     Args:
+    #         email: User's email address
             
-        Returns:
-            dict: Domain inference results including questions and summary
-        """
-        try:
-            result = await self.domain_inference_agent.process(email)
+    #     Returns:
+    #         dict: Domain inference results including questions and summary
+    #     """
+    #     try:
+    #         result = await self.domain_inference_agent.process(email)
 
-            print(f"Domain inference result on other side: {result}")
+    #         print(f"Domain inference result on other side: {result}")
             
-            # Validate the result structure
-            if not isinstance(result, dict):
-                print(f"Invalid domain inference result: {result}")
-                return {
-                    "questions": [
-                        {"question": "What is your profession?", "options": ["Software Engineer", "Designer", "Manager", "Other"]},
-                        {"question": "What industry do you work in?", "options": ["Technology", "Healthcare", "Finance", "Education", "Other"]},
-                        {"question": "What are your main responsibilities?", "options": ["Coding", "Design", "Management", "Customer Support", "Other"]}
-                    ],
-                    "summary": "Unable to process the email domain properly."
-                }
+    #         # Validate the result structure
+    #         if not isinstance(result, dict):
+    #             print(f"Invalid domain inference result: {result}")
+    #             return {
+    #                 "questions": [
+    #                     {"question": "What is your profession?", "options": ["Software Engineer", "Designer", "Manager", "Other"]},
+    #                     {"question": "What industry do you work in?", "options": ["Technology", "Healthcare", "Finance", "Education", "Other"]},
+    #                     {"question": "What are your main responsibilities?", "options": ["Coding", "Design", "Management", "Customer Support", "Other"]}
+    #                 ],
+    #                 "summary": "Unable to process the email domain properly."
+    #             }
                 
-            # Ensure questions is a list and each item has question and options fields
-            if "questions" not in result or not isinstance(result["questions"], list) or len(result["questions"]) == 0:
-                print(f"Missing or invalid 'questions' field in result")
-                result["questions"] = [
-                    {"question": "What is your profession?", "options": ["Software Engineer", "Designer", "Manager", "Other"]},
-                    {"question": "What industry do you work in?", "options": ["Technology", "Healthcare", "Finance", "Education", "Other"]},
-                    {"question": "What are your main responsibilities?", "options": ["Coding", "Design", "Management", "Customer Support", "Other"]}
-                ]
-            else:
-                # Minimal validation - just ensure basic structure and types
-                valid_questions = []
-                for q in result["questions"]:
-                    print(f"Processing question: {q}")
+    #         # Ensure questions is a list and each item has question and options fields
+    #         if "questions" not in result or not isinstance(result["questions"], list) or len(result["questions"]) == 0:
+    #             print("Missing or invalid 'questions' field in result")
+    #             result["questions"] = [
+    #                 {"question": "What is your profession?", "options": ["Software Engineer", "Designer", "Manager", "Other"]},
+    #                 {"question": "What industry do you work in?", "options": ["Technology", "Healthcare", "Finance", "Education", "Other"]},
+    #                 {"question": "What are your main responsibilities?", "options": ["Coding", "Design", "Management", "Customer Support", "Other"]}
+    #             ]
+    #         else:
+    #             # Minimal validation - just ensure basic structure and types
+    #             valid_questions = []
+    #             for q in result["questions"]:
+    #                 print(f"Processing question: {q}")
                     
-                    # Make sure it's a dict with required keys
-                    if not isinstance(q, dict):
-                        print(f"Skipping question - not a dictionary: {q}")
-                        continue
+    #                 # Make sure it's a dict with required keys
+    #                 if not isinstance(q, dict):
+    #                     print(f"Skipping question - not a dictionary: {q}")
+    #                     continue
                         
-                    # Ensure question has both question and options fields
-                    if "question" not in q or "options" not in q:
-                        print(f"Skipping question - missing required fields: {q}")
-                        continue
+    #                 # Ensure question has both question and options fields
+    #                 if "question" not in q or "options" not in q:
+    #                     print(f"Skipping question - missing required fields: {q}")
+    #                     continue
                         
-                    # Ensure options is a list
-                    if not isinstance(q["options"], list):
-                        print(f"Fixing options - not a list for question: {q['question']}")
-                        q["options"] = ["Option 1", "Option 2", "Option 3"]
+    #                 # Ensure options is a list
+    #                 if not isinstance(q["options"], list):
+    #                     print(f"Fixing options - not a list for question: {q['question']}")
+    #                     q["options"] = ["Option 1", "Option 2", "Option 3"]
                     
-                    valid_questions.append(q)
+    #                 valid_questions.append(q)
                 
-                # Check if we have at least one valid question after validation
-                if not valid_questions:
-                    print("No valid questions after validation, using defaults")
-                    result["questions"] = [
-                        {"question": "What is your profession?", "options": ["Software Engineer", "Designer", "Manager", "Other"]},
-                        {"question": "What industry do you work in?", "options": ["Technology", "Healthcare", "Finance", "Education", "Other"]},
-                        {"question": "What are your main responsibilities?", "options": ["Coding", "Design", "Management", "Customer Support", "Other"]}
-                    ]
-                else:
-                    # Use the validated questions
-                    result["questions"] = valid_questions
+    #             # Check if we have at least one valid question after validation
+    #             if not valid_questions:
+    #                 print("No valid questions after validation, using defaults")
+    #                 result["questions"] = [
+    #                     {"question": "What is your profession?", "options": ["Software Engineer", "Designer", "Manager", "Other"]},
+    #                     {"question": "What industry do you work in?", "options": ["Technology", "Healthcare", "Finance", "Education", "Other"]},
+    #                     {"question": "What are your main responsibilities?", "options": ["Coding", "Design", "Management", "Customer Support", "Other"]}
+    #                 ]
+    #             else:
+    #                 # Use the validated questions
+    #                 result["questions"] = valid_questions
             
-            # Ensure summary is a string
-            if "summary" not in result or not isinstance(result["summary"], str):
-                # Use domain if available
-                if "domain" in result and isinstance(result["domain"], str):
-                    result["summary"] = f"Based on your email domain, we've identified you're likely in the {result['domain']} field. These questions will help us personalize your experience."
-                else:
-                    result["summary"] = "No summary available for this email domain."
+    #         # Ensure summary is a string
+    #         if "summary" not in result or not isinstance(result["summary"], str):
+    #             # Use domain if available
+    #             if "domain" in result and isinstance(result["domain"], str):
+    #                 result["summary"] = f"Based on your email domain, we've identified you're likely in the {result['domain']} field. These questions will help us personalize your experience."
+    #             else:
+    #                 result["summary"] = "No summary available for this email domain."
             
-            return result
-        except Exception as e:
-            print(f"Error inferring domain: {str(e)}")
-            return {
-                "questions": [
-                    {"question": "What is your profession?", "options": ["Software Engineer", "Designer", "Manager", "Other"]},
-                    {"question": "What industry do you work in?", "options": ["Technology", "Healthcare", "Finance", "Education", "Other"]},
-                    {"question": "What are your main responsibilities?", "options": ["Coding", "Design", "Management", "Customer Support", "Other"]}
-                ],
-                "summary": f"Error processing domain inference: {str(e)}"
-            }
+    #         return result
+    #     except Exception as e:
+    #         print(f"Error inferring domain: {str(e)}")
+    #         return {
+    #             "questions": [
+    #                 {"question": "What is your profession?", "options": ["Software Engineer", "Designer", "Manager", "Other"]},
+    #                 {"question": "What industry do you work in?", "options": ["Technology", "Healthcare", "Finance", "Education", "Other"]},
+    #                 {"question": "What are your main responsibilities?", "options": ["Coding", "Design", "Management", "Customer Support", "Other"]}
+    #             ],
+    #             "summary": f"Error processing domain inference: {str(e)}"
+    #         }
 
     async def summarize_onboarding_data(self, onboarding_data) -> dict:
+
         """
         Generate a personality summary based on onboarding form data
         
@@ -459,11 +494,15 @@ class AgentService:
             
             result = await self.personality_summarizer.process_onboarding(onboarding_json)
             
-            if not isinstance(result, dict) or "summary" not in result:
-                print(f"Invalid summary result: {result}")
-                return {
-                    "summary": "We couldn't generate a personalized summary based on your responses. Our team will review your information and create a more accurate profile for you soon."
-                }
+            # if not isinstance(result, dict) or "summary" not in result:
+                # print(f"Invalid summary result: {result}")
+                # return {
+                #     "summary": "We couldn't generate a personalized summary based on your responses. Our team will review your information and create a more accurate profile for you soon."
+                # }
+
+            result = {
+                "summary" : result
+            }
                 
             return result
             
@@ -472,3 +511,79 @@ class AgentService:
             return {
                 "summary": f"Error processing onboarding data: {str(e)}"
             }
+
+
+    async def infer_user_domain(self, email: str) -> Dict[str, Any]:
+        """
+        Infer user's profession and context from their email domain.
+
+        Args:
+            email (str): User's email address.
+
+        Returns:
+            Dict[str, Any]: Domain inference results including questions and summary.
+        """
+        try:
+            result = await self.domain_inference_agent.process(email)
+
+            if not isinstance(result, dict):
+                print(f"Invalid domain inference result type: {type(result)}, expected dict.")
+                return self._default_response()
+
+            # Validate questions
+            result["questions"] = self._validate_questions(result.get("questions"))
+
+            # Ensure summary is a string
+            result["summary"] = self._validate_summary(result)
+
+            return result
+
+        except Exception as e:
+            print(f"Error inferring domain: {str(e)}")
+            return self._default_response(error_msg=str(e))
+
+    def _validate_questions(self, questions: Any) -> List[Dict[str, Any]]:
+        """Validate and format the questions list."""
+        if not isinstance(questions, list) or len(questions) == 0:
+            print("Invalid or missing 'questions' field. Using default questions.")
+            return self._default_questions()
+
+        valid_questions = []
+        for q in questions:
+            if isinstance(q, dict) and "question" in q and isinstance(q.get("options"), list):
+                valid_questions.append(q)
+            else:
+                print(f"Skipping invalid question format: {q}")
+
+        return valid_questions if valid_questions else self._default_questions()
+
+    def _validate_summary(self, result: Dict[str, Any]) -> str:
+        """Ensure summary is a valid string."""
+        if isinstance(result.get("summary"), str):
+            return result["summary"]
+        
+        if isinstance(result.get("domain"), str):
+            return f"Based on your email domain, we've identified you're likely in the {result['domain']} field."
+
+        return "We could not determine your professional domain. Please answer the questions to help us understand your work better."
+
+    def _default_response(self, error_msg: str = None) -> Dict[str, Any]:
+        """Return a default response in case of failure."""
+        return {
+            "questions": self._default_questions(),
+            "summary": f"Error processing domain inference: {error_msg}" if error_msg else 
+                        "We could not determine your domain. Please answer the questions to help us understand your work better."
+        }
+
+    def _default_questions(self) -> List[Dict[str, Any]]:
+        """Return a set of general questions."""
+        return [
+            {"question": "What best describes your current role?", 
+             "options": ["Professional", "Student", "Freelancer", "Other"]},
+            {"question": "What is your primary focus area?", 
+             "options": ["Technology", "Business", "Healthcare", "Creative Industry", "Other"]},
+            {"question": "What kind of emails are most important to you?", 
+             "options": ["Work deadlines", "Client communications", "Networking opportunities", "General updates"]},
+            {"question": "Would you like to be notified about important emails?", 
+             "options": ["Yes, notify me", "No, I will check manually"]}
+        ]

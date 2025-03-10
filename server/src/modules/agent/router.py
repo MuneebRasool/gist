@@ -6,6 +6,7 @@ from src.modules.agent.schemas import ContentClassificationResponse, ContentClas
 from src.models.user import User
 from src.dependencies import get_current_user
 # from src.modules.nylas.service import get_nylas_service
+from typing import Annotated
 
 router = APIRouter(prefix="/agent", tags=["agent"])
 
@@ -130,7 +131,11 @@ async def infer_domain(request: DomainInferenceRequest):
         raise HTTPException(status_code=500, detail=f"Error inferring domain: {str(e)}")
 
 @router.post("/submit-onboarding", response_model=PersonalitySummaryResponse)
-async def submit_onboarding(request: OnboardingSubmitRequest):
+async def submit_onboarding(
+    request: OnboardingSubmitRequest,
+    background_tasks: BackgroundTasks,
+    current_user: Annotated[User, Depends(get_current_user)]
+):
     """
     Process onboarding information to generate a personality summary
     """
@@ -143,6 +148,14 @@ async def submit_onboarding(request: OnboardingSubmitRequest):
         
         if not result or "summary" not in result:
             raise HTTPException(status_code=500, detail="Failed to process onboarding data")
+        
+        # Get the decrypted Nylas grant ID
+        grant_id = current_user.get_nylas_grant_id()
+        
+        if grant_id:
+            # Add the onboarding task to background tasks
+            # FastAPI can handle async functions in background tasks
+            background_tasks.add_task(agent_service.start_onboarding, grant_id, current_user.id)
         
         return PersonalitySummaryResponse(
             success=True,

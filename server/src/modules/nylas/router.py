@@ -88,11 +88,9 @@ async def oauth_exchange(
         current_user.nylas_email = response.email
         await current_user.set_nylas_grant_id(response.grant_id)
         await current_user.save()
-        agent_service = AgentService()
         
-        # Add the onboarding task to background tasks
-        # FastAPI can handle async functions in background tasks
-        background_tasks.add_task(agent_service.start_onboarding, response.grant_id, current_user.id)
+        # Note: Background task for onboarding has been moved to the submit-onboarding endpoint
+        
         return UserResponse.model_validate(current_user)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

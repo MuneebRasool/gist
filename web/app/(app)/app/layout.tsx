@@ -6,7 +6,7 @@ export default function DashBoardLayout({
 	children: React.ReactNode;
 }>) {
 	return (
-		<div className='h-dvh overflow-y-auto'>
+		<div className="min-h-screen bg-gradient-to-r from-[#e6dcda] via-[#cfc6cb] to-[#ced4d8]">
 			{children}
 			<FloatingFooter />
 		</div>

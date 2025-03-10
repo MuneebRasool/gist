@@ -26,6 +26,7 @@ export const useTasksStore = create<TasksStore>((set) => ({
 		try {
 			set({ isLoading: true });
 			const response = await TasksService.getUserTasks(userId);
+			console.log('Tasks fetched:', response.data);
 			set({ tasks: response.data ?? [] });
 		} catch (error) {
 			console.error('Failed to fetch tasks:', error);

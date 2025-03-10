@@ -9,7 +9,7 @@ export default function OnboardingEmailRatingLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-rose-100/80 via-white to-blue-100/80">
+    <div className="min-h-screen bg-gradient-to-r from-[#e6dcda] via-[#cfc6cb] to-[#ced4d8]">
       <main className="flex-1">
         <div className="flex min-h-screen flex-col">
           <motion.header 
@@ -18,15 +18,13 @@ export default function OnboardingEmailRatingLayout({
             transition={{ delay: 0.3 }}
             className="absolute left-8 top-8 z-10 flex items-center gap-3"
           >
-            <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gray-300/50">
+            <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gray-200/50">
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.5, type: "spring" }}
-                className="text-lg font-medium text-gray-700"
-              >
-                G
-              </motion.div>
+                className="h-9 w-9 rounded-full bg-[#A5B7C8]"
+              />
             </div>
             <motion.p 
               initial={{ opacity: 0, x: -10 }}

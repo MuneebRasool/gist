@@ -48,7 +48,7 @@ export default function WelcomeMessage() {
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center">
+    <div className="fixed inset-0 flex items-center justify-center bg-gradient-to-r from-[#e6dcda] to-[#cfc6cb]">
       <AnimatePresence>
         {showInitialMessage && (
           <>
@@ -84,7 +84,7 @@ export default function WelcomeMessage() {
               transition={{ delay: 0.5 }}
               className="absolute left-1/2 top-1/2 -translate-x-1/2 translate-y-24"
             >
-              <div className="h-32 w-32 rounded-full bg-blue-100/50 backdrop-blur-sm" />
+              <div className="h-32 w-32 rounded-full bg-[#e6dcda]/70 backdrop-blur-sm" />
               <motion.div
                 animate={{ 
                   scale: [1, 1.1, 1],
@@ -97,7 +97,7 @@ export default function WelcomeMessage() {
                 }}
                 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
               >
-                <div className="h-24 w-24 rounded-full bg-blue-200" />
+                <div className="h-24 w-24 rounded-full bg-[#cfc6cb]" />
               </motion.div>
             </motion.div>
           </>
@@ -115,10 +115,10 @@ export default function WelcomeMessage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="rounded-3xl bg-white/90 p-8 shadow-lg backdrop-blur-sm"
+              className="rounded-3xl bg-white/40 p-8 shadow-lg backdrop-blur-sm"
             >
               <div className="mb-6 flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-blue-100">
+                <div className="h-10 w-10 rounded-full bg-[#cfc6cb]/70">
                   <motion.div
                     animate={{ 
                       scale: [1, 1.2, 1],
@@ -144,7 +144,7 @@ export default function WelcomeMessage() {
               </p>
 
               <div className="space-y-4">
-                <div className="rounded-xl bg-gray-50/80 p-4">
+                <div className="rounded-xl bg-white/30 p-4 backdrop-blur-sm">
                   <div className="flex items-center gap-3">
                     <Mail className="h-6 w-6 text-gray-600" />
                     <p className="text-sm text-gray-600">
@@ -153,7 +153,7 @@ export default function WelcomeMessage() {
                   </div>
                 </div>
 
-                <div className="rounded-xl bg-gray-50/80 p-4">
+                <div className="rounded-xl bg-white/30 p-4 backdrop-blur-sm">
                   <div className="flex items-center gap-3">
                     <Calendar className="h-6 w-6 text-gray-600" />
                     <p className="text-sm text-gray-600">

@@ -149,7 +149,7 @@ const OnboardingPage = () => {
         transition={{ duration: 0.5, ease: "easeOut" }}
         className="w-full max-w-xl"
       >
-        <div className="overflow-hidden rounded-3xl bg-white/95 shadow-sm backdrop-blur-sm">
+        <div className="overflow-hidden rounded-3xl bg-white/40 shadow-sm backdrop-blur-sm">
           <div className="border-b border-gray-100 px-8 py-6">
             <h2 className="text-2xl font-semibold text-gray-800">You are,</h2>
           </div>

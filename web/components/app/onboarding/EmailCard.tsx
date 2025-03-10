@@ -1,6 +1,7 @@
 import { EmailMessage } from '@/services/nylas/email.service';
 import { motion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
+import { useState } from 'react';
 
 interface EmailCardProps {
   email: EmailMessage;
@@ -18,6 +19,7 @@ export default function EmailCard({
   isLastEmail 
 }: EmailCardProps) {
   const ratingOptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+  const [isExiting, setIsExiting] = useState(false);
   
   const getRatingLabel = (rating: number) => {
     if (rating <= 2) return 'Irrelevant';
@@ -27,14 +29,30 @@ export default function EmailCard({
     return 'Critical';
   };
 
+  const cardVariants = {
+    initial: { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, x: -300, transition: { duration: 0.3, ease: "easeInOut" } }
+  };
+
+  const handleNextClick = () => {
+    setIsExiting(true);
+    // Add a small delay before calling onNext to allow the animation to play
+    setTimeout(() => {
+      onNext();
+      setIsExiting(false);
+    }, 300);
+  };
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className="w-full max-w-2xl overflow-hidden rounded-2xl bg-white p-0 shadow-lg"
+      variants={cardVariants}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      className="w-full max-w-2xl overflow-hidden rounded-2xl bg-white/40 p-0 shadow-lg backdrop-blur-sm"
     >
-      <div className="border-b border-gray-100 bg-gray-50/50 p-6">
+      <div className="border-b border-gray-100 bg-white/30 p-6">
         <div className="space-y-4">
           <div className="space-y-1">
             <div className="text-xs font-medium uppercase tracking-wider text-gray-500">Recipient</div>
@@ -55,7 +73,7 @@ export default function EmailCard({
         </div>
       </div>
       
-      <div className="space-y-6 bg-gray-50/50 p-6">
+      <div className="space-y-6 bg-white/30 p-6">
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-gray-500">Not Important</span>
@@ -103,8 +121,9 @@ export default function EmailCard({
           <motion.button
             whileHover={{ x: 4 }}
             whileTap={{ scale: 0.95 }}
-            onClick={onNext}
-            className="flex items-center gap-2 rounded-lg bg-black px-5 py-3 text-sm font-medium text-white transition-all hover:bg-black/90"
+            onClick={handleNextClick}
+            disabled={isExiting}
+            className="flex items-center gap-2 rounded-lg bg-black px-5 py-3 text-sm font-medium text-white transition-all hover:bg-black/90 disabled:opacity-70"
           >
             {isLastEmail ? 'Complete' : 'Next Email'}
             <ChevronRight className="h-4 w-4" />
