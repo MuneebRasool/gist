@@ -18,7 +18,7 @@ export default function HomePage() {
   }, [session?.user?.id, checkConnection]);
 
   if (emailStatusLoading) {
-    return <Loading />;
+    return <Loading text="Checking your email connection..." />;
   }
 
   if (isConnected) {

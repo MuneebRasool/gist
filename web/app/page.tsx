@@ -19,5 +19,5 @@ export default function HomePage() {
 		}
 	}, [router, session?.user, status]);
 
-	return <Loading />;
+	return <Loading text="Preparing your experience..." />;
 }

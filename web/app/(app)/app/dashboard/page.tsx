@@ -20,14 +20,14 @@ export default function DashboardPage() {
 	}, [session?.user?.id, fetchTasks]);
 
 	if (isLoading) {
-		return <Loading />;
+		return <Loading text="Fetching your tasks..." />;
 	}
 
 	return (
 		<div className="space-y-8">
 			<h1 className="text-4xl font-bold tracking-tight text-gray-900">Your Focus Today</h1>
 
-			<div className="rounded-xl bg-white/50 p-6 shadow-lg backdrop-blur-sm">
+			<div className="rounded-xl bg-white/40 p-6 shadow-lg backdrop-blur-sm">
 				<div className="space-y-4">
 					{tasks.map((task) => (
 						<TaskCard key={task.task_id} task={task} />

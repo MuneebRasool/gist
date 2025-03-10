@@ -9,7 +9,7 @@ export default function OnboardingEmailRatingLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-rose-100/80 via-white to-blue-100/80">
+    <div className="min-h-screen bg-gradient-to-r from-[#e6dcda] to-[#cfc6cb]">
       <main className="flex-1">
         <div className="flex min-h-screen flex-col">
           <motion.header 

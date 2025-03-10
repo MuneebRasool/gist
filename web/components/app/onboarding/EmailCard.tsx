@@ -32,9 +32,9 @@ export default function EmailCard({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="w-full max-w-2xl overflow-hidden rounded-2xl bg-white p-0 shadow-lg"
+      className="w-full max-w-2xl overflow-hidden rounded-2xl bg-white/40 p-0 shadow-lg backdrop-blur-sm"
     >
-      <div className="border-b border-gray-100 bg-gray-50/50 p-6">
+      <div className="border-b border-gray-100 bg-white/30 p-6">
         <div className="space-y-4">
           <div className="space-y-1">
             <div className="text-xs font-medium uppercase tracking-wider text-gray-500">Recipient</div>
@@ -55,7 +55,7 @@ export default function EmailCard({
         </div>
       </div>
       
-      <div className="space-y-6 bg-gray-50/50 p-6">
+      <div className="space-y-6 bg-white/30 p-6">
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-gray-500">Not Important</span>

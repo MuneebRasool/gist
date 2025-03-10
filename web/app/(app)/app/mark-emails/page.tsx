@@ -20,6 +20,13 @@ export default function OnboardingEmailRatingPage() {
   const [emailRatings, setEmailRatings] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+
+  const loadingMessages = [
+    "Creating your personality profile...",
+    "Fetching your recent emails...",
+    "Extracting tasks from your emails..."
+  ];
 
   useEffect(() => {
     const fetchEmails = async () => {
@@ -58,6 +65,20 @@ export default function OnboardingEmailRatingPage() {
     
     fetchEmails();
   }, []);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (isLoading && isSubmitting) {
+      interval = setInterval(() => {
+        setLoadingMessageIndex(prev => (prev + 1) % loadingMessages.length);
+      }, 3000);
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isLoading, isSubmitting, loadingMessages.length]);
 
   const handleEmailRate = (rating: number) => {
     const currentEmail = emails[currentEmailIndex];
@@ -116,35 +137,36 @@ export default function OnboardingEmailRatingPage() {
       localStorage.removeItem('onboardingAnswers');
       localStorage.removeItem('domain');
       
-      router.push('/app/dashboard');
+      // Show loading sequence before redirecting
+      setIsLoading(true);
+      setIsSubmitting(true);
+      setLoadingMessageIndex(0);
+      
+      // After 10 seconds, redirect to dashboard
+      setTimeout(() => {
+        router.push('/app/dashboard');
+      }, 10000);
+      
     } catch (error) {
       console.error('Error submitting onboarding data:', error);
       toast.error('Failed to save your preferences. Please try again.');
       router.push('/app/dashboard');
     } finally {
-      setIsSubmitting(false);
+      // Don't set isSubmitting to false here as we want to keep showing the loading sequence
     }
   };
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[calc(100vh-80px)] items-center justify-center">
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="flex flex-col items-center gap-6"
-        >
-          <div className="relative h-16 w-16">
-            <motion.div
-              animate={{ 
-                rotate: 360,
-                transition: { duration: 1.5, repeat: Infinity, ease: "linear" }
-              }}
-              className="absolute inset-0 rounded-full border-2 border-indigo-200 border-t-indigo-500"
-            />
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-r from-[#e6dcda] to-[#cfc6cb]">
+        <div className="flex flex-col items-center justify-center space-y-8">
+          <div className="relative">
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#A5B7C8]/30 border-t-[#A5B7C8]" />
           </div>
-          <p className="text-lg font-medium text-gray-700">Loading your emails...</p>
-        </motion.div>
+          <p className="text-lg font-medium text-gray-600">
+            {isSubmitting ? loadingMessages[loadingMessageIndex] : "Loading your emails..."}
+          </p>
+        </div>
       </div>
     );
   }
@@ -155,7 +177,7 @@ export default function OnboardingEmailRatingPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-2xl bg-white p-8 text-center shadow-lg"
+          className="rounded-2xl bg-white/40 p-8 text-center shadow-lg backdrop-blur-sm"
         >
           <h3 className="text-xl font-medium text-gray-800">No Emails Found</h3>
           <p className="mt-4 text-gray-600">
