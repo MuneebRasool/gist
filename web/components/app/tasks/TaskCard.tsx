@@ -1,7 +1,7 @@
 import { TaskResponse } from '@/types/tasks';
 import { Card, CardContent } from '@/components/ui/card';
 import React, { useState } from 'react';
-import { CalendarDays, Mail, Loader2, AlertCircle, Video, Phone, ShoppingBag, Bug } from 'lucide-react';
+import { CalendarDays, Mail, Loader2, AlertCircle, Video, Phone, ShoppingBag, Bug, BarChart } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -58,27 +58,27 @@ const TaskCard = ({ task }: { task: TaskResponse }) => {
 	const getPriorityColorClasses = (priority: string | undefined) => {
 		switch (priority?.toLowerCase()) {
 			case 'high':
-				return 'bg-red-500/10 text-red-500 hover:bg-red-500/20';
+				return 'bg-red-500/10 text-red-600 hover:bg-red-500/20';
 			case 'medium':
-				return 'bg-amber-500/10 text-amber-500 hover:bg-amber-500/20';
+				return 'bg-amber-500/10 text-amber-600 hover:bg-amber-500/20';
 			case 'low':
-				return 'bg-green-500/10 text-green-500 hover:bg-green-500/20';
+				return 'bg-green-500/10 text-green-600 hover:bg-green-500/20';
 			default:
-				return 'bg-gray-500/10 text-gray-500 hover:bg-gray-500/20';
+				return 'bg-gray-500/10 text-gray-600 hover:bg-gray-500/20';
 		}
 	};
 
 	const getDeadlineColorClasses = (deadline: string | undefined) => {
-		if (!deadline) return 'bg-gray-500/5 text-gray-600';
+		if (!deadline) return 'bg-gray-500/5 text-gray-700';
 		
 		const deadlineLower = deadline.toLowerCase();
 		if (deadlineLower.includes('before noon') || deadlineLower.includes('urgent')) {
-			return 'bg-red-500/5 text-red-600';
+			return 'bg-red-500/5 text-red-700';
 		}
 		if (deadlineLower.includes('eod') || deadlineLower.includes('end of day')) {
-			return 'bg-gray-500/5 text-gray-700';
+			return 'bg-gray-500/5 text-gray-800';
 		}
-		return 'bg-blue-500/5 text-blue-600';
+		return 'bg-blue-500/5 text-blue-700';
 	};
 
 	const TaskIcon = getTaskIcon(task.task);
@@ -99,7 +99,7 @@ const TaskCard = ({ task }: { task: TaskResponse }) => {
 								<div className={`rounded-full p-1.5 ${getPriorityColorClasses(task.priority)}`}>
 									<TaskIcon className="h-4 w-4" />
 								</div>
-								<h3 className={`text-lg font-semibold ${isCompleted ? 'line-through' : ''}`}>
+								<h3 className={`text-lg font-semibold text-gray-800 ${isCompleted ? 'line-through' : ''}`}>
 									{task.task}
 								</h3>
 							</div>
@@ -117,8 +117,32 @@ const TaskCard = ({ task }: { task: TaskResponse }) => {
 							</div>
 						</div>
 
+						{/* Display scores if available */}
+						{(task.relevance_score !== undefined || task.utility_score !== undefined || task.cost_score !== undefined) && (
+							<div className="flex flex-wrap gap-3 text-xs text-gray-600">
+								{task.relevance_score !== undefined && (
+									<div className="flex items-center gap-1">
+										<BarChart className="h-3 w-3" />
+										<span>Relevance: {task.relevance_score}</span>
+									</div>
+								)}
+								{task.utility_score !== undefined && (
+									<div className="flex items-center gap-1">
+										<BarChart className="h-3 w-3" />
+										<span>Utility: {task.utility_score}</span>
+									</div>
+								)}
+								{task.cost_score !== undefined && (
+									<div className="flex items-center gap-1">
+										<BarChart className="h-3 w-3" />
+										<span>Cost: {task.cost_score}</span>
+									</div>
+								)}
+							</div>
+						)}
+
 						<div className="flex items-center justify-between">
-							<p className="text-sm text-muted-foreground">
+							<p className="text-sm text-gray-600">
 								Created {format(new Date(task.createdAt), 'MMM d, yyyy')}
 							</p>
 							{task.messageId && (
@@ -140,7 +164,7 @@ const TaskCard = ({ task }: { task: TaskResponse }) => {
 			<Sheet open={open} onOpenChange={setOpen}>
 				<SheetContent className="min-w-full overflow-hidden sm:min-w-[600px]">
 					<SheetHeader>
-						<SheetTitle className="text-2xl font-bold">Email Details</SheetTitle>
+						<SheetTitle className="text-2xl font-bold text-gray-900">Email Details</SheetTitle>
 					</SheetHeader>
 					<div className="mt-6 h-full">
 						{error ? (
@@ -152,23 +176,23 @@ const TaskCard = ({ task }: { task: TaskResponse }) => {
 							<ScrollArea className="h-[calc(100vh-120px)] pr-4">
 								<div className="space-y-6">
 									<div className="rounded-lg bg-muted/30 p-4">
-										<h3 className="text-xl font-bold tracking-tight">{email.subject}</h3>
-										<p className="mt-2 text-sm text-muted-foreground">{formatEmailDate(email.date)}</p>
+										<h3 className="text-xl font-bold tracking-tight text-gray-900">{email.subject}</h3>
+										<p className="mt-2 text-sm text-gray-600">{formatEmailDate(email.date)}</p>
 									</div>
 
 									<div className="space-y-3 rounded-lg bg-card p-4">
 										<div className="flex gap-3">
-											<span className="min-w-20 font-semibold">From:</span>
+											<span className="min-w-20 font-semibold text-gray-800">From:</span>
 											<span className="text-primary">{email.from[0]?.name || email.from[0]?.email}</span>
 										</div>
 										<div className="flex gap-3">
-											<span className="min-w-20 font-semibold">To:</span>
-											<span>{email.to.map((to) => to.name || to.email).join(', ')}</span>
+											<span className="min-w-20 font-semibold text-gray-800">To:</span>
+											<span className="text-gray-700">{email.to.map((to) => to.name || to.email).join(', ')}</span>
 										</div>
 										{email.cc.length > 0 && (
 											<div className="flex gap-3">
-												<span className="min-w-20 font-semibold">CC:</span>
-												<span className="text-muted-foreground">
+												<span className="min-w-20 font-semibold text-gray-800">CC:</span>
+												<span className="text-gray-600">
 													{email.cc.map((cc) => cc.name || cc.email).join(', ')}
 												</span>
 											</div>
@@ -177,7 +201,7 @@ const TaskCard = ({ task }: { task: TaskResponse }) => {
 
 									<Separator className="my-6" />
 
-									<div className="prose prose-sm dark:prose-invert max-w-none">
+									<div className="prose prose-sm dark:prose-invert max-w-none text-gray-800">
 										<div dangerouslySetInnerHTML={{ __html: email.body }} />
 									</div>
 								</div>
@@ -186,7 +210,7 @@ const TaskCard = ({ task }: { task: TaskResponse }) => {
 							<div className="flex h-full items-center justify-center">
 								<div className="text-center">
 									<Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
-									<p className="mt-2 text-sm text-muted-foreground">Loading email...</p>
+									<p className="mt-2 text-sm text-gray-600">Loading email...</p>
 								</div>
 							</div>
 						)}
