@@ -45,7 +45,7 @@ class PersonalitySummarizer(BaseAgent):
             print("🟣 PERSONALITY SUMMARIZER: Calling LLM")
             result = await self.execute(system_prompt, onboarding_data, response_format="text")
             print(f"🟣 PERSONALITY SUMMARIZER: LLM response received, length: {len(result)} characters")
-            print(f"🟣 PERSONALITY SUMMARIZER: Summary sample: {result[:100]}...")
+            print(f"🟣 PERSONALITY SUMMARIZER: Summary sample: {result}...")
             print("---------------------------------------\n")
             
             return result

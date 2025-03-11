@@ -41,6 +41,7 @@ class TaskNode(StructuredNode):
     relevance_score = FloatProperty(default=0.0)
     utility_score = FloatProperty(default=0.0)
     cost_score = FloatProperty(default=0.0)
+    classification = StringProperty(default=None)
     createdAt = DateTimeProperty(default=lambda: datetime.now(UTC))
     updatedAt = DateTimeProperty(default=lambda: datetime.now(UTC))
     

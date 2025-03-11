@@ -10,6 +10,8 @@ class TaskCreate(BaseModel):
     relevance_score: Optional[float] = Field(None, description="Relevance score of the task")
     utility_score: Optional[float] = Field(None, description="Utility score of the task")
     cost_score: Optional[float] = Field(None, description="Cost score of the task")
+    classification: Optional[str] = Field(None, description="Classification of the task")
+
 
 class TaskUpdate(BaseModel):
     task: Optional[str] = Field(None, description="Task title/description")
@@ -25,6 +27,7 @@ class TaskResponse(BaseModel):
     relevance_score: Optional[float] = Field(None, description="Relevance score of the task")
     utility_score: Optional[float] = Field(None, description="Utility score of the task")
     cost_score: Optional[float] = Field(None, description="Cost score of the task")
+    classification: Optional[str] = Field(None, description="Classification of the task")
     createdAt: datetime = Field(..., description="When the task was created")
     updatedAt: datetime = Field(..., description="When the task was last updated")
     
