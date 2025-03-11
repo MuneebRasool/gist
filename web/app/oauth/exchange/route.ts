@@ -27,7 +27,7 @@ export const GET = async (req: NextRequest) => {
 		// Redirect to onboarding page with email parameter
 		if (email) {
 			const encodedEmail = encodeURIComponent(email);
-			return NextResponse.redirect(`${envConfig.APP_URL}/app/onboarding?email=${encodedEmail}`);
+			return NextResponse.redirect(`${envConfig.APP_URL}/app/mark-emails?email=${encodedEmail}`);
 		}
 		
 		// Fallback if email is not available

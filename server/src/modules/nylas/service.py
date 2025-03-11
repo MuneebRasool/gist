@@ -110,19 +110,101 @@ class NylasService:
 
     async def get_message(self, grant_id: str, message_id: str) -> Dict[str, Any]:
         """
-        Get a message by ID.
+        Get a specific message.
         Args:
-            grant_id: The grant ID to get messages for
+            grant_id: The grant ID to get the message for
             message_id: The ID of the message to get
         Returns:
             Dict containing message data
         Raises:
-            Exception: If fetching message fails
+            Exception: If fetching the message fails
         """
         try:
-            message = self.client.messages.find(
-                identifier=grant_id, message_id=message_id
-            )
-            return message.data.to_dict()
+            message = self.client.messages.find(identifier=grant_id, id=message_id)
+            return message.to_dict()
         except Exception as e:
             raise Exception(f"{str(e)}")
+
+    async def get_filtered_onboarding_messages(
+        self,
+        grant_id: str,
+        agent_service,
+        fetch_limit: int = 15,
+        return_limit: int = 10,
+        offset: Optional[str] = None,
+        query_params: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Get messages for onboarding with spam filtering.
+        
+        Args:
+            grant_id: The grant ID to get messages for
+            agent_service: Instance of AgentService to use for spam classification
+            fetch_limit: Number of messages to fetch initially (default 15)
+            return_limit: Maximum number of non-spam messages to return (default 10)
+            offset: Cursor for pagination
+            query_params: Additional query parameters for filtering messages
+            
+        Returns:
+            Dict containing filtered non-spam messages data and next cursor
+        
+        Raises:
+            Exception: If fetching or processing messages fails
+        """
+        try:
+            print(f"Starting get_filtered_onboarding_messages for grant_id: {grant_id}")
+            
+            # Fetch more messages than needed to account for spam filtering
+            messages_response = await self.get_messages(
+                grant_id=grant_id,
+                limit=fetch_limit,
+                offset=offset,
+                query_params=query_params,
+            )
+            
+            if not messages_response["data"]:
+                print("No messages found in response")
+                return {"data": [], "next_cursor": None}
+            
+            print("=======================================")
+            print(f"Retrieved {len(messages_response['data'])} messages")
+            print(f"Data type: {type(messages_response['data'])}")
+            
+            if messages_response["data"]:
+                print(f"First message type: {type(messages_response['data'][0])}")
+                if isinstance(messages_response["data"][0], dict):
+                    print(f"First message keys: {list(messages_response['data'][0].keys())}")
+                    # Print a sample of the first message structure
+                    sample_keys = ['id', 'subject', 'snippet']
+                    sample_data = {k: messages_response["data"][0].get(k) for k in sample_keys if k in messages_response["data"][0]}
+                    print(f"Sample data: {sample_data}")
+            
+            # Use agent service to classify spam
+            print("Calling classify_spams...")
+            try:
+                classification_result = await agent_service.classify_spams(messages_response["data"])
+                print("classify_spams completed successfully")
+            except Exception as e:
+                import traceback
+                print(f"Error in classify_spams: {str(e)}")
+                print(f"Traceback: {traceback.format_exc()}")
+                # Return all messages as non-spam in case of error
+                return {
+                    "data": messages_response["data"][:return_limit],
+                    "next_cursor": messages_response["next_cursor"],
+                }
+            
+            # Get non-spam messages and limit to return_limit
+            non_spam_messages = classification_result.get("non_spam", [])[:return_limit]
+            print(f"Filtered to {len(non_spam_messages)} non-spam messages")
+            
+            return {
+                "data": non_spam_messages,
+                "next_cursor": messages_response["next_cursor"],
+            }
+            
+        except Exception as e:
+            import traceback
+            print(f"Error in get_filtered_onboarding_messages: {str(e)}")
+            print(f"Traceback: {traceback.format_exc()}")
+            raise Exception(f"Failed to get filtered onboarding messages: {str(e)}")

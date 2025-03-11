@@ -21,20 +21,9 @@ class ContentClassificationResponse(BaseModel):
     message: str
     type: str
 
-class DomainInferenceRequest(BaseModel):
-    email: str
-
 class QuestionWithOptions(BaseModel):
     question: str
     options: List[str]
-
-class DomainInferenceResponse(BaseModel):
-    success: bool
-    message: str
-    questions: List[QuestionWithOptions]
-    summary: str
-
-# Add new classes for onboarding data
 
 class EmailParticipant(BaseModel):
     name: Optional[str] = ""
@@ -212,4 +201,15 @@ class PersonalitySummaryResponse(BaseModel):
     success: bool
     message: str
     personalitySummary: Optional[str] = None
+
+class DomainInferenceRequest(BaseModel):
+    email: str
+    ratedEmails: Optional[List[RatedEmail]] = None
+    ratings: Optional[Dict[str, int]] = None
+
+class DomainInferenceResponse(BaseModel):
+    success: bool
+    message: str
+    questions: List[QuestionWithOptions]
+    summary: str
 

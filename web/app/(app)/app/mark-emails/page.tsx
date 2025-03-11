@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import EmailService, { EmailMessage } from '@/services/nylas/email.service';
-import { OnboardingService, OnboardingFormData } from '@/services/agent/onboarding.service';
+// import { OnboardingService, OnboardingFormData, QuestionWithOptions } from '@/services/agent/onboarding.service';
 import { useOnboardingStore } from '@/store/onboarding.store';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -12,6 +12,7 @@ import EmailCard from '@/components/app/onboarding/EmailCard';
 import QuestionPrompt from '@/components/app/onboarding/QuestionPrompt';
 import ProgressIndicator from '@/components/app/onboarding/ProgressIndicator';
 import { Email } from '@/types/nylasEmail';
+import { AgentService } from '@/services/agent.service';
 
 export default function OnboardingEmailRatingPage() {
   const router = useRouter();
@@ -32,7 +33,7 @@ export default function OnboardingEmailRatingPage() {
     const fetchEmails = async () => {
       try {
         setIsLoading(true);
-        const response = await EmailService.getEmails({ limit: 10 });
+        const response = await EmailService.getOnboardingEmails({ limit: 15 });
         
         if (response.error) {
           toast.error('Failed to load emails. Please try again.');
@@ -101,60 +102,59 @@ export default function OnboardingEmailRatingPage() {
     try {
       setIsSubmitting(true);
       
-      // Get data from localStorage
-      const storedQuestions = localStorage.getItem('onboardingQuestions');
-      const storedAnswers = localStorage.getItem('onboardingAnswers');
+      // Get domain and email from localStorage
       const domain = localStorage.getItem('domain') || undefined;
       
-      const onboardingData: OnboardingFormData = {
-        questions: storedQuestions ? JSON.parse(storedQuestions) : [],
-        answers: storedAnswers ? JSON.parse(storedAnswers) : {},
-        domain,
-        emailRatings,
-        ratedEmails: emails.map(email => ({
-          id: email.id,
-          subject: email.subject || '',
-          from: Array.isArray(email.from) ? email.from : [],
-          snippet: email.snippet || '',
-          date: email.date || 0
-        }))
-      };
+      // Map the emails to the simplified format
+      const simplifiedEmails = emails.map(email => ({
+        id: email.id,
+        subject: email.subject || '',
+        from: Array.isArray(email.from) ? email.from : [],
+        snippet: email.snippet || '',
+        date: email.date || 0
+      }));
       
-      const response = await OnboardingService.submitOnboardingData(onboardingData);
-      
-      if (response.error) {
-        const errorMessage = typeof response.error === 'string' 
-          ? response.error 
-          : response.error.message || 'Failed to save preferences';
-        toast.error(errorMessage);
-        return;
+      try {
+        
+        const emailsJson = JSON.stringify(simplifiedEmails);
+        const ratingsJson = JSON.stringify(emailRatings);
+        
+        localStorage.setItem('ratedEmails', emailsJson);
+        localStorage.setItem('emailRatings', ratingsJson);
+        
+        // Verify the data was saved correctly
+        const savedEmails = localStorage.getItem('ratedEmails');
+        const savedRatings = localStorage.getItem('emailRatings');
+        
+        if (!savedEmails || !savedRatings) {
+          console.error('Failed to save emails or ratings to localStorage');
+        } else {
+          console.log('Successfully saved emails and ratings to localStorage');
+        }
+      } catch (error) {
+        console.error('Error saving emails and ratings to localStorage:', error);
       }
       
-      toast.success('Onboarding completed successfully!');
-      
-      // Clear localStorage
-      localStorage.removeItem('onboardingQuestions');
-      localStorage.removeItem('onboardingAnswers');
-      localStorage.removeItem('domain');
+      toast.success('Email ratings saved successfully!');
       
       // Show loading sequence before redirecting
       setIsLoading(true);
       setIsSubmitting(true);
       setLoadingMessageIndex(0);
       
-      // After 10 seconds, redirect to dashboard
-      setTimeout(() => {
-        router.push('/app/dashboard');
-      }, 10000);
+      const redirectPath = domain ? `/app/onboarding?domain=${domain}` : '/app/onboarding';
       
+      // Add a small delay to show the success message
+      setTimeout(() => {
+        router.push(redirectPath);
+      }, 1500);
     } catch (error) {
-      console.error('Error submitting onboarding data:', error);
-      toast.error('Failed to save your preferences. Please try again.');
-      router.push('/app/dashboard');
-    } finally {
-      // Don't set isSubmitting to false here as we want to keep showing the loading sequence
+      console.error('Error submitting email ratings:', error);
+      toast.error('Failed to complete onboarding. Please try again.');
+      setIsSubmitting(false);
     }
   };
+
 
   if (isLoading) {
     return (
