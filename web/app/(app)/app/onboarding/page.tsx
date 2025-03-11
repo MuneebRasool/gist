@@ -5,20 +5,25 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { AgentService } from '@/services/agent.service';
 import { QuestionWithOptions } from '@/types/agent';
 import { useOnboardingStore } from '@/store/onboarding.store';
-import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { OnboardingService, OnboardingFormData, SimplifiedEmail } from '@/services/agent/onboarding.service';
 
-const loadingMessages = [
-		"Creating your personalized dashboard...",
-		"Analyzing your email preferences...",
-		"Setting up task extraction...",
-		"Finalizing your profile...",
-		"Almost ready to show your dashboard..."
-	];
+// Import extracted components
+import { OnboardingAssistant } from '@/components/app/onboarding/OnboardingAssistant';
+import { QuestionCard } from '@/components/app/onboarding/QuestionCard';
+import { SummaryView } from '@/components/app/onboarding/SummaryView';
+import { LoadingScreen } from '@/components/app/onboarding/LoadingScreen';
+import { NavigationButtons } from '@/components/app/onboarding/NavigationButtons';
+import { ProgressBar } from '@/components/app/onboarding/ProgressBar';
 
+const loadingMessages = [
+	"Creating your personalized dashboard...",
+	"Analyzing your email preferences...",
+	"Setting up task extraction...",
+	"Finalizing your profile...",
+	"Almost ready to show your dashboard..."
+];
 
 const OnboardingPage = () => {
 	const router = useRouter();
@@ -41,6 +46,9 @@ const OnboardingPage = () => {
 
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+	const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+	const [showSummary, setShowSummary] = useState(false);
+	const [assistantMessage, setAssistantMessage] = useState("I'll help you set up your profile. Let's start with a few questions.");
 
 	useEffect(() => {
 		const fetchDomainInference = async () => {
@@ -95,7 +103,6 @@ const OnboardingPage = () => {
 							: 'Please answer these questions to help us personalize your experience.');
 	
 					setSummary(generatedSummary);
-	
 				}
 			} catch (error) {
 				console.error('Error fetching domain inference:', error);
@@ -127,10 +134,39 @@ const OnboardingPage = () => {
 		return () => {
 			if (interval) clearInterval(interval);
 		};
-	}, [isSubmitting, loadingMessages.length]);
+	}, [isSubmitting]);
+
+	// Update assistant message based on current question
+	useEffect(() => {
+		if (questions.length > 0 && currentQuestionIndex < questions.length) {
+			const messages = [
+				"This helps me understand your preferences better.",
+				"Great question! Your answer will help personalize your experience.",
+				"I'm learning more about how you work with each answer.",
+				"This information helps me tailor the experience to your needs."
+			];
+			setAssistantMessage(messages[currentQuestionIndex % messages.length]);
+		} else if (showSummary) {
+			setAssistantMessage("Here's a summary of your choices. Look good?");
+		}
+	}, [currentQuestionIndex, questions.length, showSummary]);
 
 	const handleOptionSelect = (question: string, option: string) => {
 		setAnswer(question, option);
+	};
+
+	const goToNextQuestion = () => {
+		if (currentQuestionIndex < questions.length - 1) {
+			setCurrentQuestionIndex(prev => prev + 1);
+		} else {
+			setShowSummary(true);
+		}
+	};
+
+	const goToPreviousQuestion = () => {
+		if (currentQuestionIndex > 0) {
+			setCurrentQuestionIndex(prev => prev - 1);
+		}
 	};
 
 	const handleSubmit = async () => {
@@ -168,7 +204,6 @@ const OnboardingPage = () => {
 			});
 			const response = await OnboardingService.submitOnboardingData(onboardingData);
 
-
 			console.log('Onboarding submission response:', response);
 			
 			if (response.error) {
@@ -198,22 +233,15 @@ const OnboardingPage = () => {
 
 	if (isLoading || isSubmitting) {
 		return (
-		  <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-r from-[#e6dcda] via-[#cfc6cb] to-[#ced4d8]">
-			<div className="flex flex-col items-center justify-center space-y-8">
-			  <div className="relative">
-				<div className="h-12 w-12 animate-spin rounded-full border-4 border-[#A5B7C8]/30 border-t-[#A5B7C8]" />
-			  </div>
-			  <p className="text-lg font-medium text-gray-600">
-				{isSubmitting ? loadingMessages[loadingMessageIndex] : "Loading your questions..."}
-			  </p>
-			</div>
-		  </div>
+			<LoadingScreen 
+				message={isSubmitting ? loadingMessages[loadingMessageIndex] : "Loading your questions..."} 
+				isSubmitting={isSubmitting}
+			/>
 		);
 	}
-	
 
 	return (
-		<div className='flex min-h-screen items-center justify-center p-4'>
+		<div className='flex min-h-screen items-center justify-center p-4 bg-gradient-to-r from-[#e6dcda] via-[#cfc6cb] to-[#ced4d8]'>
 			<motion.div
 				initial={{ opacity: 0, y: 20 }}
 				animate={{ opacity: 1, y: 0 }}
@@ -221,71 +249,56 @@ const OnboardingPage = () => {
 				className='w-full max-w-xl'
 			>
 				<div className='overflow-hidden rounded-3xl bg-white/40 shadow-sm backdrop-blur-sm'>
-					<div className='border-b border-gray-100 px-8 py-6'>
+					<div className='border-b border-gray-100 px-8 py-6 flex justify-between items-center'>
 						<h2 className='text-2xl font-semibold text-gray-800'>You are,</h2>
+						<ProgressBar 
+							currentQuestionIndex={currentQuestionIndex}
+							totalQuestions={questions.length}
+							showSummary={showSummary}
+						/>
 					</div>
 
 					<div className='p-8'>
 						<div className='space-y-8'>
-							<AnimatePresence>
-								{questions.map((question: QuestionWithOptions, index: number) => (
-									<motion.div
-										key={index}
-										initial={{ opacity: 0, y: 15 }}
-										animate={{ opacity: 1, y: 0 }}
-										transition={{ delay: 0.1 * (index + 1) }}
-										className='space-y-4'
-									>
-										<h3 className='text-base font-medium text-gray-700'>{question.question}</h3>
-										<div className='grid grid-cols-2 gap-4'>
-											{question.options.map((option: string, optIndex: number) => (
-												<motion.div key={optIndex} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-													<Button
-														variant='outline'
-														className={`h-14 w-full rounded-xl border text-base font-medium transition-all duration-200 ${
-															answers[question.question] === option
-																? 'border-gray-400 bg-gray-50 text-gray-900'
-																: 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50/50'
-														}`}
-														onClick={() => handleOptionSelect(question.question, option)}
-													>
-														<span className='block truncate px-2' title={option}>
-															{option}
-														</span>
-													</Button>
-												</motion.div>
-											))}
-										</div>
-									</motion.div>
-								))}
+							{/* Assistant component */}
+							<OnboardingAssistant 
+								message={assistantMessage}
+								currentQuestionIndex={currentQuestionIndex}
+								totalQuestions={questions.length}
+								isShowingSummary={showSummary}
+							/>
+
+							{/* Questions or Summary */}
+							<AnimatePresence mode="wait">
+								{!showSummary && questions.length > 0 && (
+									<QuestionCard
+										key={`question-${currentQuestionIndex}`}
+										question={questions[currentQuestionIndex]}
+										selectedAnswer={answers[questions[currentQuestionIndex]?.question]}
+										onSelectOption={handleOptionSelect}
+									/>
+								)}
+
+								{showSummary && (
+									<SummaryView 
+										questions={questions} 
+										answers={answers} 
+									/>
+								)}
 							</AnimatePresence>
 
-							<div className='mt-10 flex items-center justify-between pt-4'>
-								<motion.div
-									whileHover={!isSubmitting && questions.every((q) => answers[q.question]) ? { scale: 1.02 } : {}}
-									whileTap={!isSubmitting && questions.every((q) => answers[q.question]) ? { scale: 0.98 } : {}}
-									className='w-full'
-								>
-									<Button
-										onClick={handleSubmit}
-										disabled={isSubmitting || questions.length === 0 || !questions.every((q) => answers[q.question])}
-										className={`h-12 w-full rounded-xl text-base font-medium transition-all duration-300 ${
-											isSubmitting || questions.length === 0 || !questions.every((q) => answers[q.question])
-												? 'bg-gray-100 text-gray-400'
-												: 'bg-gray-900 text-white hover:bg-gray-800'
-										}`}
-									>
-										{isSubmitting ? (
-											<div className='flex items-center gap-2'>
-												<Loader2 className='h-4 w-4 animate-spin' />
-												<span>Saving...</span>
-											</div>
-										) : (
-											'Continue'
-										)}
-									</Button>
-								</motion.div>
-							</div>
+							{/* Navigation Buttons */}
+							<NavigationButtons 
+								currentQuestionIndex={currentQuestionIndex}
+								totalQuestions={questions.length}
+								showSummary={showSummary}
+								isSubmitting={isSubmitting}
+								hasCurrentAnswer={!!answers[questions[currentQuestionIndex]?.question]}
+								onPrevious={goToPreviousQuestion}
+								onNext={goToNextQuestion}
+								onSubmit={handleSubmit}
+								onEditAnswers={() => setShowSummary(false)}
+							/>
 						</div>
 					</div>
 				</div>
