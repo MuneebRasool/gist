@@ -89,6 +89,7 @@ class AgentService:
         self,
         user_id: str,
         email,  # Can be either a dictionary or EmailData object
+
     ):
         """
         Extract tasks from email and save them to the database
@@ -119,6 +120,7 @@ class AgentService:
             user = await User.get(id=user_id)
             if user and user.personality and isinstance(user.personality, dict):
                 user_personality = user.personality.get("summary", "")
+
                 print(f"User personality: {user_personality}")
         except Exception as e:
             print(f"Error fetching user personality: {str(e)}")
@@ -177,6 +179,7 @@ class AgentService:
                 ),
                 user_id=user_id,
             )
+
         return True
 
     async def fetch_last_week_emails(self, grant_id: str):
@@ -329,7 +332,6 @@ class AgentService:
             if not isinstance(result, dict):
                 print(f"Invalid content classification result (not a dict): {result}")
                 return {"type": "Drawer"}  # Default to Drawer
-
             # Ensure type is a string and is one of the valid values
             if "type" not in result or not isinstance(result["type"], str):
                 print(
@@ -345,8 +347,8 @@ class AgentService:
                 )
                 result["type"] = "Drawer"  # Default to Drawer
 
+
             return result
         except Exception as e:
             print(f"Error classifying content: {str(e)}")
             return {"type": "3"}  # Default to Drawer
-
