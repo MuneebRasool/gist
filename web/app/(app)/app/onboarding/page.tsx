@@ -40,8 +40,6 @@ const OnboardingPage = () => {
 	} = useOnboardingStore();
 
 	const [isSubmitting, setIsSubmitting] = useState(false);
-	const [ratedEmails, setRatedEmails] = useState<SimplifiedEmail[]>([]);
-	const [emailRatings, setEmailRatings] = useState<Record<string, number>>({});
 	const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
 
 	useEffect(() => {
@@ -51,139 +49,53 @@ const OnboardingPage = () => {
 				router.push('/app/dashboard/settings');
 				return;
 			}
-
+	
+			setIsLoading(true);
+	
 			try {
-				setIsLoading(true);
-				
+				// Ensure localStorage is only accessed in the client
+				if (typeof window === 'undefined') return;
+	
 				// Get rated emails and ratings from localStorage
 				let storedEmails: SimplifiedEmail[] = [];
 				let storedRatings: Record<string, number> = {};
-				
+	
 				try {
-					console.log('Retrieving emails and ratings from localStorage');
-					
 					const emailsJson = localStorage.getItem('ratedEmails');
 					const ratingsJson = localStorage.getItem('emailRatings');
-					
-					console.log('Emails JSON exists:', !!emailsJson);
-					console.log('Ratings JSON exists:', !!ratingsJson);
-					
-					if (emailsJson) {
-						storedEmails = JSON.parse(emailsJson);
-						console.log('Parsed emails count:', storedEmails.length);
-						
-						if (storedEmails.length > 0) {
-							console.log('First email sample:', storedEmails[0]);
-						}
-						
-						setRatedEmails(storedEmails);
-					} else {
-						console.warn('No rated emails found in localStorage');
-					}
-					
-					if (ratingsJson) {
-						storedRatings = JSON.parse(ratingsJson);
-						console.log('Parsed ratings count:', Object.keys(storedRatings).length);
-						setEmailRatings(storedRatings);
-					} else {
-						console.warn('No email ratings found in localStorage');
-					}
-				} catch (error) {
-					console.error('Error parsing stored emails or ratings:', error);
+	
+					storedEmails = emailsJson ? JSON.parse(emailsJson) : [];
+					storedRatings = ratingsJson ? JSON.parse(ratingsJson) : {};
+				} catch (parseError) {
+					console.error('Error parsing stored emails or ratings:', parseError);
 				}
-				
-				// Check if we already have questions in localStorage
-				const storedQuestionsJson = localStorage.getItem('questions');
-				const storedSummary = localStorage.getItem('summary');
-				
-				let shouldFetchFromAPI = true;
-				
-				if (storedQuestionsJson) {
-					try {
-						const parsedQuestions = JSON.parse(storedQuestionsJson);
-						if (Array.isArray(parsedQuestions) && parsedQuestions.length > 0) {
-							console.log('Using stored questions from localStorage');
-							setQuestions(parsedQuestions);
-							
-							if (storedSummary) {
-								setSummary(storedSummary);
-							} else {
-								setSummary('Please answer these questions to help us personalize your experience.');
-							}
-							
-							shouldFetchFromAPI = false;
-						}
-					} catch (error) {
-						console.error('Error parsing stored questions:', error);
-						// Continue with API call if parsing fails
-					}
+	
+				// Call domain inference API
+				const response = await AgentService.inferDomain(email, storedEmails, storedRatings);
+				console.log('Domain inference response:', response);
+	
+				if (response.error) {
+					console.error('Domain inference error:', response.error);
+					toast.error('Failed to load onboarding questions. Please try again.');
+					router.push('/app/dashboard');
+					return;
 				}
-				
-				// If we have rated emails but no questions, or if we need to fetch from API
-				if (shouldFetchFromAPI && storedEmails.length > 0) {
-					console.log('Fetching questions using rated emails');
-					
-					// Use the rated emails to get personalized questions
-					const response = await AgentService.inferDomain(email, storedEmails, storedRatings);
-					
-					console.log('Domain inference response:', response);
-					
-					if (response.error) {
-						console.error('Domain inference error:', response.error);
-						toast.error('Failed to load onboarding questions. Please try again.');
-						router.push('/app');
-						return;
-					}
-					
-					if (response.data) {
-						console.log('Domain inference data:', response.data);
-						
-						setQuestions(response.data.questions || []);
-						
-						if (response.data.summary) {
-							setSummary(response.data.summary);
-						} else if (response.data.domain) {
-							setSummary(
-								`Based on your email, we've personalized some questions for your ${response.data.domain} context.`
-							);
-						} else {
-							setSummary('Please answer these questions to help us personalize your experience.');
-						}
-						
-						// Save to localStorage for future use
-						localStorage.setItem('questions', JSON.stringify(response.data.questions || []));
-						if (response.data.summary) {
-							localStorage.setItem('summary', response.data.summary);
-						}
-						if (response.data.domain) {
-							localStorage.setItem('domain', response.data.domain);
-						}
-					}
-				} else if (shouldFetchFromAPI) {
-					// Fallback to basic domain inference if no rated emails
-					console.log('Fetching questions using basic domain inference');
-					
-					const response = await AgentService.inferDomain(email);
-					
-					if (response.error) {
-						toast.error('Failed to load onboarding questions. Please try again.');
-						router.push('/app');
-						return;
-					}
-					
-					if (response.data) {
-						setQuestions(response.data.questions || []);
-						
-						if (response.data.summary) {
-							setSummary(response.data.summary);
-						} else if (response.data.domain) {
-							setSummary(
-								`Based on your email, we've personalized some questions for your ${response.data.domain} context.`
-							);
-						} else {
-							setSummary('Please answer these questions to help us personalize your experience.');
-						}
-					}
+	
+				if (response.data) {
+					console.log('Domain inference data:', response.data);
+	
+					// Set questions
+					setQuestions(response.data.questions || []);
+	
+					// Set summary based on response data
+					let generatedSummary =
+						response.data.summary ||
+						(response.data.domain
+							? `Based on your email, we've personalized some questions for your ${response.data.domain} context.`
+							: 'Please answer these questions to help us personalize your experience.');
+	
+					setSummary(generatedSummary);
+	
 				}
 			} catch (error) {
 				console.error('Error fetching domain inference:', error);
@@ -193,10 +105,13 @@ const OnboardingPage = () => {
 				setIsLoading(false);
 			}
 		};
-
-		fetchDomainInference();
+	
+		// Run only on client side
+		if (typeof window !== 'undefined') {
+			fetchDomainInference();
+		}
 	}, [email, router, setIsLoading, setQuestions, setSummary]);
-
+	
 	// Add effect to cycle through loading messages when isSubmitting is true
 	useEffect(() => {
 		let interval: NodeJS.Timeout;
@@ -233,18 +148,8 @@ const OnboardingPage = () => {
 			}
 
 			// Save answers and other onboarding data to localStorage
-			try {
-				localStorage.setItem('onboardingAnswers', JSON.stringify(answers));
-				localStorage.setItem('onboardingQuestions', JSON.stringify(questions));
-				localStorage.setItem('onboardingSummary', summary);
-
-				if (email) {
-					localStorage.setItem('userEmail', email);
-				}
-			} catch (error) {
-				console.error('Error saving to localStorage:', error);
-			}
-
+			const emailRatings = JSON.parse(localStorage.getItem('emailRatings') || '{}');
+			const ratedEmails = JSON.parse(localStorage.getItem('ratedEmails') || '[]');
 			// Prepare the onboarding data to send to the backend
 			const onboardingData: OnboardingFormData = {
 				questions: questions,
@@ -261,16 +166,8 @@ const OnboardingPage = () => {
 				emailRatings: Object.keys(emailRatings).length,
 				ratedEmails: ratedEmails.length
 			});
-			// Submit all data to the backend
 			const response = await OnboardingService.submitOnboardingData(onboardingData);
 
-			localStorage.removeItem('onboardingQuestions');
-			localStorage.removeItem('onboardingAnswers');
-			localStorage.removeItem('onboardingSummary');
-			localStorage.removeItem('ratedEmails');
-			localStorage.removeItem('emailRatings');
-			localStorage.removeItem('domain');
-			
 
 			console.log('Onboarding submission response:', response);
 			

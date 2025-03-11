@@ -102,3 +102,6 @@ Analyze the user’s email domain to infer their professional field and role, th
     ],
     "summary": "User has a corporate email, likely in a managerial or technical role. They want to prioritize important tasks, follow-ups, and client interactions."
 }
+
+
+NOTE : question can either have 2 options or 4
