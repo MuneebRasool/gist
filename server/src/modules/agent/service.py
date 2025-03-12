@@ -298,11 +298,41 @@ class AgentService:
                         print(f"Found {len(items)} tasks in email")
                 
                 for item in items:
+                    # Extract task features
+                    task_context = context + f"\ntask: {item}"
+                    utility_task_features_coroutine = self.utility_features_extractor.process(task_context)
+                    cost_task_features_coroutine = self.cost_features.process(task_context)
+
+                    # Gather results
+                    utility_result, cost_result = await asyncio.gather(
+                        utility_task_features_coroutine,
+                        cost_task_features_coroutine
+                    )
+
+                    utility_features = utility_result.get('utility_features', {})
+                    cost_features = cost_result.get('cost_features', {})
+
+                    # Use the trained model to predict scores
+                    features = scoring_model.extract_features({
+                        'priority': item.get("priority", "high"),
+                        'deadline': item.get("due_date", "No Deadline"),
+                        'utility_features': utility_features,
+                        'cost_features': cost_features
+                    })
+
+                    utility_score = scoring_model.predict_utility(features)
+                    cost_score = scoring_model.predict_cost(features)
+                    relevance_score = scoring_model.calculate_relevance(utility_score, cost_score)
+
+                    # Create task with predicted scores
                     task = TaskNode(
                         task_id=str(uuid.uuid4()),
                         task=item.get("title",""),
                         deadline=item.get("due_date","No Deadline"),
                         priority=item.get("priority","high"),
+                        utility_score=utility_score,
+                        cost_score=cost_score,
+                        relevance_score=relevance_score
                     ).save()
                     email_node.tasks.connect(task)
 

@@ -53,4 +53,13 @@ export class TasksService {
 	static async deleteTask(taskId: string) {
 		return await ApiClient.delete(`/api/tasks/${taskId}`);
 	}
+
+	/**
+	 * Reorder a task (move up/down)
+	 * @param taskId Task ID
+	 * @param direction Direction to move ('up' or 'down')
+	 */
+	static async reorderTask(taskId: string, direction: 'up' | 'down') {
+		return await ApiClient.post<TaskResponse>(`/api/tasks/${taskId}/reorder`, { direction });
+	}
 }

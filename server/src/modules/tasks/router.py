@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException, status,Depends
 from typing import List
-from .schemas import TaskCreate, TaskUpdate, TaskResponse
+from .schemas import TaskCreate, TaskUpdate, TaskResponse, TaskReorder
 from .service import TaskService
+from src.models.task_scoring import scoring_model
 from src.dependencies import get_current_user
 from src.models.user import User
 
@@ -61,3 +62,18 @@ async def delete_task(task_id: str):
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Task with ID {task_id} not found"
         )
+
+@router.post("/{task_id}/reorder", response_model=TaskResponse)
+async def reorder_task(task_id: str, reorder_data: TaskReorder):
+    """
+    Reorder a task and update its scores based on the direction
+    - Moving up increases utility score by 0.1
+    - Moving down increases cost score by 0.1
+    """
+    task = await TaskService.reorder_task(task_id, reorder_data.direction)
+    if not task:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Task with ID {task_id} not found"
+        )
+    return task

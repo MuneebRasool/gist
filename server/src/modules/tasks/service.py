@@ -1,7 +1,8 @@
 from datetime import datetime, UTC
-from typing import List, Optional
+from typing import List, Optional, Literal
 from src.models.graph.nodes import TaskNode, EmailNode, UserNode
 from .schemas import TaskCreate, TaskUpdate
+from src.models.task_scoring import scoring_model
 import uuid
 from neomodel import db
 
@@ -113,6 +114,54 @@ class TaskService:
             return True
         except TaskNode.DoesNotExist:
             return False
+
+    @staticmethod
+    async def reorder_task(task_id: str, direction: Literal["up", "down"]) -> Optional[TaskNode]:
+        """
+        Reorder a task and update its scores based on direction
+        - Moving up increases utility score by 0.1
+        - Moving down increases cost score by 0.1
+        """
+        try:
+            task = TaskNode.nodes.get(task_id=task_id)
+            
+            # Get current scores
+            utility_score = float(task.utility_score or 0.5)
+            cost_score = float(task.cost_score or 0.5)
+            
+            # Update scores based on direction
+            if direction == "up":
+                utility_score = min(1.0, utility_score + 0.1)
+            else:  # down
+                cost_score = min(1.0, cost_score + 0.1)
+            
+            # Train the SGDRegressor with new scores
+            features = scoring_model.extract_features({
+                'priority': task.priority,
+                'deadline': task.deadline,
+                'utility_features': {},  # Add utility features if available
+                'cost_features': {}      # Add cost features if available
+            })
+            
+            scoring_model.partial_fit(features, {
+                'utility': utility_score,
+                'cost': cost_score
+            })
+            
+            # Calculate new relevance score
+            relevance_score = scoring_model.calculate_relevance(utility_score, cost_score)
+            
+            # Update task in Neo4j
+            task.utility_score = utility_score
+            task.cost_score = cost_score
+            task.relevance_score = relevance_score
+            task.updatedAt = datetime.now(UTC)
+            task.save()
+            
+            return task
+            
+        except TaskNode.DoesNotExist:
+            return None
 
     @staticmethod
     async def add_task_dependency(task_id: str, depends_on_task_id: str) -> bool:

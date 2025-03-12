@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, Literal
 from datetime import datetime
 
 class TaskCreate(BaseModel):
@@ -29,3 +29,6 @@ class TaskResponse(BaseModel):
     updatedAt: datetime = Field(..., description="When the task was last updated")
     
     # Note: userId is not included as it's accessed through email->user relationship
+
+class TaskReorder(BaseModel):
+    direction: Literal["up", "down"] = Field(..., description="Direction to move the task")
