@@ -9,7 +9,7 @@ from src.models.user import User
 from .dependencies import get_nylas_service
 from src.modules.auth.schemas import UserResponse
 from src.modules.nylas.schemas import VerificationCode
-from src.modules.agent.service import AgentService
+from src.modules.agent.onboarding_service import OnboardingAgentService
 from src.config.settings import (
     NYLAS_CLIENT_ID,
     NYLAS_API_KEY,
@@ -22,6 +22,7 @@ router = APIRouter(
     tags=["nylas"],
 )
 
+agent = OnboardingAgentService()
 
 @router.get("/auth-url")
 async def nylas_auth(

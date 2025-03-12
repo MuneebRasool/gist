@@ -15,6 +15,18 @@ export interface SimplifiedEmail {
   date?: number;
 }
 
+export interface QuestionWithOptions {
+  question: string;
+  options: string[];
+}
+
+export interface DomainInferenceResponse {
+  success: boolean;
+  message: string;
+  questions: QuestionWithOptions[];
+  summary: string;
+}
+
 export interface OnboardingFormData {
   // Step 1: Domain-specific questions and answers
   questions: {
@@ -74,6 +86,37 @@ export class OnboardingService {
             });
           });
         }
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Update domain inference with rated emails
+   * @param email User's email address
+   * @param ratedEmails List of emails rated by the user
+   * @returns Domain inference results with questions
+   */
+  static async updateDomainInference(email: string, ratedEmails: SimplifiedEmail[]) {
+    console.log('🟡 ONBOARDING SERVICE: Updating domain inference with rated emails');
+    
+    // Deep clone and log exactly what we're sending
+    const payload = {
+      email,
+      ratedEmails
+    };
+    console.log('🟡 ONBOARDING SERVICE: Domain inference payload:', JSON.parse(JSON.stringify(payload)));
+    
+    try {
+      const response = await ApiClient.post<DomainInferenceResponse>('/api/agent/infer-domain', payload);
+      console.log('🟡 ONBOARDING SERVICE: Domain inference response:', response);
+      return response;
+    } catch (error) {
+      console.error('🟡 ONBOARDING SERVICE: Error during domain inference API call:', error);
+      if (error && (error as any).response) {
+        const axiosError = error as any;
+        console.error('🟡 ONBOARDING SERVICE: Response status:', axiosError.response.status);
+        console.error('🟡 ONBOARDING SERVICE: Response data:', axiosError.response.data);
       }
       throw error;
     }

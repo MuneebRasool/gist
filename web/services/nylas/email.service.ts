@@ -42,6 +42,13 @@ export default class EmailService {
 			...options,
 		});
 	}
+
+	static async getOnboardingEmails(options: GetEmailOptions) {
+		return await ApiClient.get<EmailResponse>('/api/nylas/email/onboarding/message', {
+			...options,
+		});
+	}
+
 	static async getEmailById(messageId: string) {
 		return await ApiClient.get<Email>(`/api/nylas/email/messages/${messageId}`);
 	}

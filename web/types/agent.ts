@@ -54,6 +54,17 @@ export interface ContentClassificationResponse {
  */
 export interface DomainInferenceRequest {
 	email: string;
+	ratedEmails?: Array<{
+		id: string;
+		subject: string;
+		from: Array<{
+			name: string;
+			email: string;
+		}>;
+		snippet?: string;
+		date?: number;
+	}>;
+	ratings?: Record<string, number>;
 }
 
 /**

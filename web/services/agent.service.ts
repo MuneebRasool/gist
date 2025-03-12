@@ -1,5 +1,6 @@
 import { ApiClient } from '@/lib/api-client';
 import { ProcessEmailsRequest, SpamClassificationResponse, ExtractTaskBatchResponse, ContentClassificationResponse, ContentClassificationRequest, DomainInferenceRequest, DomainInferenceResponse } from '@/types/agent';
+import { SimplifiedEmail } from './agent/onboarding.service';
 
 /**
  * Agent service for email processing and task extraction
@@ -33,9 +34,10 @@ export class AgentService {
 	/**
 	 * Infer user's profession and context from their email domain
 	 * @param email User's email address
+	 * @param ratedEmails Optional list of rated emails to enhance inference
 	 */
-	static async inferDomain(email: string) {
-		const request: DomainInferenceRequest = { email };
+	static async inferDomain(email: string, ratedEmails?: SimplifiedEmail[], ratings?: Record<string, number>) {
+		const request: DomainInferenceRequest = { email, ratedEmails, ratings };
 		return await ApiClient.post<DomainInferenceResponse>('/api/agent/infer-domain', request);
 	}
 }
