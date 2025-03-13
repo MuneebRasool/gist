@@ -4,16 +4,19 @@
 Analyze the provided email content and classify it into one of the following categories:  
 
 ### **1. Content Type**  
-- 1.  **Library** → Important references such as OTPs, personal emails from friends or family, and saved information.  
-- 2.  **Main Focus-View** → High-priority emails containing urgent tasks, deadlines, or time-sensitive information.  
-- 3.  **Drawer** → Low-priority content like newsletters, articles, advertisements, and promotional emails.  
+- **Library** → Important references such as OTPs, personal emails from friends or family, and saved information.  
+- **Main Focus-View** → High-priority emails containing urgent tasks, deadlines, or time-sensitive information.  
+- **Drawer** → Low-priority content like newsletters, articles, advertisements, and promotional emails.  
 
 ## **Analysis Approach**  
 1. **Identify Structural Patterns:**  
    - Subject line, sender, and formatting cues.  
    - Urgency indicators (e.g., deadlines, alerts, action items).  
    - Differentiation between personal, transactional, and promotional emails.  
-2. **Determine the Most Relevant Category:**  
+2. **Leverage User Personality Insights:**  
+   - Adapt classification based on the user's behavior and preferences for handling emails.  
+   - Prioritize emails that align with the user's work habits and focus areas.  
+3. **Determine the Most Relevant Category:**  
    - If the email requires urgent attention or contains deadlines → **Main Focus-View**  
    - If the email is a reference or contains personal communication → **Library**  
    - If the email is promotional, informational, or non-urgent → **Drawer**  
@@ -25,12 +28,3 @@ Provide the classification in the following JSON format:
 {
   "type": "Library"
 }
-Do not include any additional explanations beyond the JSON response.
-
-
-
-
-
-
-
-

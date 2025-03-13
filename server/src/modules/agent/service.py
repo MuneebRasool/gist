@@ -2,7 +2,7 @@
 Service for handling agent-related operations.
 """
 
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 from src.agents.spam_classifier import SpamClassifier
 from src.agents.task_extractor import TaskExtractor
 from src.agents.personality_summarizer import PersonalitySummarizer
@@ -32,19 +32,6 @@ class AgentService:
         self.cost_features = CostFeaturesExtractor()
         self.content_classifier = ContentClassifier()
         self.domain_inference_agent = DomainInferenceAgent()
-
-    async def classify_spams(self, emails: List[dict]) -> dict:
-        """
-        Process batch of emails whether these are spam or not spam
-
-        Args:
-            user_id: The ID of the user
-            emails: List of email objects containing message_id, subject, body, etc.
-                   Can be either dictionaries or EmailData objects
-
-        Returns:
-            dict: Results of processing including tasks and personality insights
-        """
 
     async def classify_spams(self, emails: List[dict]) -> dict:
         """

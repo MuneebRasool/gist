@@ -1,7 +1,7 @@
 import { TaskResponse } from '@/types/tasks';
 import { Card, CardContent } from '@/components/ui/card';
 import React, { useState } from 'react';
-import { CalendarDays, Mail, Loader2, AlertCircle, Video, Phone, ShoppingBag, Bug, BarChart } from 'lucide-react';
+import { CalendarDays, Mail, Loader2, AlertCircle, Video, Phone, ShoppingBag, Bug, BarChart, GripVertical } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -114,6 +114,9 @@ const TaskCard = ({ task }: { task: TaskResponse }) => {
 										{task.deadline}
 									</Badge>
 								)}
+								<div className="opacity-0 group-hover:opacity-70 transition-opacity cursor-grab">
+									<GripVertical className="h-5 w-5 text-gray-400" />
+								</div>
 							</div>
 						</div>
 
