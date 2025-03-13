@@ -29,14 +29,20 @@ jobs:
           INSTANCE_IP=$(aws lightsail get-instance --instance-name $INSTANCE_NAME --query 'instance.publicIpAddress' --output text)
           echo "INSTANCE_IP=${INSTANCE_IP}" >> $GITHUB_ENV
 
+      - name: Setup SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEFAULT_SSH_PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/github
+          chmod 600 ~/.ssh/github
+          ls -lah ~/.ssh/
+          cat ~/.ssh/github | head -n 5  # Debug: Print first 5 lines of SSH key
+
       - name: SSH into Lightsail Instance and Deploy
         run: |
-          # Copy the SSH key
-          mkdir -p ~/.ssh
-          echo "${{ secrets.DEFAULT_SSH_PRIVATE_KEY }}" > ~/.ssh/github
-          chmod 400 ~/.ssh/github
+          echo "Trying to SSH into $INSTANCE_IP..."
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/github ubuntu@${{ env.INSTANCE_IP }} "echo 'SSH connection successful'"
 
-          echo "INSTANCE_IP: $INSTANCE_IP"
-
-          # Deploying Now..!!
+      - name: Run Deployment Script
+        run: |
+          echo "Deploying application..."
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/github ubuntu@${{ env.INSTANCE_IP }} 'bash -s' < ./deploy.sh
