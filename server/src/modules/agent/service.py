@@ -20,7 +20,7 @@ import uuid
 from ...agents.task_cost_features_extractor import CostFeaturesExtractor
 from ...agents.task_utility_features_extractor import UtilityFeaturesExtractor
 from ...utils.get_text_from_html import get_text_from_html
-from ...utils.get_utility_score import get_relevance_score
+from ...utils.get_task_scores import calculate_task_scores
 
 
 class AgentService:
@@ -148,9 +148,13 @@ class AgentService:
             classification = classification_result.get("type", "Drawer")
 
             print("classification", classification)
-            # Calculate relevance score
-            relevance_score, utility_score, cost_score = get_relevance_score(
-                utility_features, cost_features
+            
+            # Use the new scoring model to calculate scores
+            relevance_score, utility_score, cost_score = calculate_task_scores(
+                utility_features=utility_features,
+                cost_features=cost_features,
+                priority=item.get("priority", "medium"),
+                deadline=item.get("due_date")
             )
 
             await TaskService.create_task(
@@ -160,8 +164,8 @@ class AgentService:
                     priority=item.get("priority"),
                     messageId=email_id,
                     relevance_score=relevance_score,
-                    utility_score=utility_score.get("total_utility_score"),
-                    cost_score=cost_score.get("total_cost_score"),
+                    utility_score=utility_score,
+                    cost_score=cost_score,
                     classification=classification,
                 ),
                 user_id=user_id,

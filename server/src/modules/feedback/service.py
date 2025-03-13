@@ -10,7 +10,7 @@ class FeedbackService:
         """
         Process task reordering feedback and update task scores
         """
-        task = self._get_task(request.task_id)
+        task = self._get_task(request.task_id, request.classification)
 
         task_above = self._get_task(request.task_above_id, request.classification) if request.task_above_id else None
         task_below = self._get_task(request.task_below_id, request.classification) if request.task_below_id else None
