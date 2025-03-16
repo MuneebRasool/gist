@@ -77,6 +77,7 @@ class AgentService:
         self,
         user_id: str,
         email,
+        user_personality: str = None,
     ):
         """
         Extract tasks from email and save them to the database
@@ -84,7 +85,7 @@ class AgentService:
             user_id: The ID of the user
             email: Email object containing id, subject, body, etc.
                   Can be either a dictionary or EmailData object
-            user_persona: Optional user persona information
+            user_personality: Optional user persona information
         Returns:
             bool: True if tasks were successfully extracted and saved
         """
@@ -101,15 +102,14 @@ class AgentService:
             print(f"Warning: Unsupported email type: {type(email)}")
             return False
 
-        # Fetch user personality if available
-        user_personality = None
-        try:
-            user = await User.get(id=user_id)
-            if user and user.personality and isinstance(user.personality, dict):
-                user_personality = user.personality.get("summary", "")
-
-        except Exception as e:
-            print(f"Error fetching user personality: {str(e)}")
+        # If user_personality is not provided, fetch it
+        if user_personality is None:
+            try:
+                user = await User.get(id=user_id)
+                if user and user.personality and isinstance(user.personality, dict):
+                    user_personality = user.personality.get("summary", "")
+            except Exception as e:
+                print(f"Error fetching user personality: {str(e)}")
 
         # Extract tasks using personality data if available
         task_items = await self.extract_tasks(email_body, user_personality)
@@ -145,10 +145,6 @@ class AgentService:
             utility_features = utility_result.get("utility_features", {})
             cost_features = cost_result.get("cost_features", {})
             classification = classification_result.get("type", "Drawer")
-
-            # print("utility_features", utility_features)
-            # print("cost_features", cost_features)
-            # print("classification", classification)
             
             # Use the new scoring model to calculate scores with user-specific models
             relevance_score, utility_score, cost_score = await calculate_task_scores(
@@ -264,7 +260,7 @@ class AgentService:
 
                 # Process for each user
                 for user in users:
-                    # Fetch user personality if available
+                    # Fetch user personality once for all operations
                     user_personality = None
                     if user.personality:
                         # If personality is a list, use the most recent one
@@ -304,6 +300,9 @@ class AgentService:
                                 priority=task.get("priority", "high"),
                             ).save()
                             email_node.tasks.connect(task_node)
+                        
+                        # Pass the user_personality to extract_and_save_tasks to avoid fetching it again
+                        await self.extract_and_save_tasks(user.id, email, user_personality)
 
                 return True
         except Exception as e:

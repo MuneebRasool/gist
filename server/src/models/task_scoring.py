@@ -31,75 +31,90 @@ class TaskScoringModel:
         # Weights for relevance score calculation
         self.alpha = 0.6  # Weight for utility score
         self.beta = 0.4   # Weight for cost score
-        
-        # Feature mappings
+
         self.utility_mappings = {
             "priority": {
-                "high": 0.8,
+                "high": 1.0,
                 "medium": 0.5,
-                "low": 0.2
-            },
-            "intrinsic_interest": {
-                "high": 0.5,
-                "moderate": 0.3,
                 "low": 0.1
             },
-            "user_personalization": {
-                "important": 0.2,
-                "standard": 0.0
+            "intrinsic_interest": {
+                "high": 1.0,
+                "moderate": 0.5,
+                "low": 0.1
+            },
+            "user_emphasis": {
+                "high": 1.0,
+                "low": 0.0
             },
             "task_type_relevance": {
-                "high": 0.3,
-                "medium": 0.2,
+                "high": 1.0,
+                "medium": 0.5,
                 "low": 0.1
             },
             "emotional_salience": {
-                "strong": 0.25,
-                "weak": 0.05
-            },
-            "user_feedback": {
-                "emphasized": 0.25,
-                "standard": 0.0
+                "strong": 1.0,
+                "weak": 0.1
             },
             "domain_relevance": {
-                "high": 0.2,
+                "high": 1.0,
                 "low": 0.0
             },
             "novel_task": {
-                "high": 0.15,
+                "high": 1.0,
                 "low": 0.0
             },
             "reward_pathways": {
-                "yes": 0.2,
-                "no": 0.0
-            },
-            "social_collaborative_signals": {
-                "yes": 0.1,
+                "yes": 1.0,
                 "no": 0.0
             },
             "time_of_day_alignment": {
-                "appropriate": 0.1,
+                "appropriate": 1.0,
                 "inappropriate": 0.0
+            },
+            "learning_opportunity": {
+                "high": 1.0,
+                "low": 0.0
+            },
+            "urgency": {
+                "high": 1.0,
+                "medium": 0.5,
+                "low": 0.1
             }
         }
+
         
         self.cost_mappings = {
             "task_complexity": {
-                "high": 0.6,
-                "medium": 0.3,
-                "low": 0.1
-            },
-            "spam_probability": {
-                "high": 0.8,
-                "medium": 0.4,
-                "low": 0.1
+                5: 1.0,
+                4: 0.8,
+                3: 0.6,
+                2: 0.4,
+                1: 0.2
             },
             "emotional_stress_factor": {
-                "high": 0.5,
-                "medium": 0.3,
+                "high": 1.0,
+                "medium": 0.5,
                 "low": 0.1
+            },
+            "location_dependencies": {
+                "none": 0.0,
+                "1": 0.2,
+                "2": 0.5,
+                "3 or more": 1.0
+            },
+            "resource_requirements": {
+                "none": 0.0,
+                "1": 0.2,
+                "2": 0.5,
+                "3 or more": 1.0
+            },
+            "interruptibility": {
+                "high": 1.0,
+                "low": 0.0
             }
         }
+
         
     def _encode_priority(self, priority: str) -> float:
         """Convert priority string to numerical value"""
@@ -110,57 +125,9 @@ class TaskScoringModel:
         }
         return priority_map.get(priority.lower(), 0.5)
     
-    def _get_days_to_deadline(self, deadline: str) -> float:
-        """Calculate days until deadline"""
-        if not deadline or deadline == "No Deadline":
-            return 30.0  # Default to 30 days if no deadline
-        try:
-            deadline_date = datetime.strptime(deadline, "%Y-%m-%d")
-            days = (deadline_date - datetime.now()).days
-            return float(max(0, days))  # Ensure non-negative
-        except:
-            return 30.0
-    
-    def _convert_time_to_cost(self, time_estimate: str) -> float:
-        """Converts time estimate strings to a cost value"""
-        cost = 0.1
-        time_lower = time_estimate.lower()
-
-        if "minute" in time_lower:
-            try:
-                minutes = float(time_lower.split("_")[0])
-                hours = minutes / 60
-                cost = min(1.0, hours * 0.1)  # 0.1 per hour, capped at 1.0
-            except (ValueError, IndexError):
-                cost = 0.05  # Default for minutes if parsing fails
-        elif "hour" in time_lower:
-            try:
-                hours = float(time_lower.split("_")[0])
-                cost = min(1.0, hours * 0.1)  # 0.1 per hour, capped at 1.0
-            except (ValueError, IndexError):
-                cost = 0.1  # Default for hours if parsing fails
-        elif "day" in time_lower:
-            try:
-                days = float(time_lower.split("_")[0])
-                hours = days * 8  # Assuming 8-hour workdays
-                cost = min(1.0, hours * 0.1)  # 0.1 per hour, capped at 1.0
-            except (ValueError, IndexError):
-                cost = 0.5  # Default for days if parsing fails
-        elif "week" in time_lower:
-            try:
-                weeks = float(time_lower.split("_")[0])
-                hours = weeks * 40  # Assuming 40-hour work weeks
-                cost = min(1.0, hours * 0.1)  # 0.1 per hour, capped at 1.0
-            except (ValueError, IndexError):
-                cost = 0.8  # Default for weeks if parsing fails
-
-        return cost
-
     def _get_feature_value(self, feature: str, value: str, mappings: Dict) -> float:
         """Get numerical value for a feature using appropriate mapping"""
-        if feature == "time_required":
-            return self._convert_time_to_cost(value)
-        elif feature == "location_dependencies":
+        if feature == "location_dependencies":
             if value == "none":
                 return 0.0
             try:

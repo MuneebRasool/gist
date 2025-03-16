@@ -9,9 +9,8 @@ from src.agents.personality_summarizer import PersonalitySummarizer
 from src.agents.content_classifier import ContentClassifier
 from src.agents.email_domain_inferencer import DomainInferenceAgent
 from src.models.user import User
-from src.modules.nylas.service import NylasService
+# from src.modules.nylas.service import NylasService
 from src.modules.agent.service import AgentService
-import datetime
 
 
 from .schemas import EmailData
@@ -204,12 +203,27 @@ class OnboardingAgentService:
             print(f"Processing {len(non_spam_emails)} non-spam emails")
 
             # Process non-spam emails
+            #fetch user's personality
+            user = await User.get(id=user_id)
+            user_personality = None
+            if user.personality:
+                        if (
+                            isinstance(user.personality, list)
+                            and len(user.personality) > 0
+                        ):
+                            user_personality = user.personality[-1]
+                        # If personality is a string, use it directly
+                        elif isinstance(user.personality, str):
+                            user_personality = user.personality
+                        # If personality is a dict, convert to string
+                        elif isinstance(user.personality, dict):
+                            user_personality = str(user.personality)
             if non_spam_emails:
                 # Extract and save tasks from each non-spam email
                 task_extraction_tasks = []
                 for email in non_spam_emails:
                     try:
-                        task = self.agent.extract_and_save_tasks(user_id, email)
+                        task = self.agent.extract_and_save_tasks(user_id, email, user_personality)
                         task_extraction_tasks.append(task)
                     except Exception as e:
                         print(f"Error creating task extraction for email: {str(e)}")
@@ -418,3 +432,5 @@ class OnboardingAgentService:
 #   generate few questions for user to answer based on his email domain and marked emails
 #   send questions to user, record his answer, generate personality based on that. (let generate 10 points about user based on all the info)
 #   generate tasks based on personality and email content
+
+
