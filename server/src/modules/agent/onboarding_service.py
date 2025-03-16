@@ -94,6 +94,7 @@ class OnboardingAgentService:
                         else:
                             # Try get method as fallback
                             email_body = getattr(email, "body", "") or getattr(email, "snippet", "")
+                            print(f"Used getattr fallback method, body length: {len(email_body)}")
                             # print(f"Used getattr fallback method, body length: {len(email_body)}")
                             
                         if not email_body:

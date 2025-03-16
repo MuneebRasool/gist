@@ -1,7 +1,8 @@
 from openai import AsyncOpenAI
 from src.config import settings
-from langsmith.wrappers import wrap_openai
 import json
+from src.tools import get_task_deadline
+
 class BaseAgent:
     """
     Base class for all agents.
@@ -14,10 +15,10 @@ class BaseAgent:
             api_key= settings.LLM_API_KEY,
     ):
         self.model = model
-        self.client = wrap_openai(AsyncOpenAI(
+        self.client = AsyncOpenAI(
             base_url=base_url,
             api_key=api_key,
-        ))
+        )
 
     async def execute(
         self, 
@@ -112,3 +113,19 @@ class BaseAgent:
             if response_format == "json":
                 return {"error": f"API error: {str(e)}"}
             return f"Error: {str(e)}"
+            
+    async def _execute_tool_function(self, function_name, function_args):
+        """
+        Execute a tool function with the given arguments
+        
+        Args:
+            function_name: The name of the function to execute
+            function_args: The arguments to pass to the function
+            
+        Returns:
+            The result of the function execution
+        """
+        if function_name == "get_task_deadline":
+            return get_task_deadline(**function_args)
+        else:
+            raise ValueError(f"Unknown function: {function_name}")

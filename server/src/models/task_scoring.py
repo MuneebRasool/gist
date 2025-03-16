@@ -149,6 +149,17 @@ class TaskScoringModel:
                 feature_values.append(self._get_feature_value(feature, value, mappings))
         return np.array(feature_values)
 
+    def _get_days_to_deadline(self, deadline: str) -> float:
+        """Calculate days until deadline"""
+        if not deadline or deadline == "No Deadline":
+            return 30.0  # Default to 30 days if no deadline
+        try:
+            deadline_date = datetime.strptime(deadline, "%Y-%m-%d")
+            days = (deadline_date - datetime.now()).days
+            return float(max(0, days))  # Ensure non-negative
+        except ValueError:
+            return 30.0
+
     def extract_features(self, task_data: Dict[str, Any]) -> Tuple[np.ndarray, np.ndarray]:
         """Convert task data into separate utility and cost feature arrays"""
         # Extract common features
@@ -250,7 +261,7 @@ class TaskScoringModel:
             )
                 # Simulate the full feature set (adjust based on your actual features)
             n_utility_features = 14  # 11 from utility_mappings + priority + deadline
-            n_cost_features = 7      # 3 from cost_mappings + priority + deadline
+            n_cost_features = 8      # 3 from cost_mappings + priority + deadline
             X_utility = np.full((1, n_utility_features), 0.5)  # Match expected utility features
             X_cost = np.full((1, n_cost_features), 0.5)        # Match expected cost features
             y = np.array([0.5])
