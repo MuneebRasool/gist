@@ -1,7 +1,8 @@
 from fastapi import Depends, HTTPException
 from src.modules.feedback.schemas import TaskReorderRequest, TaskReorderResponse
-from typing import Optional, List
+from typing import Optional, List, Dict
 from src.models.graph.nodes import TaskNode
+from src.models.task_scoring import scoring_model
 
 
 class FeedbackService:
@@ -17,12 +18,31 @@ class FeedbackService:
         
         adjustment_factor = min(request.positions * 0.1, 0.5)
 
+        # Calculate new relevance score
         new_score = self._calculate_new_score(task, task_above, task_below, request.direction, adjustment_factor)
 
         # Update task score and classification
         task.relevance_score = new_score
         if not task.classification or task.classification != request.classification:
             task.classification = request.classification
+        
+        # Train the model if we have reference tasks
+        if task_above or task_below:
+            # Use the scoring model to process reorder feedback
+            updated_scores = await scoring_model.process_reorder_feedback(
+                task=task,
+                task_above=task_above,
+                task_below=task_below,
+                user_id=user_id
+            )
+            
+            # Update task scores with the results
+            task.utility_score = updated_scores.get('utility_score', task.utility_score)
+            task.cost_score = updated_scores.get('cost_score', task.cost_score)
+            
+            # Use the relevance_score from the model if available, otherwise keep the calculated one
+            if 'relevance_score' in updated_scores:
+                task.relevance_score = updated_scores.get('relevance_score')
         
         task.save()
 
@@ -46,6 +66,7 @@ class FeedbackService:
     def _calculate_new_score(self, task, task_above, task_below, direction, adjustment_factor) -> float:
         """Calculate the new relevance score based on the relative positions."""
         if task_above and task_below:
+            # If we have tasks both above and below, position in between
             return (task_above.relevance_score + task_below.relevance_score) / 2
         
         if task_above:

@@ -4,11 +4,16 @@ Task scoring model using SGDRegressor for continuous learning
 from sklearn.linear_model import SGDRegressor
 import numpy as np
 from datetime import datetime
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, Optional
+from src.models.user import UserModel
+from src.modules.tasks.service import TaskService
+
+
+
 
 class TaskScoringModel:
     def __init__(self):
-        # Initialize models for utility and cost prediction
+        # Initialize default models for utility and cost prediction
         self.utility_model = SGDRegressor(
             loss='squared_error',
             penalty='l2',
@@ -200,10 +205,125 @@ class TaskScoringModel:
         cost_features = cost_features.reshape(1, -1)
         
         return utility_features, cost_features
+    
+    async def load_user_models(self, user_id: str) -> bool:
+        """
+        Load user-specific models from the database
         
-    def partial_fit(self, features: Tuple[np.ndarray, np.ndarray], y: Dict[str, float]) -> None:
-        """Online learning - update models with new data"""
+        Args:
+            user_id: The ID of the user
+            
+        Returns:
+            bool: True if models were loaded successfully, False otherwise
+        """
+        try:
+            user_model = await UserModel.get_or_create(user_id)
+            if user_model:
+                self.utility_model = await user_model.get_utility_model()
+                self.cost_model = await user_model.get_cost_model()
+                self.is_initialized = True
+                print(f"Loaded models for user {user_id}")
+                return True
+            else:
+                print(f"No models found for user {user_id}, using default models")
+                return False
+        except Exception as e:
+            print(f"Error loading models for user {user_id}: {str(e)}")
+            return False
+    
+    async def save_user_models(self, user_id: str) -> bool:
+        """
+        Save the current models to the database for a specific user
+        
+        Args:
+            user_id: The ID of the user
+            
+        Returns:
+            bool: True if models were saved successfully, False otherwise
+        """
+        try:
+            # Get or create user model
+            user_model = await UserModel.get_or_create(user_id)
+            print(f"Retrieved or created model for user {user_id}")
+                
+            # Set the models on the instance
+            await user_model.set_models(self.utility_model, self.cost_model)
+            print(f"Saved models for user {user_id}")
+            return True
+        except Exception as e:
+            print(f"Error saving models for user {user_id}: {str(e)}")
+            return False
+    
+    async def create_initial_models(self, user_id: str) -> bool:
+        """
+        Create initial models for a new user
+        
+        Args:
+            user_id: The ID of the user
+            
+        Returns:
+            bool: True if models were created successfully, False otherwise
+        """
+        try:
+            print(f"Creating initial models for user {user_id}")
+            
+            # Initialize default models
+            utility_model = SGDRegressor(
+                loss='squared_error',
+                penalty='l2',
+                alpha=0.001,
+                learning_rate='adaptive'
+            )
+            
+            cost_model = SGDRegressor(
+                loss='squared_error',
+                penalty='l2',
+                alpha=0.001,
+                learning_rate='adaptive'
+            )
+                # Simulate the full feature set (adjust based on your actual features)
+            n_utility_features = 14  # 11 from utility_mappings + priority + deadline
+            n_cost_features = 7      # 3 from cost_mappings + priority + deadline
+            X_utility = np.full((1, n_utility_features), 0.5)  # Match expected utility features
+            X_cost = np.full((1, n_cost_features), 0.5)        # Match expected cost features
+            y = np.array([0.5])
+            
+            utility_model.fit(X_utility, y)
+            cost_model.fit(X_cost, y)
+
+
+            
+            # Create a new UserModel instance and save the models
+            print(f"Creating UserModel instance for user {user_id}")
+            user_model = await UserModel.get_or_create(user_id)
+            
+            # Set the models on the instance
+            print("Setting models on UserModel instance")
+            await user_model.set_models(utility_model, cost_model)
+            
+            print(f"Successfully created initial models for user {user_id}")
+            return True
+        except Exception as e:
+            import traceback
+            print(f"Error creating initial models for user {user_id}: {str(e)}")
+            print(f"Traceback: {traceback.format_exc()}")
+            return False
+        
+    async def partial_fit(self, features: Tuple[np.ndarray, np.ndarray], y: Dict[str, float], user_id: Optional[str] = None) -> None:
+        """
+        Online learning - update models with new data and optionally save to database
+        
+        Args:
+            features: Tuple of (utility_features, cost_features)
+            y: Dictionary with 'utility' and 'cost' values
+            user_id: Optional user ID to save models to database
+        """
         utility_features, cost_features = features
+        
+        # Load user models if user_id is provided and models aren't already loaded
+        if user_id and not self.is_initialized:
+            await self.load_user_models(user_id)
+        
         if not self.is_initialized:
             self.utility_model.partial_fit(utility_features, [y['utility']])
             self.cost_model.partial_fit(cost_features, [y['cost']])
@@ -211,20 +331,59 @@ class TaskScoringModel:
         else:
             self.utility_model.partial_fit(utility_features, [y['utility']])
             self.cost_model.partial_fit(cost_features, [y['cost']])
+        
+        # Save updated models to database if user_id is provided
+        if user_id:
+            await self.save_user_models(user_id)
     
-    def predict_utility(self, features: Tuple[np.ndarray, np.ndarray]) -> float:
-        """Get utility score prediction using utility features"""
+    async def predict_utility(self, features: Tuple[np.ndarray, np.ndarray], user_id: Optional[str] = None) -> float:
+        """
+        Get utility score prediction using utility features
+        
+        Args:
+            features: Tuple of (utility_features, cost_features)
+            user_id: Optional user ID to load models from database
+            
+        Returns:
+            float: Utility score between 0 and 1
+        """
         utility_features, _ = features
+        
+        # Always try to load user models if user_id is provided
+        if user_id:
+            await self.load_user_models(user_id)
+            
         if not self.is_initialized:
             return 0.5
+        # print("utility_features")
+        # print(utility_features
+        # print(utility_features.shape)
         prediction = float(self.utility_model.predict(utility_features)[0])
         return max(0.0, min(1.0, prediction))  # Ensure score is between 0 and 1
     
-    def predict_cost(self, features: Tuple[np.ndarray, np.ndarray]) -> float:
-        """Get cost score prediction using cost features"""
+    async def predict_cost(self, features: Tuple[np.ndarray, np.ndarray], user_id: Optional[str] = None) -> float:
+        """
+        Get cost score prediction using cost features
+        
+        Args:
+            features: Tuple of (utility_features, cost_features)
+            user_id: Optional user ID to load models from database
+            
+        Returns:
+            float: Cost score between 0 and 1
+        """
         _, cost_features = features
+        
+        # Always try to load user models if user_id is provided
+        if user_id:
+            await self.load_user_models(user_id)
+            
         if not self.is_initialized:
             return 0.5
+        
+        # print("cost_features")
+        # print(cost_features)
+        # print(cost_features.shape)
         prediction = float(self.cost_model.predict(cost_features)[0])
         return max(0.0, min(1.0, prediction))  # Ensure score is between 0 and 1
     
@@ -232,36 +391,89 @@ class TaskScoringModel:
         """Calculate relevance score from utility and cost scores"""
         relevance = utility_score * self.alpha - self.beta * cost_score
         return float(max(0.0, min(1.0, relevance)))  # Ensure score is between 0 and 1
-
-    # def process_user_feedback(self, task_data: Dict[str, Any], user_feedback: Dict[str, float]) -> None:
-    #     """
-    #     Process user feedback to improve the model
+  
+    async def process_reorder_feedback(self, task: Any, task_above: Optional[Any] = None, 
+                                      task_below: Optional[Any] = None, user_id: Optional[str] = None) -> Dict[str, float]:
+        """
+        Process task reordering feedback to improve the model
         
-    #     Args:
-    #         task_data: Dictionary containing task data including utility_features, cost_features, priority, deadline
-    #         user_feedback: Dictionary containing user feedback with keys 'utility' and 'cost'
-    #                        Values should be between 0 and 1
-    #     """
-    #     # Extract features from task data
-    #     features = self.extract_features(task_data)
+        Args:
+            task: The task being reordered
+            task_above: Optional task above the reordered task
+            task_below: Optional task below the reordered task
+            user_id: Optional user ID to load and save models from/to database
+            
+        Returns:
+            Dict: Updated scores for the task
+        """
+        # Calculate target utility and cost scores based on available reference tasks
+        target_utility = 0.0
+        target_cost = 0.0
+        count = 0
         
-    #     # Validate feedback values
-    #     utility_feedback = max(0.0, min(1.0, user_feedback.get('utility', 0.5)))
-    #     cost_feedback = max(0.0, min(1.0, user_feedback.get('cost', 0.5)))
+        if task_above:
+            target_utility += task_above.utility_score
+            target_cost += task_above.cost_score
+            count += 1
+            
+        if task_below:
+            target_utility += task_below.utility_score
+            target_cost += task_below.cost_score
+            count += 1
+            
+        if count == 0:
+            return {
+                'utility_score': task.utility_score,
+                'cost_score': task.cost_score,
+                'relevance_score': task.relevance_score
+            }
+            
+        target_utility /= count
+        target_cost /= count
         
-    #     # Update model with feedback
-    #     self.partial_fit(features, {'utility': utility_feedback, 'cost': cost_feedback})
         
-    #     print(f"Model updated with user feedback: utility={utility_feedback}, cost={cost_feedback}")
+        features_data = await TaskService.get_task_features(task.task_id)
         
-    #     return {
-    #         'utility_score': self.predict_utility(features),
-    #         'cost_score': self.predict_cost(features),
-    #         'relevance_score': self.calculate_relevance(
-    #             self.predict_utility(features), 
-    #             self.predict_cost(features)
-    #         )
-    #     }
+        if features_data:
+            print(f"Found features in database for task {task.task_id}")
+            utility_features = features_data.get("utility_features", {})
+            cost_features = features_data.get("cost_features", {})
+            
+            # Prepare task data with features from database
+            task_data = {
+                'priority': task.priority if hasattr(task, 'priority') else 'medium',
+                'deadline': task.deadline if hasattr(task, 'deadline') and task.deadline != "No Deadline" else None,
+                'utility_features': utility_features,
+                'cost_features': cost_features
+            }
+            
+            # Extract features from task data
+            features = self.extract_features(task_data)
+            
+            # Update model with feedback
+            await self.partial_fit(features, {'utility': target_utility, 'cost': target_cost}, user_id)
+            
+            print(f"Model updated with reorder feedback using stored features: utility={target_utility}, cost={target_cost}")
+            
+            # Get updated predictions
+            utility_score = await self.predict_utility(features, user_id)
+            cost_score = await self.predict_cost(features, user_id)
+            
+            # Calculate new relevance score
+            relevance_score = self.calculate_relevance(utility_score, cost_score)
+            
+            # Return updated scores
+            return {
+                'utility_score': utility_score,
+                'cost_score': cost_score,
+                'relevance_score': relevance_score
+            }
+        else:
+            return {
+                'utility_score': task.utility_score,
+                'cost_score': task.cost_score,
+                'relevance_score': task.relevance_score
+            }
 
 # Create singleton instance
 scoring_model = TaskScoringModel()

@@ -65,7 +65,7 @@ async def infer_domain(request: DomainInferenceRequest):
         
         
         # Log if rated emails are provided
-        if hasattr(request, 'ratedEmails') and request.ratedEmails:
+        if request.ratedEmails:
             print(f"Received {len(request.ratedEmails)} rated emails for domain inference")
             
             # Log a sample of the first email for debugging
@@ -76,8 +76,8 @@ async def infer_domain(request: DomainInferenceRequest):
             print("No rated emails provided for domain inference")
         
         # Pass rated emails to the infer_user_domain function if provided
-        rated_emails = request.ratedEmails if hasattr(request, 'ratedEmails') else None
-        ratings = request.ratings if hasattr(request, 'ratings') else None
+        rated_emails = request.ratedEmails
+        ratings = request.ratings
         
         # Log ratings information for debugging
         if ratings:

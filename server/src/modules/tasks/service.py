@@ -1,6 +1,7 @@
 from datetime import datetime, UTC
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from src.models.graph.nodes import TaskNode, EmailNode, UserNode
+from src.models.user import Features
 from .schemas import TaskCreate, TaskUpdate
 import uuid
 from neomodel import db
@@ -8,9 +9,23 @@ from neomodel import db
 class TaskService:
 
     @staticmethod
-    async def create_task(task_data: TaskCreate, user_id: str) -> TaskNode:
+    async def create_task(
+        task_data: TaskCreate, 
+        user_id: str, 
+        utility_features: Optional[Dict[str, Any]] = None, 
+        cost_features: Optional[Dict[str, Any]] = None
+    ) -> TaskNode:
         """
         Create a new task and connect it to the corresponding email
+        
+        Args:
+            task_data: Task data to create
+            user_id: The ID of the user
+            utility_features: Optional dictionary of utility features
+            cost_features: Optional dictionary of cost features
+            
+        Returns:
+            TaskNode: The created task node
         """
         # First get the email node
         email = TaskService.ensure_graph_nodes(user_id, task_data.messageId)
@@ -32,6 +47,20 @@ class TaskService:
         # Connect task to email
         email.tasks.connect(task)
         task.messageId = task_data.messageId
+        
+        # Save features if provided
+        if utility_features and cost_features:
+            try:
+                await Features.create_features(
+                    user_id=user_id,
+                    task_id=task.task_id,
+                    utility_features=utility_features,
+                    cost_features=cost_features
+                )
+                print(f"Features saved for task {task.task_id}")
+            except Exception as e:
+                print(f"Error saving features for task {task.task_id}: {str(e)}")
+        
         return task
     
     @staticmethod
@@ -137,3 +166,23 @@ class TaskService:
         """
         results, _ = db.cypher_query(query, {'task_id': task_id})
         return [TaskNode.inflate(row[0]) for row in results]
+
+    @staticmethod
+    async def get_task_features(task_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get features for a task
+        
+        Args:
+            task_id: The ID of the task
+            
+        Returns:
+            Optional[Dict[str, Any]]: Dictionary containing utility and cost features if found, None otherwise
+        """
+        features = await Features.get_by_task_id(task_id)
+        if not features:
+            return None
+            
+        return {
+            "utility_features": features.features,
+            "cost_features": features.cost
+        }

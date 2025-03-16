@@ -21,6 +21,7 @@ from ...agents.task_cost_features_extractor import CostFeaturesExtractor
 from ...agents.task_utility_features_extractor import UtilityFeaturesExtractor
 from ...utils.get_text_from_html import get_text_from_html
 from ...utils.get_task_scores import calculate_task_scores
+# from ...models.task_scoring import scoring_model
 
 
 class AgentService:
@@ -75,8 +76,7 @@ class AgentService:
     async def extract_and_save_tasks(
         self,
         user_id: str,
-        email,  # Can be either a dictionary or EmailData object
-
+        email,
     ):
         """
         Extract tasks from email and save them to the database
@@ -108,7 +108,6 @@ class AgentService:
             if user and user.personality and isinstance(user.personality, dict):
                 user_personality = user.personality.get("summary", "")
 
-                print(f"User personality: {user_personality}")
         except Exception as e:
             print(f"Error fetching user personality: {str(e)}")
 
@@ -147,14 +146,17 @@ class AgentService:
             cost_features = cost_result.get("cost_features", {})
             classification = classification_result.get("type", "Drawer")
 
-            print("classification", classification)
+            # print("utility_features", utility_features)
+            # print("cost_features", cost_features)
+            # print("classification", classification)
             
-            # Use the new scoring model to calculate scores
-            relevance_score, utility_score, cost_score = calculate_task_scores(
+            # Use the new scoring model to calculate scores with user-specific models
+            relevance_score, utility_score, cost_score = await calculate_task_scores(
                 utility_features=utility_features,
                 cost_features=cost_features,
                 priority=item.get("priority", "medium"),
-                deadline=item.get("due_date")
+                deadline=item.get("due_date"),
+                user_id=user_id  # Pass user_id to use personalized models
             )
 
             await TaskService.create_task(
@@ -169,7 +171,11 @@ class AgentService:
                     classification=classification,
                 ),
                 user_id=user_id,
+                utility_features=utility_features,
+                cost_features=cost_features
             )
+
+            # Features are now saved in the create_task method
 
         return True
 
@@ -225,10 +231,10 @@ class AgentService:
                 from_data = message_data.get("from", [{}])
                 grant_id = message_data.get("grant_id")
 
-                print(f"Got message from {from_data[0].get('email')}")
+                # print(f"Got message from {from_data[0].get('email')}")
                 email_node = EmailNode.nodes.get_or_none(messageId=message_id)
                 if email_node:
-                    print(f"Email {message_id} already processed, skipping")
+                    # print(f"Email {message_id} already processed, skipping")
                     return True
                 else:
                     email_node = EmailNode(messageId=message_id).save()

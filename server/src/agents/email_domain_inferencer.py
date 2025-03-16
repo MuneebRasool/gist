@@ -19,23 +19,43 @@ class DomainInferenceAgent(BaseAgent):
         )
 
 
-    async def process(self,  email: str, rated_emails: Optional[List[Dict[str, Any]]] = None, ratings: Optional[Dict[str, int]] = None) -> dict:
+    async def process(self,  email: str, rated_emails: Optional[List[Any]] = None, ratings: Optional[Dict[str, int]] = None) -> dict:
         """
         Process an email to infer domain and generate questions
         
         Args:
             email: User's email address
+            rated_emails: Optional list of RatedEmail objects
             ratings: Optional dictionary mapping email IDs to user ratings
             
         Returns:
             dict: Domain inference results containing domain and questions
         """
         try:
-            
-            
-            rated_emails_section = "\n".join(
-                [f"- {email['subject']} (Rating: {ratings.get(email['id'], 'N/A')})" for email in rated_emails]
-            ) if rated_emails else "No rated emails provided."
+            # Create a formatted section of rated emails with their ratings
+            if rated_emails and ratings:
+                rated_emails_list = []
+                for email_obj in rated_emails:
+                    # Handle both Pydantic models and dictionaries
+                    if hasattr(email_obj, 'id') and hasattr(email_obj, 'subject'):
+                        # It's a Pydantic model
+                        email_id = email_obj.id
+                        email_subject = email_obj.subject or "(No subject)"
+                    elif isinstance(email_obj, dict):
+                        # It's a dictionary
+                        email_id = email_obj.get('id', '')
+                        email_subject = email_obj.get('subject', '(No subject)')
+                    else:
+                        # Skip if we can't extract the needed information
+                        continue
+                    
+                    # Get the rating for this email
+                    rating = ratings.get(email_id, 'N/A')
+                    rated_emails_list.append(f"- {email_subject} (Rating: {rating})")
+                
+                rated_emails_section = "\n".join(rated_emails_list)
+            else:
+                rated_emails_section = "No rated emails provided."
 
             user_prompt = self.DOMAIN_INFERENCE_PROMPT.replace('{domain}', email).replace('{rated_emails_section}', rated_emails_section)
 
