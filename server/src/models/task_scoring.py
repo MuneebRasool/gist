@@ -30,8 +30,8 @@ class TaskScoringModel:
         self.is_initialized = False
         
         # Weights for relevance score calculation
-        self.alpha = 0.7  # Weight for utility score
-        self.beta = 0.3   # Weight for cost score
+        self.alpha = 0.8  # Weight for utility score
+        self.beta = 0.2   # Weight for cost score
 
         self.utility_mappings = {
             "priority": {
@@ -354,9 +354,16 @@ class TaskScoringModel:
             
         if not self.is_initialized:
             return 0.5
-        # print("utility_features")
-        # print(utility_features
-        # print(utility_features.shape)
+        
+        # Ensure we only use the expected number of features (12)
+        expected_features = 12
+        if utility_features.shape[1] > expected_features:
+            print(f"WARNING: Utility features have {utility_features.shape[1]} dimensions, but model expects {expected_features}. Slicing to first {expected_features} features.")
+            utility_features = utility_features[:, :expected_features]
+        elif utility_features.shape[1] < expected_features:
+            print(f"ERROR: Utility features have only {utility_features.shape[1]} dimensions, but model expects {expected_features}.")
+            return 0.5  # Return default score if not enough features
+        
         prediction = float(self.utility_model.predict(utility_features)[0])
         return max(0.0, min(1.0, prediction))  # Ensure score is between 0 and 1
     
@@ -380,9 +387,15 @@ class TaskScoringModel:
         if not self.is_initialized:
             return 0.5
         
-        # print("cost_features")
-        # print(cost_features)
-        # print(cost_features.shape)
+        # Ensure we only use the expected number of features (6)
+        expected_features = 6
+        if cost_features.shape[1] > expected_features:
+            print(f"WARNING: Cost features have {cost_features.shape[1]} dimensions, but model expects {expected_features}. Slicing to first {expected_features} features.")
+            cost_features = cost_features[:, :expected_features]
+        elif cost_features.shape[1] < expected_features:
+            print(f"ERROR: Cost features have only {cost_features.shape[1]} dimensions, but model expects {expected_features}.")
+            return 0.5  # Return default score if not enough features
+        
         prediction = float(self.cost_model.predict(cost_features)[0])
         return max(0.0, min(1.0, prediction))  # Ensure score is between 0 and 1
     
@@ -453,16 +466,16 @@ class TaskScoringModel:
             print(f"Model updated with reorder feedback using stored features: utility={target_utility}, cost={target_cost}")
             
             # Get updated predictions
-            utility_score = await self.predict_utility(features, user_id)
-            cost_score = await self.predict_cost(features, user_id)
+            # utility_score = await self.predict_utility(features, user_id)
+            # cost_score = await self.predict_cost(features, user_id)
             
             # Calculate new relevance score
-            relevance_score = self.calculate_relevance(utility_score, cost_score)
+            relevance_score = self.calculate_relevance(target_utility, target_cost)
             
             # Return updated scores
             return {
-                'utility_score': utility_score,
-                'cost_score': cost_score,
+                'utility_score': target_utility,
+                'cost_score': target_cost,
                 'relevance_score': relevance_score
             }
         else:

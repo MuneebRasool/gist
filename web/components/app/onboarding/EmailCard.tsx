@@ -69,7 +69,9 @@ export default function EmailCard({
       <div className="p-6">
         <div className="space-y-1">
           <div className="text-xs font-medium uppercase tracking-wider text-gray-500">Message</div>
-          <div className="min-h-[100px] text-base leading-relaxed text-gray-800">{email.body}</div>
+          <div className="min-h-[100px] max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent pr-2 text-base leading-relaxed text-gray-800">
+            {email.body}
+          </div>
         </div>
       </div>
       

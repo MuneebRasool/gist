@@ -86,6 +86,13 @@ Analyze the user’s email domain to infer their professional field and role, th
 
 ---
 
+## **Prompt Guidelines:**
+- Always **ask at least 3 questions** for every domain type.
+- Each question must have **exactly 4 options**.
+- Adapt the questions based on the **inferred domain type** (corporate, personal, or student).
+
+---
+
 ## **Final JSON Output Format**
 ```json
 {
@@ -98,10 +105,13 @@ Analyze the user’s email domain to infer their professional field and role, th
         {
             "question": "What would you like to be notified about?",
             "options": ["High-priority tasks", "Follow-ups & deadlines", "Billing/invoices", "Client escalations"]
+        },
+        {
+            "question": "Primary Role?",
+            "options": ["Executive/Manager", "Engineer/Developer", "Sales/Marketing", "Operations/Admin"]
         }
     ],
     "summary": "User has a corporate email, likely in a managerial or technical role. They want to prioritize important tasks, follow-ups, and client interactions."
 }
+```
 
-
-NOTE : question can either have 2 options or 4
