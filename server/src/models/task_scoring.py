@@ -149,29 +149,29 @@ class TaskScoringModel:
                 feature_values.append(self._get_feature_value(feature, value, mappings))
         return np.array(feature_values)
 
-    def _get_days_to_deadline(self, deadline: str) -> float:
-        """Calculate days until deadline"""
-        if not deadline or deadline == "No Deadline":
-            return 30.0  # Default to 30 days if no deadline
-        try:
-            deadline_date = datetime.strptime(deadline, "%Y-%m-%d")
-            days = (deadline_date - datetime.now()).days
-            return float(max(0, days))  # Ensure non-negative
-        except ValueError:
-            return 30.0
+    # def _get_days_to_deadline(self, deadline: str) -> float:
+    #     """Calculate days until deadline"""
+    #     if not deadline or deadline == "No Deadline":
+    #         return 30.0  # Default to 30 days if no deadline
+    #     try:
+    #         deadline_date = datetime.strptime(deadline, "%Y-%m-%d")
+    #         days = (deadline_date - datetime.now()).days
+    #         return float(max(0, days))  # Ensure non-negative
+    #     except ValueError:
+    #         return 30.0
 
     def extract_features(self, task_data: Dict[str, Any]) -> Tuple[np.ndarray, np.ndarray]:
         """Convert task data into separate utility and cost feature arrays"""
         # Extract common features
-        priority = self._encode_priority(task_data.get('priority', 'medium'))
-        deadline = self._get_days_to_deadline(task_data.get('deadline'))
+        # priority = self._encode_priority(task_data.get('priority', 'medium'))
+        # deadline = self._get_days_to_deadline(task_data.get('deadline'))
         
         # Convert utility features to array
         utility_features = self._convert_features_to_array(
             task_data.get('utility_features', {}),
             self.utility_mappings
         )
-        utility_features = np.append(utility_features, [priority, deadline])
+        # Reshape to 2D array for model input
         utility_features = utility_features.reshape(1, -1)
         
         # Convert cost features to array
@@ -179,7 +179,7 @@ class TaskScoringModel:
             task_data.get('cost_features', {}),
             self.cost_mappings
         )
-        cost_features = np.append(cost_features, [priority, deadline])
+        # Reshape to 2D array for model input
         cost_features = cost_features.reshape(1, -1)
         
         return utility_features, cost_features
@@ -259,9 +259,8 @@ class TaskScoringModel:
                 alpha=0.001,
                 learning_rate='adaptive'
             )
-                # Simulate the full feature set (adjust based on your actual features)
-            n_utility_features = 14  # 11 from utility_mappings + priority + deadline
-            n_cost_features = 8      # 3 from cost_mappings + priority + deadline
+            n_utility_features = 12  # 11 from utility_mappings + priority + deadline
+            n_cost_features = 6      # 3 from cost_mappings + priority + deadline
             X_utility = np.full((1, n_utility_features), 0.5)  # Match expected utility features
             X_cost = np.full((1, n_cost_features), 0.5)        # Match expected cost features
             y = np.array([0.5])
