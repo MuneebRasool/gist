@@ -48,3 +48,4 @@ class TaskNode(StructuredNode):
     # Relationships
     email = RelationshipFrom('EmailNode', 'CONTAINS_TASK', cardinality=One)
     depends_on = RelationshipTo('TaskNode', 'DEPENDS_ON', cardinality=ZeroOrMore)
+

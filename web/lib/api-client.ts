@@ -10,7 +10,7 @@ type ApiResult<T> = {
 		message: string;
 		status: number;
 		details?: Record<string, unknown>;
-		validationErrors?: any[];
+		validationErrors?: unknown[];
 	};
 };
 

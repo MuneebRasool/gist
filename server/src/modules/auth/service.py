@@ -17,6 +17,7 @@ from .constants import (
     UNVERIFIED_USER_ERROR,
     REQUIRE_GOOGLE_AUTH_ERROR
 )
+from src.models.task_scoring import scoring_model
 
 
 class UserService:
@@ -100,6 +101,9 @@ class UserService:
             verification_code=code,
             verification_code_expires_at=expires_at,
         )
+
+        # Initialize task scoring models for the new user
+        await scoring_model.create_initial_models(str(user.id))
 
         # Send verification email
         verification_html = f"""
@@ -198,6 +202,10 @@ class UserService:
                 is_active=True,
                 verified=True,  # Google accounts are pre-verified
             )
+            
+            # Initialize task scoring models for the new user
+            await scoring_model.create_initial_models(str(user.id))
+            
         elif not user.verified:
             # If user exists but not verified, mark as verified since it's Google auth
             user.verified = True

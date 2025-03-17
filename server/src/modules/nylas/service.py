@@ -3,7 +3,8 @@
 from typing import Optional, Dict, Any
 from nylas import Client
 from nylas.models.auth import CodeExchangeRequest, CodeExchangeResponse
-
+from .schemas import EmailData
+from ...utils.get_text_from_html import get_text_from_html
 from src.config.settings import (
     NYLAS_CLIENT_ID,
     NYLAS_API_KEY,
@@ -162,27 +163,27 @@ class NylasService:
                 query_params=query_params,
             )
             
-            if not messages_response["data"]:
-                print("No messages found in response")
-                return {"data": [], "next_cursor": None}
+            emails_raw = messages_response.get("data", [])
+
+            if not emails_raw:
+                raise Exception("No emails found for the last week")
+
+                        # Convert the list of dictionaries to EmailData objects
+            emails = []
+            for email in emails_raw:
+                parsed_email_body = get_text_from_html(email.get("body", ""))
+                emails.append(
+                    EmailData(
+                        id=email.get("id"),
+                        body=parsed_email_body,
+                        subject=email.get("subject"),
+                        from_=email.get("from"),
+                    )
+                )
             
-            print("=======================================")
-            print(f"Retrieved {len(messages_response['data'])} messages")
-            print(f"Data type: {type(messages_response['data'])}")
-            
-            if messages_response["data"]:
-                print(f"First message type: {type(messages_response['data'][0])}")
-                if isinstance(messages_response["data"][0], dict):
-                    print(f"First message keys: {list(messages_response['data'][0].keys())}")
-                    # Print a sample of the first message structure
-                    sample_keys = ['id', 'subject', 'snippet']
-                    sample_data = {k: messages_response["data"][0].get(k) for k in sample_keys if k in messages_response["data"][0]}
-                    print(f"Sample data: {sample_data}")
-            
-            # Use agent service to classify spam
             print("Calling classify_spams...")
             try:
-                classification_result = await agent_service.classify_spams(messages_response["data"])
+                classification_result = await agent_service.classify_spams(emails)
                 print("classify_spams completed successfully")
             except Exception as e:
                 import traceback

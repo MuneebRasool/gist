@@ -69,7 +69,7 @@ export default function EmailCard({
       <div className="p-6">
         <div className="space-y-1">
           <div className="text-xs font-medium uppercase tracking-wider text-gray-500">Message</div>
-          <div className="min-h-[100px] text-base leading-relaxed text-gray-800">{email.snippet}</div>
+          <div className="min-h-[100px] text-base leading-relaxed text-gray-800">{email.body}</div>
         </div>
       </div>
       

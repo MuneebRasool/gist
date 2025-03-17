@@ -9,9 +9,8 @@ from src.agents.personality_summarizer import PersonalitySummarizer
 from src.agents.content_classifier import ContentClassifier
 from src.agents.email_domain_inferencer import DomainInferenceAgent
 from src.models.user import User
-from src.modules.nylas.service import NylasService
+# from src.modules.nylas.service import NylasService
 from src.modules.agent.service import AgentService
-import datetime
 
 
 from .schemas import EmailData
@@ -73,52 +72,49 @@ class OnboardingAgentService:
                         if hasattr(email, 'body'):
                             # It's a Pydantic model (EmailData)
                             email_body = email.body
-                            print(f"Extracted body from Pydantic model, length: {len(email_body)}")
+                            # print(f"Extracted body from Pydantic model, length: {len(email_body)}")
                         elif isinstance(email, dict):
                             # Check for 'body' key in dictionary
                             if 'body' in email:
                                 email_body = email['body']
-                                print(f"Extracted body from dictionary 'body' key, length: {len(email_body)}")
+                                # print(f"Extracted body from dictionary 'body' key, length: {len(email_body)}")
                             # Check for 'snippet' key as fallback (common in Nylas messages)
-                            elif 'snippet' in email:
-                                email_body = email['snippet']
-                                print(f"Using snippet as fallback, length: {len(email_body)}")
-                            # Try to get body from 'body_data' if it exists (another Nylas format)
                             elif 'body_data' in email and isinstance(email['body_data'], dict):
                                 if 'text' in email['body_data']:
                                     email_body = email['body_data']['text']
-                                    print(f"Extracted body from body_data.text, length: {len(email_body)}")
+                                    # print(f"Extracted body from body_data.text, length: {len(email_body)}")
                                 elif 'html' in email['body_data']:
                                     from ...utils.get_text_from_html import get_text_from_html
                                     email_body = get_text_from_html(email['body_data']['html'])
-                                    print(f"Extracted and converted HTML body, length: {len(email_body)}")
+                                    # print(f"Extracted and converted HTML body, length: {len(email_body)}")
                         else:
                             # Try get method as fallback
                             email_body = getattr(email, "body", "") or getattr(email, "snippet", "")
                             print(f"Used getattr fallback method, body length: {len(email_body)}")
+                            # print(f"Used getattr fallback method, body length: {len(email_body)}")
                             
                         if not email_body:
-                            print(f"Warning: Empty body for email ID: {email_id}")
+                            # print(f"Warning: Empty body for email ID: {email_id}")
                             # Use a placeholder to avoid errors with empty text
                             email_body = "No content available"
                             
                     except (AttributeError, TypeError) as e:
-                        print(f"Error extracting body from email of type {type(email)}: {str(e)}")
+                        # print(f"Error extracting body from email of type {type(email)}: {str(e)}")
                         email_body = "Error extracting content"
                     
                     # Classify the email
                     is_spam = await self.spam_classifier.process(email_body)
-                    print(f"Email ID: {email_id} classified as: {is_spam}")
+                    # print(f"Email ID: {email_id} classified as: {is_spam}")
                     
                     return (email, is_spam.lower() == "spam")
                 except Exception as e:
-                    print(f"Error in classify_email: {str(e)}")
+                    # print(f"Error in classify_email: {str(e)}")
                     # Return the email as non-spam in case of error to avoid losing data
                     return (email, False)
 
             # Process emails (limit to 20 for performance)
             process_limit = min(20, len(emails))
-            print(f"Processing top {process_limit} emails")
+            # print(f"Processing top {process_limit} emails")
             
             tasks = [
                 classify_email(email) for email in emails[:process_limit]
@@ -204,12 +200,27 @@ class OnboardingAgentService:
             print(f"Processing {len(non_spam_emails)} non-spam emails")
 
             # Process non-spam emails
+            #fetch user's personality
+            user = await User.get(id=user_id)
+            user_personality = None
+            if user.personality:
+                        if (
+                            isinstance(user.personality, list)
+                            and len(user.personality) > 0
+                        ):
+                            user_personality = user.personality[-1]
+                        # If personality is a string, use it directly
+                        elif isinstance(user.personality, str):
+                            user_personality = user.personality
+                        # If personality is a dict, convert to string
+                        elif isinstance(user.personality, dict):
+                            user_personality = str(user.personality)
             if non_spam_emails:
                 # Extract and save tasks from each non-spam email
                 task_extraction_tasks = []
                 for email in non_spam_emails:
                     try:
-                        task = self.agent.extract_and_save_tasks(user_id, email)
+                        task = self.agent.extract_and_save_tasks(user_id, email, user_personality)
                         task_extraction_tasks.append(task)
                     except Exception as e:
                         print(f"Error creating task extraction for email: {str(e)}")
@@ -254,11 +265,11 @@ class OnboardingAgentService:
             email_ratings = getattr(onboarding_data, 'emailRatings', {})
             rated_emails = getattr(onboarding_data, 'ratedEmails', [])
             
-            print(f"🔍 Questions: {len(questions)}")
-            print(f"🔍 Answers: {len(answers)}")
-            print(f"🔍 Domain: {domain}")
-            print(f"🔍 Email Ratings: {len(email_ratings)}")
-            print(f"🔍 Rated Emails: {len(rated_emails)}")
+            # print(f"🔍 Questions: {len(questions)}")
+            # print(f"🔍 Answers: {len(answers)}")
+            # print(f"🔍 Domain: {domain}")
+            # print(f"🔍 Email Ratings: {len(email_ratings)}")
+            # print(f"🔍 Rated Emails: {len(rated_emails)}")
             
             # Prepare a rich context for personality summarization
             context = {
@@ -322,13 +333,13 @@ class OnboardingAgentService:
             traceback.print_exc()
             return {"summary": f"Error processing onboarding data: {str(e)}"}
 
-    async def infer_user_domain(self, email: str, rated_emails: Optional[List[Dict[str, Any]]] = None, ratings: Optional[Dict[str, int]] = None) -> Dict[str, Any]:
+    async def infer_user_domain(self, email: str, rated_emails: Optional[List[Any]] = None, ratings: Optional[Dict[str, int]] = None) -> Dict[str, Any]:
         """
         Infer user's profession and context from their email domain and rated emails if available.
 
         Args:
             email (str): User's email address.
-            rated_emails (Optional[List[Dict[str, Any]]]): List of emails rated by the user during onboarding.
+            rated_emails (Optional[List[Any]]): List of emails rated by the user during onboarding.
             ratings (Optional[Dict[str, int]]): Dictionary mapping email IDs to user ratings.
 
         Returns:
@@ -418,3 +429,5 @@ class OnboardingAgentService:
 #   generate few questions for user to answer based on his email domain and marked emails
 #   send questions to user, record his answer, generate personality based on that. (let generate 10 points about user based on all the info)
 #   generate tasks based on personality and email content
+
+

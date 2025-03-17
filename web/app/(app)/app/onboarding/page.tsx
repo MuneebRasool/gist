@@ -95,8 +95,8 @@ const OnboardingPage = () => {
 					// Set questions
 					setQuestions(response.data.questions || []);
 	
-					// Set summary based on response data
-					let generatedSummary =
+					//Set summary based on response data
+					const generatedSummary =
 						response.data.summary ||
 						(response.data.domain
 							? `Based on your email, we've personalized some questions for your ${response.data.domain} context.`

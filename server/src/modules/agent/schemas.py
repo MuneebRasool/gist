@@ -206,6 +206,31 @@ class DomainInferenceRequest(BaseModel):
     email: str
     ratedEmails: Optional[List[RatedEmail]] = None
     ratings: Optional[Dict[str, int]] = None
+    
+    class Config:
+        # Allow validation to succeed even with extra fields
+        extra = "allow"
+        # Use arbitrary_types_allowed for more flexibility
+        arbitrary_types_allowed = True
+        
+    @root_validator(pre=True)
+    def validate_and_log_structure(cls, values):
+        """Log the incoming values to debug validation issues and fix common problems"""
+        print("\n---------------------------------------")
+        print("🔍 VALIDATING DOMAIN INFERENCE REQUEST")
+        
+        # Log basic information
+        print(f"🔍 Email: {values.get('email', 'Not provided')}")
+        print(f"🔍 Rated Emails: {len(values.get('ratedEmails', []))}")
+        print(f"🔍 Ratings: {len(values.get('ratings', {}))}")
+        
+        # Ensure ratings is a dictionary
+        if 'ratings' in values and not isinstance(values['ratings'], dict):
+            print(f"❌ Invalid ratings type: {type(values['ratings'])}")
+            values['ratings'] = {}
+        
+        print("---------------------------------------\n")
+        return values
 
 class DomainInferenceResponse(BaseModel):
     success: bool

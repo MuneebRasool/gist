@@ -24,6 +24,15 @@ class EmailMessage(BaseModel):
     unread: bool = False
     starred: bool = False
 
+
+
+class EmailData(BaseModel):
+    id: str
+    body: str
+    subject: Optional[str]
+    from_: Optional[List[dict]]
+
+
 class MessageList(BaseModel):
-    data: List[EmailMessage]
+    data: List[EmailData]
     next_cursor: Optional[str] = None

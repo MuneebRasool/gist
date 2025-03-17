@@ -2,7 +2,7 @@
 Service for handling agent-related operations.
 """
 
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 from src.agents.spam_classifier import SpamClassifier
 from src.agents.task_extractor import TaskExtractor
 from src.agents.personality_summarizer import PersonalitySummarizer
@@ -20,7 +20,8 @@ import uuid
 from ...agents.task_cost_features_extractor import CostFeaturesExtractor
 from ...agents.task_utility_features_extractor import UtilityFeaturesExtractor
 from ...utils.get_text_from_html import get_text_from_html
-from ...utils.get_utility_score import get_relevance_score
+from ...utils.get_task_scores import calculate_task_scores
+# from ...models.task_scoring import scoring_model
 
 
 class AgentService:
@@ -32,19 +33,6 @@ class AgentService:
         self.cost_features = CostFeaturesExtractor()
         self.content_classifier = ContentClassifier()
         self.domain_inference_agent = DomainInferenceAgent()
-
-    async def classify_spams(self, emails: List[dict]) -> dict:
-        """
-        Process batch of emails whether these are spam or not spam
-
-        Args:
-            user_id: The ID of the user
-            emails: List of email objects containing message_id, subject, body, etc.
-                   Can be either dictionaries or EmailData objects
-
-        Returns:
-            dict: Results of processing including tasks and personality insights
-        """
 
     async def classify_spams(self, emails: List[dict]) -> dict:
         """
@@ -88,8 +76,8 @@ class AgentService:
     async def extract_and_save_tasks(
         self,
         user_id: str,
-        email,  # Can be either a dictionary or EmailData object
-
+        email,
+        user_personality: str = None,
     ):
         """
         Extract tasks from email and save them to the database
@@ -97,7 +85,7 @@ class AgentService:
             user_id: The ID of the user
             email: Email object containing id, subject, body, etc.
                   Can be either a dictionary or EmailData object
-            user_persona: Optional user persona information
+            user_personality: Optional user persona information
         Returns:
             bool: True if tasks were successfully extracted and saved
         """
@@ -114,16 +102,14 @@ class AgentService:
             print(f"Warning: Unsupported email type: {type(email)}")
             return False
 
-        # Fetch user personality if available
-        user_personality = None
-        try:
-            user = await User.get(id=user_id)
-            if user and user.personality and isinstance(user.personality, dict):
-                user_personality = user.personality.get("summary", "")
-
-                print(f"User personality: {user_personality}")
-        except Exception as e:
-            print(f"Error fetching user personality: {str(e)}")
+        # If user_personality is not provided, fetch it
+        if user_personality is None:
+            try:
+                user = await User.get(id=user_id)
+                if user and user.personality and isinstance(user.personality, dict):
+                    user_personality = user.personality.get("summary", "")
+            except Exception as e:
+                print(f"Error fetching user personality: {str(e)}")
 
         # Extract tasks using personality data if available
         task_items = await self.extract_tasks(email_body, user_personality)
@@ -159,11 +145,14 @@ class AgentService:
             utility_features = utility_result.get("utility_features", {})
             cost_features = cost_result.get("cost_features", {})
             classification = classification_result.get("type", "Drawer")
-
-            print("classification", classification)
-            # Calculate relevance score
-            relevance_score, utility_score, cost_score = get_relevance_score(
-                utility_features, cost_features
+            
+            # Use the new scoring model to calculate scores with user-specific models
+            relevance_score, utility_score, cost_score = await calculate_task_scores(
+                utility_features=utility_features,
+                cost_features=cost_features,
+                priority=item.get("priority", "medium"),
+                deadline=item.get("due_date"),
+                user_id=user_id  # Pass user_id to use personalized models
             )
 
             await TaskService.create_task(
@@ -173,12 +162,16 @@ class AgentService:
                     priority=item.get("priority"),
                     messageId=email_id,
                     relevance_score=relevance_score,
-                    utility_score=utility_score.get("total_utility_score"),
-                    cost_score=cost_score.get("total_cost_score"),
+                    utility_score=utility_score,
+                    cost_score=cost_score,
                     classification=classification,
                 ),
                 user_id=user_id,
+                utility_features=utility_features,
+                cost_features=cost_features
             )
+
+            # Features are now saved in the create_task method
 
         return True
 
@@ -234,10 +227,10 @@ class AgentService:
                 from_data = message_data.get("from", [{}])
                 grant_id = message_data.get("grant_id")
 
-                print(f"Got message from {from_data[0].get('email')}")
+                # print(f"Got message from {from_data[0].get('email')}")
                 email_node = EmailNode.nodes.get_or_none(messageId=message_id)
                 if email_node:
-                    print(f"Email {message_id} already processed, skipping")
+                    # print(f"Email {message_id} already processed, skipping")
                     return True
                 else:
                     email_node = EmailNode(messageId=message_id).save()
@@ -267,7 +260,7 @@ class AgentService:
 
                 # Process for each user
                 for user in users:
-                    # Fetch user personality if available
+                    # Fetch user personality once for all operations
                     user_personality = None
                     if user.personality:
                         # If personality is a list, use the most recent one
@@ -307,6 +300,9 @@ class AgentService:
                                 priority=task.get("priority", "high"),
                             ).save()
                             email_node.tasks.connect(task_node)
+                        
+                        # Pass the user_personality to extract_and_save_tasks to avoid fetching it again
+                        await self.extract_and_save_tasks(user.id, email, user_personality)
 
                 return True
         except Exception as e:

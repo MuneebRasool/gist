@@ -17,6 +17,7 @@ from src.modules.nylas.router import router as nylas_router
 from src.modules.nylas.email_router import router as nylas_email_router
 from src.modules.agent.router import router as agent_router
 from src.modules.tasks.router import router as tasks_router
+from src.modules.feedback.router import router as feedback_router
 from src.exceptions import (
     http_exception_handler,
     validation_exception_handler,
@@ -62,6 +63,7 @@ app.include_router(nylas_router, prefix=settings.API_V1_PREFIX)
 app.include_router(nylas_email_router, prefix=settings.API_V1_PREFIX)
 app.include_router(agent_router, prefix=settings.API_V1_PREFIX)
 app.include_router(tasks_router, prefix=settings.API_V1_PREFIX)
+app.include_router(feedback_router, prefix=settings.API_V1_PREFIX)
 
 @app.get("/")
 async def root():

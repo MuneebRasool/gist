@@ -2,6 +2,9 @@ from bs4 import BeautifulSoup
 
 
 def get_text_from_html(html_content):
+    print("HTML Content:")
+    print("+++++++++++++++++++++++++")
+    print(html_content)
     soup = BeautifulSoup(html_content, "html.parser")
 
     # Remove tracking images (usually width="1" height="1")
