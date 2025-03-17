@@ -7,6 +7,7 @@ from datetime import datetime
 from typing import Dict, Any, Tuple, Optional
 from src.models.user import UserModel
 from src.modules.tasks.service import TaskService
+from pathlib import Path
 
 
 
@@ -29,8 +30,8 @@ class TaskScoringModel:
         self.is_initialized = False
         
         # Weights for relevance score calculation
-        self.alpha = 0.6  # Weight for utility score
-        self.beta = 0.4   # Weight for cost score
+        self.alpha = 0.7  # Weight for utility score
+        self.beta = 0.3   # Weight for cost score
 
         self.utility_mappings = {
             "priority": {
@@ -149,17 +150,6 @@ class TaskScoringModel:
                 feature_values.append(self._get_feature_value(feature, value, mappings))
         return np.array(feature_values)
 
-    # def _get_days_to_deadline(self, deadline: str) -> float:
-    #     """Calculate days until deadline"""
-    #     if not deadline or deadline == "No Deadline":
-    #         return 30.0  # Default to 30 days if no deadline
-    #     try:
-    #         deadline_date = datetime.strptime(deadline, "%Y-%m-%d")
-    #         days = (deadline_date - datetime.now()).days
-    #         return float(max(0, days))  # Ensure non-negative
-    #     except ValueError:
-    #         return 30.0
-
     def extract_features(self, task_data: Dict[str, Any]) -> Tuple[np.ndarray, np.ndarray]:
         """Convert task data into separate utility and cost feature arrays"""
         # Extract common features
@@ -234,7 +224,7 @@ class TaskScoringModel:
     
     async def create_initial_models(self, user_id: str) -> bool:
         """
-        Create initial models for a new user
+        Create initial models for a new user by loading pre-trained models
         
         Args:
             user_id: The ID of the user
@@ -245,30 +235,28 @@ class TaskScoringModel:
         try:
             print(f"Creating initial models for user {user_id}")
             
-            # Initialize default models
-            utility_model = SGDRegressor(
-                loss='squared_error',
-                penalty='l2',
-                alpha=0.001,
-                learning_rate='adaptive'
-            )
+            # Define path to pre-trained models
+            model_dir = Path(__file__).parent.parent / "utils" / "models"
+            utility_model_path = model_dir / "utility_model.joblib"
+            cost_model_path = model_dir / "cost_model.joblib"
             
-            cost_model = SGDRegressor(
-                loss='squared_error',
-                penalty='l2',
-                alpha=0.001,
-                learning_rate='adaptive'
-            )
-            n_utility_features = 12  # 11 from utility_mappings + priority + deadline
-            n_cost_features = 6      # 3 from cost_mappings + priority + deadline
-            X_utility = np.full((1, n_utility_features), 0.5)  # Match expected utility features
-            X_cost = np.full((1, n_cost_features), 0.5)        # Match expected cost features
-            y = np.array([0.5])
-            
-            utility_model.fit(X_utility, y)
-            cost_model.fit(X_cost, y)
-
-
+            # Try to load pre-trained models
+            if utility_model_path.exists() and cost_model_path.exists():
+                print(f"Loading pre-trained models from {model_dir}")
+                try:
+                    import joblib
+                    utility_model = joblib.load(utility_model_path)
+                    cost_model = joblib.load(cost_model_path)
+                    print("Successfully loaded pre-trained models")
+                except Exception as e:
+                    print(f"Error loading pre-trained models: {str(e)}")
+                    # Fall back to creating default models
+                    print("Falling back to default model initialization")
+                    utility_model, cost_model = self._create_default_models()
+            else:
+                print(f"Pre-trained models not found at {model_dir}")
+                print("Using default model initialization")
+                utility_model, cost_model = self._create_default_models()
             
             # Create a new UserModel instance and save the models
             print(f"Creating UserModel instance for user {user_id}")
@@ -286,6 +274,40 @@ class TaskScoringModel:
             print(f"Traceback: {traceback.format_exc()}")
             return False
         
+    def _create_default_models(self):
+        """
+        Create default untrained models when pre-trained models aren't available
+        
+        Returns:
+            Tuple[SGDRegressor, SGDRegressor]: Default utility and cost models
+        """
+        # Initialize default models
+        utility_model = SGDRegressor(
+            loss='squared_error',
+            penalty='l2',
+            alpha=0.001,
+            learning_rate='adaptive'
+        )
+        
+        cost_model = SGDRegressor(
+            loss='squared_error',
+            penalty='l2',
+            alpha=0.001,
+            learning_rate='adaptive'
+        )
+        
+        # Initialize with simple data to avoid cold-start issues
+        n_utility_features = 12  # 11 from utility_mappings + priority + deadline
+        n_cost_features = 6      # 5 from cost_mappings + priority + deadline
+        X_utility = np.full((1, n_utility_features), 0.5)  # Match expected utility features
+        X_cost = np.full((1, n_cost_features), 0.5)        # Match expected cost features
+        y = np.array([0.5])
+        
+        utility_model.fit(X_utility, y)
+        cost_model.fit(X_cost, y)
+        
+        return utility_model, cost_model
+    
     async def partial_fit(self, features: Tuple[np.ndarray, np.ndarray], y: Dict[str, float], user_id: Optional[str] = None) -> None:
         """
         Online learning - update models with new data and optionally save to database
