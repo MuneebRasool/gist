@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import EmailService, { EmailMessage } from '@/services/nylas/email.service';
 // import { OnboardingService, OnboardingFormData, QuestionWithOptions } from '@/services/agent/onboarding.service';
 import { useOnboardingStore } from '@/store/onboarding.store';
@@ -16,6 +16,7 @@ import { AgentService } from '@/services/agent.service';
 
 export default function OnboardingEmailRatingPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [emails, setEmails] = useState<EmailMessage[]>([]);
   const [currentEmailIndex, setCurrentEmailIndex] = useState(0);
   const [emailRatings, setEmailRatings] = useState<Record<string, number>>({});
@@ -28,6 +29,14 @@ export default function OnboardingEmailRatingPage() {
     "Fetching your recent emails...",
     "Extracting tasks from your emails..."
   ];
+
+  useEffect(() => {
+    const emailFromParams = searchParams.get('email');
+    if (emailFromParams) {
+      localStorage.setItem('userEmail', emailFromParams);
+      console.log('Email saved to localStorage:', emailFromParams);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const fetchEmails = async () => {
@@ -104,6 +113,7 @@ export default function OnboardingEmailRatingPage() {
       
       // Get domain and email from localStorage
       const domain = localStorage.getItem('domain') || undefined;
+      const email = searchParams.get('email') || localStorage.getItem('userEmail') || undefined;
       
       // Map the emails to the simplified format
       const simplifiedEmails = emails.map(email => ({
@@ -122,17 +132,26 @@ export default function OnboardingEmailRatingPage() {
         localStorage.setItem('ratedEmails', emailsJson);
         localStorage.setItem('emailRatings', ratingsJson);
         
+        // Ensure email is saved to localStorage
+        if (email) {
+          localStorage.setItem('userEmail', email);
+        }
+        
         // Verify the data was saved correctly
         const savedEmails = localStorage.getItem('ratedEmails');
         const savedRatings = localStorage.getItem('emailRatings');
+        const savedEmail = localStorage.getItem('userEmail');
         
         if (!savedEmails || !savedRatings) {
           console.error('Failed to save emails or ratings to localStorage');
         } else {
           console.log('Successfully saved emails and ratings to localStorage');
+          if (savedEmail) {
+            console.log('Successfully saved user email to localStorage:', savedEmail);
+          }
         }
       } catch (error) {
-        console.error('Error saving emails and ratings to localStorage:', error);
+        console.error('Error saving data to localStorage:', error);
       }
       
       toast.success('Email ratings saved successfully!');
@@ -142,7 +161,9 @@ export default function OnboardingEmailRatingPage() {
       setIsSubmitting(true);
       setLoadingMessageIndex(0);
       
-      const redirectPath = domain ? `/app/onboarding?domain=${domain}` : '/app/onboarding';
+      // Include email in redirect URL if available
+      const emailParam = email ? `&email=${email}` : '';
+      const redirectPath = domain ? `/app/onboarding?domain=${domain}${emailParam}` : `/app/onboarding${emailParam ? `?${emailParam.substring(1)}` : ''}`;
       
       // Add a small delay to show the success message
       setTimeout(() => {

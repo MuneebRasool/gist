@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
+// import FloatingFooter from '@/components/app/FloatingNavbar';
 
 export default function OnboardingEmailRatingLayout({
   children,
@@ -56,6 +57,7 @@ export default function OnboardingEmailRatingLayout({
               </div>
             </div>
           </motion.footer>
+          {/* <FloatingFooter /> */}
         </div>
       </main>
     </div>
