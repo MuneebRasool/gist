@@ -79,10 +79,6 @@ class OnboardingAgentService:
                                 email_body = email['body']
                                 # print(f"Extracted body from dictionary 'body' key, length: {len(email_body)}")
                             # Check for 'snippet' key as fallback (common in Nylas messages)
-                            elif 'snippet' in email:
-                                email_body = email['snippet']
-                                # print(f"Using snippet as fallback, length: {len(email_body)}")
-                            # Try to get body from 'body_data' if it exists (another Nylas format)
                             elif 'body_data' in email and isinstance(email['body_data'], dict):
                                 if 'text' in email['body_data']:
                                     email_body = email['body_data']['text']

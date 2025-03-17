@@ -1,7 +1,7 @@
 from openai import AsyncOpenAI
 from src.config import settings
 import json
-from src.tools import get_task_deadline
+from src.tools.get_task_deadline import get_task_deadline
 
 class BaseAgent:
     """
