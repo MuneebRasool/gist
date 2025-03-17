@@ -440,8 +440,6 @@ class TaskScoringModel:
             
             # Prepare task data with features from database
             task_data = {
-                'priority': task.priority if hasattr(task, 'priority') else 'medium',
-                'deadline': task.deadline if hasattr(task, 'deadline') and task.deadline != "No Deadline" else None,
                 'utility_features': utility_features,
                 'cost_features': cost_features
             }

@@ -116,7 +116,7 @@ class AgentService:
         tasks = task_items.get("tasks", [])
 
         if len(tasks) == 0:
-            print("No tasks found in email")
+            # print("No tasks found in email")
             return True
         else:
             print(f"Found {len(tasks)} tasks in email")
@@ -211,11 +211,11 @@ class AgentService:
         try:
             # Check if this is a message.created event
             if webhook_data.get("type") == "message.created":
-                print("Processing message.created event")
+                # print("Processing message.created event")
 
                 # Extract message data from the webhook
                 message_data = webhook_data.get("data", {}).get("object", {})
-                print("Got Message data")
+                # print("Got Message data")
                 if not message_data:
                     raise Exception("Message data not found in webhook data")
 
@@ -317,7 +317,7 @@ class AgentService:
             content: Text content to classify
 
         Returns:
-            dict: Classification results with a type (1=Library, 2=Main Focus-View, 3=Drawer)
+            dict: Classification results with a type (Library, Main Focus-View, Drawer)
         """
         try:
             # Remove any newlines or control characters that might cause JSON parsing issues
@@ -331,7 +331,7 @@ class AgentService:
             # Ensure type is a string and is one of the valid values
             if "type" not in result or not isinstance(result["type"], str):
                 print(
-                    f"Missing or invalid 'type' field in content classification result: {result}"
+                    f"Missing or invalid 'destination' field in content classification result: {result}"
                 )
                 result["type"] = "Drawer"  # Default to Drawer
 
@@ -343,8 +343,7 @@ class AgentService:
                 )
                 result["type"] = "Drawer"  # Default to Drawer
 
-
             return result
         except Exception as e:
             print(f"Error classifying content: {str(e)}")
-            return {"type": "3"}  # Default to Drawer
+            return {"type": "Drawer"}  # Default to Drawer

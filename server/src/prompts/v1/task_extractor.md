@@ -49,7 +49,7 @@ Only produce tasks if they're genuinely needed.
 
 You must NOT extract tasks from the following types of emails:
 - **OTP emails** (One-time passwords, 2FA codes, authentication codes, login verifications for GIST only, etc.).
-- **Sign-in alerts for Gist ONLY** (e.g., 'You granted access to Gist').
+- **Sign-in alerts for GIST ONLY** (e.g., 'You granted access to Gist').
 - **Transaction confirmation receipts** (e.g., 'Your payment was successful', 'Your order has been processed').
 - **System-generated access confirmations** where the agent itself (or an authorized system like GIST) was the one granted access.
 - **General email marketing, newsletters, or promotional emails.**
