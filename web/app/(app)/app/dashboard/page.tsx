@@ -5,13 +5,13 @@ import { useEffect, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import Loading from '@/app/loading';
 import SortableTaskList from '@/components/app/tasks/SortableTaskList';
+import FloatingButtons from '@/components/app/FloatingButtons';
 import { TaskResponse } from '@/types/tasks';
 
 export default function DashboardPage() {
 	const { tasks, fetchTasks, isLoading, updateTaskOrder } = useTasksStore();
 	const { data: session } = useSession();
 
-	// Filter tasks with classification = "main focus view"
 	const filteredTasks = useMemo(() => {
 		return tasks.filter(task => task.classification === 'Main Focus-View');
 	}, [tasks]);
@@ -22,15 +22,19 @@ export default function DashboardPage() {
 		}
 	}, [session?.user?.id, fetchTasks]);
 
-	// Handle task reordering
 	const handleTasksReordered = (reorderedTasks: TaskResponse[]) => {
-		// Extract the task IDs in the new order
 		const taskIds = reorderedTasks.map(task => task.task_id);
-		
-		// Update the task order in the store
 		updateTaskOrder(taskIds);
-		
-		// The API call for feedback is now handled in the SortableTaskList component
+	};
+
+	const handleLibraryClick = () => {
+		// TODO: Implement library functionality
+		console.log('Library clicked');
+	};
+
+	const handleDrawerClick = () => {
+		// TODO: Implement drawer functionality
+		console.log('Drawer clicked');
 	};
 
 	if (isLoading) {
@@ -38,17 +42,25 @@ export default function DashboardPage() {
 	}
 
 	return (
-		<div className='space-y-8'>
-			<h1 className='text-4xl font-bold tracking-tight text-gray-900'>Your Focus Today</h1>
+		<div className='space-y-8 pt-10 relative h-full'>
+			<div className='max-w-7xl mx-auto h-full'>
+				<h1 className='text-4xl font-semibold text-gray-800'>Your Focus Today</h1>
+				<div className="flex flex-col gap-56 mt-6 justify-between"> {/* Changed gap from 4 to 24 (100px) */}
+					<SortableTaskList 
+						tasks={filteredTasks} 
+						emptyMessage={{
+							title: "No Focus Tasks Found",
+							description: "No main focus tasks found. Tasks classified as main focus will appear here."
+						}}
+						onTasksReordered={handleTasksReordered}
+					/>
 
-			<SortableTaskList 
-				tasks={filteredTasks} 
-				emptyMessage={{
-					title: "No Focus Tasks Found",
-					description: "No main focus tasks found. Tasks classified as main focus will appear here."
-				}}
-				onTasksReordered={handleTasksReordered}
-			/>
+					<FloatingButtons
+						onLibraryClick={handleLibraryClick}
+						onDrawerClick={handleDrawerClick}
+					/>
+				</div>
+			</div>
 		</div>
 	);
 }

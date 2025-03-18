@@ -49,10 +49,10 @@ export default function Sidebar({ topOffset = 0 }: SidebarProps) {
 	return (
 		<aside
 			className={cn(
-				'fixed left-0 ml-4 flex h-dvh flex-col pb-5 pt-10 backdrop-blur-sm transition-all duration-300',
+				'fixed left-0 ml-4 flex h-[calc(100vh-120px)] flex-col pb-5 backdrop-blur-sm transition-all duration-300',
 				isCollapsed ? 'w-16' : 'w-56'
 			)}
-			style={{ top: topOffset }}
+			style={{ top: `calc(${topOffset}px + 120px)` }}
 		>
 			<div className='flex flex-col items-center gap-6'>
 				<div className={`flex ${isCollapsed ? 'justify-center' : 'w-full justify-start px-4'}`}>
