@@ -1,6 +1,6 @@
 """Nylas service implementation."""
 
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from nylas import Client
 from nylas.models.auth import CodeExchangeRequest, CodeExchangeResponse
 from .schemas import EmailData
@@ -11,6 +11,7 @@ from src.config.settings import (
     NYLAS_API_URI,
     NYLAS_CALLBACK_URI,
 )
+import datetime
 
 
 class NylasService:
@@ -126,28 +127,72 @@ class NylasService:
         except Exception as e:
             raise Exception(f"{str(e)}")
 
+    async def fetch_last_two_weeks_emails(
+        self,
+        grant_id: str,
+        limit: int = 100,
+        query_params: Optional[Dict[str, Any]] = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        Fetch emails from the last two weeks.
+        
+        Args:
+            grant_id: The GrantID of the user
+            limit: Maximum number of emails to fetch
+            query_params: Additional query parameters
+            
+        Returns:
+            List of email objects
+        """
+        # Calculate 2 weeks ago timestamp in seconds (UTC)
+        two_weeks_ago = int(
+            (datetime.datetime.now() - datetime.timedelta(days=14)).timestamp()
+        )
+
+        # Prepare query parameters
+        params = {
+            "received_after": two_weeks_ago,
+            "limit": limit,
+        }
+        
+        if query_params:
+            params.update(query_params)
+
+        # Fetch emails
+        emails = await self.get_messages(
+            grant_id=grant_id,
+            limit=limit,
+            query_params=params
+        )
+        
+        return emails.get("data", [])
+
     async def get_filtered_onboarding_messages(
         self,
         grant_id: str,
         agent_service,
-        fetch_limit: int = 15,
-        return_limit: int = 10,
+        email_extractor_agent,
+        user_domain: str,
+        fetch_limit: int = 100,
+        return_limit: int = 5,
         offset: Optional[str] = None,
         query_params: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
-        Get messages for onboarding with spam filtering.
+        Get messages for onboarding with spam filtering and relevance selection.
         
         Args:
             grant_id: The grant ID to get messages for
             agent_service: Instance of AgentService to use for spam classification
-            fetch_limit: Number of messages to fetch initially (default 15)
-            return_limit: Maximum number of non-spam messages to return (default 10)
+            email_extractor_agent: Instance of EmailExtractorAgent for relevance selection
+            user_domain: User's email domain for context
+            fetch_limit: Number of messages to fetch initially (default 100)
+            return_limit: Maximum number of relevant messages to return (default 5)
             offset: Cursor for pagination
             query_params: Additional query parameters for filtering messages
             
         Returns:
-            Dict containing filtered non-spam messages data and next cursor
+            Dict containing filtered relevant messages data and next cursor
         
         Raises:
             Exception: If fetching or processing messages fails
@@ -155,20 +200,17 @@ class NylasService:
         try:
             print(f"Starting get_filtered_onboarding_messages for grant_id: {grant_id}")
             
-            # Fetch more messages than needed to account for spam filtering
-            messages_response = await self.get_messages(
+            # Fetch last two weeks of emails
+            emails_raw = await self.fetch_last_two_weeks_emails(
                 grant_id=grant_id,
                 limit=fetch_limit,
-                offset=offset,
-                query_params=query_params,
+                query_params=query_params
             )
-            
-            emails_raw = messages_response.get("data", [])
 
             if not emails_raw:
-                raise Exception("No emails found for the last week")
+                raise Exception("No emails found for the last two weeks")
 
-                        # Convert the list of dictionaries to EmailData objects
+            # Convert the list of dictionaries to EmailData objects
             emails = []
             for email in emails_raw:
                 parsed_email_body = get_text_from_html(email.get("body", ""))
@@ -185,27 +227,35 @@ class NylasService:
             try:
                 classification_result = await agent_service.classify_spams(emails)
                 print("classify_spams completed successfully")
+                non_spam_messages = classification_result.get("non_spam", [])
             except Exception as e:
-                import traceback
                 print(f"Error in classify_spams: {str(e)}")
-                print(f"Traceback: {traceback.format_exc()}")
-                # Return all messages as non-spam in case of error
-                return {
-                    "data": messages_response["data"][:return_limit],
-                    "next_cursor": messages_response["next_cursor"],
-                }
+                non_spam_messages = emails
             
-            # Get non-spam messages and limit to return_limit
-            non_spam_messages = classification_result.get("non_spam", [])[:return_limit]
-            print(f"Filtered to {len(non_spam_messages)} non-spam messages")
+            print(f"Found {len(non_spam_messages)} non-spam messages")
+            
+            try:
+                selected_emails = await email_extractor_agent.process_email_batches(
+                    emails=non_spam_messages,
+                    user_domain=user_domain,
+                    max_selected=return_limit
+                )
+                print(f"Selected {len(selected_emails)} relevant emails")
+            except Exception as e:
+                print(f"Error in email extractor: {str(e)}")
+                # Return first return_limit messages in case of error
+                selected_emails = [{"selected_email": email, "explanation": "Error in email extraction"} 
+                                for email in non_spam_messages[:return_limit]]
             
             return {
-                "data": non_spam_messages,
-                "next_cursor": messages_response["next_cursor"],
+                "data": [result["selected_email"] for result in selected_emails],
+                "next_cursor": None,  # Since we're fetching a specific time window
             }
             
         except Exception as e:
-            import traceback
             print(f"Error in get_filtered_onboarding_messages: {str(e)}")
-            print(f"Traceback: {traceback.format_exc()}")
             raise Exception(f"Failed to get filtered onboarding messages: {str(e)}")
+        
+
+
+# /oboarding   -> get onboarding messages -> filter spams -> out of 100 messages, filter out the top 5 messages which are relevant to user's domain -> return them to user. 

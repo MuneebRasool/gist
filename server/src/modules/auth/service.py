@@ -100,6 +100,7 @@ class UserService:
             verified=False,
             verification_code=code,
             verification_code_expires_at=expires_at,
+            onboarding=False,  # Set onboarding to false for new users
         )
 
         # Initialize task scoring models for the new user
@@ -201,6 +202,7 @@ class UserService:
                 avatar=user_data.get("picture"),
                 is_active=True,
                 verified=True,  # Google accounts are pre-verified
+                onboarding=False,  # Set onboarding to false for new users
             )
             
             # Initialize task scoring models for the new user

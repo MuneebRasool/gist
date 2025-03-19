@@ -67,23 +67,6 @@ class DomainInferenceAgent(BaseAgent):
 
             print(f"Domain inference response: {response}")
             
-            # Additional debugging information
-            if isinstance(response, dict):
-                print(f"Response type: dict with keys: {list(response.keys())}")
-                if "questions" in response:
-                    print(f"Questions type: {type(response['questions'])}")
-                    print(f"Number of questions: {len(response['questions'])}")
-                    for i, q in enumerate(response['questions']):
-                        print(f"Question {i+1} type: {type(q)}")
-                        print(f"Question {i+1} keys: {list(q.keys()) if isinstance(q, dict) else 'Not a dict'}")
-                        print(f"Question {i+1} content: {q}")
-            else:
-                print(f"Response is not a dict, it's a {type(response)}")
-            
-            if not response or not isinstance(response, dict):
-                print(f"Invalid response from LLM for domain {email}")
-                return {}
-                
             # Ensure the response has the expected structure
             default_response = {
                 "domain": "unknown",

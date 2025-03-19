@@ -11,6 +11,8 @@ declare module 'next-auth' {
 		name: string;
 		avatar: string;
 		token: string;
+		onboarding?: boolean;
+		nylas_email?: string;
 	}
 	interface Session {
 		user: User;
@@ -24,6 +26,8 @@ declare module 'next-auth/jwt' {
 		email: string;
 		name: string;
 		avatar: string;
+		onboarding?: boolean;
+		nylas_email?: string;
 	}
 }
 
@@ -63,6 +67,8 @@ export const authOptions: NextAuthOptions = {
 					name: res.data?.user.name ?? '',
 					avatar: res.data?.user.avatar ?? '',
 					token: res.data?.access_token ?? '',
+					onboarding: res.data?.user.onboarding,
+					nylas_email: res.data?.user.nylas_email,
 				};
 			},
 		}),
@@ -85,6 +91,8 @@ export const authOptions: NextAuthOptions = {
 						user.avatar = response.data.user.avatar ?? '';
 						user.email = response.data.user.email;
 						user.name = response.data.user.name;
+						user.onboarding = response.data.user.onboarding;
+						user.nylas_email = response.data.user.nylas_email;
 						return true;
 					}
 				} catch (error) {
@@ -102,6 +110,8 @@ export const authOptions: NextAuthOptions = {
 					id: token.id,
 					token: token.token,
 					avatar: token.avatar,
+					onboarding: token.onboarding,
+					nylas_email: token.nylas_email,
 				},
 			};
 		},
@@ -114,6 +124,8 @@ export const authOptions: NextAuthOptions = {
 					email: user.email,
 					avatar: user.avatar,
 					token: user.token,
+					onboarding: user.onboarding,
+					nylas_email: user.nylas_email,
 				};
 			}
 			return token;
