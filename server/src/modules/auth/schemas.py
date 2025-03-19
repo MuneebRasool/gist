@@ -19,6 +19,7 @@ class UserBase(BaseModel):
     avatar: Optional[str] = None
     nylas_email: Optional[str] = None
     personality: Optional[List[str]] = None
+    onboarding: Optional[bool] = None
 
     @field_validator("id", mode="before")
     @classmethod

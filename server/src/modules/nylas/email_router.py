@@ -6,6 +6,7 @@ from src.models.user import User
 from src.modules.nylas.service import NylasService
 from src.modules.nylas.schemas import MessageList,EmailMessage
 from src.modules.agent.onboarding_service import OnboardingAgentService
+from src.agents.email_extractor import EmailExtractorAgent
 
 router = APIRouter(
     prefix="/nylas/email",
@@ -13,6 +14,7 @@ router = APIRouter(
 )
 
 agent = OnboardingAgentService()
+email_extractor = EmailExtractorAgent()
 
 @router.get("/onboarding/message", response_model=MessageList)
 async def get_filtered_onboarding_message(
@@ -29,12 +31,12 @@ async def get_filtered_onboarding_message(
     """
     Get filtered email messages for user onboarding.
     
-    This endpoint fetches a larger batch of emails, filters out spam,
-    and returns the non-spam messages (up to the specified limit).
+    This endpoint fetches emails from the last two weeks, filters out spam,
+    and uses AI to select the most relevant messages based on the user's domain.
     
     Args:
-        limit: Number of non-spam messages to return (1-100)
-        offset: Cursor for pagination
+        limit: Number of relevant messages to return (1-100)
+        offset: Cursor for pagination (not used in this endpoint)
         unread: Filter by unread status
         starred: Filter by starred status
         in_folder: Filter by folder ID
@@ -43,7 +45,7 @@ async def get_filtered_onboarding_message(
         received_before: Filter by received date before unix timestamp
         
     Returns:
-        MessageList containing filtered non-spam messages and next cursor
+        MessageList containing filtered relevant messages
     """
     try:
         if not current_user.nylas_grant_id:
@@ -51,6 +53,9 @@ async def get_filtered_onboarding_message(
                 status_code=400,
                 detail="Nylas grant ID not found. Please connect your email account first."
             )
+
+        # Extract user's email domain
+        user_domain = current_user.email.split('@')[-1]
 
         # Build query parameters
         params = {}
@@ -67,14 +72,15 @@ async def get_filtered_onboarding_message(
         if subject:
             params["q"] = subject  # Using 'q' for subject search as per Nylas API
 
-        # Get filtered messages from Nylas with spam detection
+        # Get filtered messages from Nylas with spam detection and relevance selection
         nylas_service = NylasService()
         messages = await nylas_service.get_filtered_onboarding_messages(
             grant_id=current_user.get_nylas_grant_id(),
             agent_service=agent,
-            fetch_limit=15,  # Fetch 15 emails initially
+            email_extractor_agent=email_extractor,
+            user_domain=user_domain,
+            fetch_limit=100,  # Fetch up to 100 emails from last 2 weeks
             return_limit=limit,  # Return only up to the requested limit after filtering
-            offset=offset,
             query_params=params
         )
         

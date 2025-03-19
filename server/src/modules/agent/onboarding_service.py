@@ -46,16 +46,8 @@ class OnboardingAgentService:
             
             async def classify_email(email):
                 try:
-                    email_id = None
-                    email_subject = None
                     email_body = ""
                     
-                    if isinstance(email, dict):
-                        email_id = email.get("id", "unknown_id")
-                        email_subject = email.get("subject", "no_subject")
-                    elif hasattr(email, 'id') and hasattr(email, 'subject'):
-                        email_id = email.id
-                        email_subject = email.subject
                     
                     # Handle different email formats to extract body
                     try:
@@ -260,33 +252,64 @@ class OnboardingAgentService:
         Returns:
             Dict[str, Any]: Domain inference results including questions and summary.
         """
+        print(f"[DEBUG] Starting domain inference for email: {email}")
+        print(f"[DEBUG] Rated emails count: {len(rated_emails) if rated_emails else 0}")
+        print(f"[DEBUG] Ratings count: {len(ratings) if ratings else 0}")
+        
         try:
+            print("[DEBUG] Calling domain_inference_agent.process")
             result = await self.domain_inference_agent.process(email, rated_emails, ratings)
+            print(f"[DEBUG] Domain inference result: {result}")
+            
+            print("[DEBUG] Validating questions")
             result["questions"] = self._validate_questions(result.get("questions"))
+            print(f"[DEBUG] Validated questions: {result['questions']}")
+            
             return result
 
         except Exception as e:
+            print(f"[ERROR] Exception in infer_user_domain: {str(e)}")
+            import traceback
+            print(f"[ERROR] Traceback: {traceback.format_exc()}")
             return self._default_response(error_msg=str(e))
 
     def _validate_questions(self, questions: Any) -> List[Dict[str, Any]]:
         """Validate and format the questions list."""
-        if not isinstance(questions, list) or len(questions) == 0:
+        print(f"[DEBUG] Validating questions input: {questions}")
+        
+        if not isinstance(questions, list):
+            print("[DEBUG] Questions is not a list, returning defaults")
+            return self._default_questions()
+            
+        if len(questions) == 0:
+            print("[DEBUG] Questions list is empty, returning defaults") 
             return self._default_questions()
 
         valid_questions = []
-        for q in questions:
+        for i, q in enumerate(questions):
+            print(f"[DEBUG] Validating question {i}: {q}")
             if (
                 isinstance(q, dict)
                 and "question" in q
                 and isinstance(q.get("options"), list)
             ):
                 valid_questions.append(q)
+                print(f"[DEBUG] Question {i} is valid")
+            else:
+                print(f"[DEBUG] Question {i} is invalid")
 
-        return valid_questions if valid_questions else self._default_questions()
+        if not valid_questions:
+            print("[DEBUG] No valid questions found, returning defaults")
+            return self._default_questions()
+            
+        print(f"[DEBUG] Returning {len(valid_questions)} valid questions")
+        return valid_questions
 
     def _default_response(self, error_msg: str = None) -> Dict[str, Any]:
         """Return a default response in case of failure."""
-        return {
+        print(f"[DEBUG] Generating default response with error: {error_msg}")
+        
+        response = {
             "questions": self._default_questions(),
             "summary": (
                 f"Error processing domain inference: {error_msg}"
@@ -294,10 +317,14 @@ class OnboardingAgentService:
                 else "We could not determine your domain. Please answer the questions to help us understand your work better."
             ),
         }
+        print(f"[DEBUG] Default response: {response}")
+        return response
 
     def _default_questions(self) -> List[Dict[str, Any]]:
         """Return a set of general questions."""
-        return [
+        print("[DEBUG] Generating default questions")
+        
+        questions = [
             {
                 "question": "What best describes your current role?",
                 "options": ["Professional", "Student", "Freelancer", "Other"],
@@ -306,7 +333,7 @@ class OnboardingAgentService:
                 "question": "What is your primary focus area?",
                 "options": [
                     "Technology",
-                    "Business",
+                    "Business", 
                     "Healthcare",
                     "Creative Industry",
                     "Other",
@@ -316,7 +343,7 @@ class OnboardingAgentService:
                 "question": "What kind of emails are most important to you?",
                 "options": [
                     "Work deadlines",
-                    "Client communications",
+                    "Client communications", 
                     "Networking opportunities",
                     "General updates",
                 ],
@@ -326,6 +353,8 @@ class OnboardingAgentService:
                 "options": ["Yes, notify me", "No, I will check manually"],
             },
         ]
+        print(f"[DEBUG] Generated {len(questions)} default questions")
+        return questions
 # onboarindg flow 
 
 #   user signs up -> grant id is generated

@@ -11,6 +11,7 @@ export type UserDto = {
 	avatar?: string;
 	nylas_email?: string;
 	personality?: string[];
+	onboarding?: boolean;
 };
 
 export type UserUpdateRequest = {
