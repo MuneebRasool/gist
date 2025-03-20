@@ -2,6 +2,7 @@
 Service for handling agent-related operations.
 """
 
+import json
 from typing import List, Dict, Any, Optional
 from src.agents.spam_classifier import SpamClassifier
 from src.agents.task_extractor import TaskExtractor
@@ -171,11 +172,12 @@ class OnboardingAgentService:
             user = await User.get(id=user_id)
             user_personality = None
             if user.personality:
-                if isinstance(user.personality, list) and len(user.personality) > 0:
-                    user_personality = user.personality[-1]
-                elif isinstance(user.personality, str):
-                    user_personality = user.personality
-                elif isinstance(user.personality, dict):
+                # Handle ArrayField of CharField
+                if isinstance(user.personality, list):
+                    # Take the last entry if list is not empty
+                    user_personality = user.personality[-1] if user.personality else None
+                else:
+                    # If somehow it's not a list, convert to string
                     user_personality = str(user.personality)
                 
             # Prepare data for batch saving to PostgreSQL
@@ -309,11 +311,12 @@ class OnboardingAgentService:
             if rated_emails and email_ratings:
                 rated_email_data = []
                 for email_data in rated_emails:
-                    email_id = getattr(email_data, 'id', None) or email_data.get('id')
+                    # Since email_data is a Pydantic model, use getattr
+                    email_id = getattr(email_data, 'id', None)
                     if email_id and email_id in email_ratings:
                         rating = email_ratings[email_id]
-                        subject = getattr(email_data, 'subject', None) or email_data.get('subject', '')
-                        snippet = getattr(email_data, 'snippet', None) or email_data.get('snippet', '')
+                        subject = getattr(email_data, 'subject', '')
+                        snippet = getattr(email_data, 'snippet', '')
                         
                         rated_email_data.append({
                             "id": email_id,
@@ -331,7 +334,6 @@ class OnboardingAgentService:
                         "rating": email_data["rating"]
                     })
             
-            import json
             context_json = json.dumps(context)
             result = await self.personality_summarizer.process_onboarding(context_json)
             

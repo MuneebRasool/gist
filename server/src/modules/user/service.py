@@ -27,7 +27,7 @@ class UserService:
                 return None
                 
             # Return the personality data (could be None if not yet set)
-            return user.personality
+            return user.personality[:-1]
         except Exception as e:
             print(f"Error fetching user personality: {str(e)}")
             return None
@@ -49,8 +49,9 @@ class UserService:
             if not user:
                 return False
             
-            # Update the personality data
-            user.personality = personality_data
+            user.personality = []
+            user.personality.append(personality_data)
+            
             await user.save()
             
             return True

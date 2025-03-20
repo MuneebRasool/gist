@@ -23,7 +23,7 @@ class User(models.Model):
     verified = fields.BooleanField(default=False)
     verification_code = fields.CharField(max_length=6, null=True)
     verification_code_expires_at = fields.DatetimeField(null=True)
-    personality = fields.JSONField(null=True)
+    personality = fields.JSONField(null=True, default=list)
     nylas_email = fields.CharField(max_length=255, null=True)
     nylas_grant_id = fields.TextField(null=True, description="Encrypted Nylas grant ID")
     onboarding = fields.BooleanField(default=False)
