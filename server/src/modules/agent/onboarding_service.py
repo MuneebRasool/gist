@@ -8,6 +8,7 @@ from src.agents.task_extractor import TaskExtractor
 from src.agents.personality_summarizer import PersonalitySummarizer
 from src.agents.content_classifier import ContentClassifier
 from src.agents.email_domain_inferencer import DomainInferenceAgent
+from src.agents.content_summarizer import ContentSummarizer
 from src.models.user import User
 from src.modules.agent.service import AgentService
 
@@ -29,6 +30,7 @@ class OnboardingAgentService:
         self.cost_features = CostFeaturesExtractor()
         self.content_classifier = ContentClassifier()
         self.domain_inference_agent = DomainInferenceAgent()
+        self.content_summarizer = ContentSummarizer()
         self.agent = AgentService()
 
     async def classify_spams(self, emails: List[dict]) -> dict:
@@ -214,10 +216,19 @@ class OnboardingAgentService:
                     # Set to None to indicate no node was created
                     email_nodes[email.id] = None
                 
-                # Prepare data for PostgreSQL batch save with classification
+                # Generate a summary of the email content
+                try:
+                    summary_result = await self.content_summarizer.process_content(email.body)
+                    email_summary = summary_result.get("summary", "No summary available")
+                    print(f"Generated summary for email {email.id}")
+                except Exception as e:
+                    print(f"Error generating summary for email {email.id}: {str(e)}")
+                    email_summary = "Failed to generate summary: " + str(e)
+                
+                # Prepare data for PostgreSQL batch save with classification and summary
                 email_data_list.append({
                     "id": email.id,
-                    "body": email.body,
+                    "body": email_summary,  # Store the summary in the body field
                     "subject": email.subject,
                     "from": email.from_,
                     "snippet": getattr(email, "snippet", ""),
@@ -241,9 +252,12 @@ class OnboardingAgentService:
                     try:
                         # Use the pre-created EmailNode
                         email_node = email_nodes.get(email.id)
+                        
+                        # We need to pass the original email content for task extraction
+                        # The summarized version is already saved in PostgreSQL
                         task = self.agent.extract_and_save_tasks(
                             user_id, 
-                            email, 
+                            email,  # Original email with full content
                             user_personality,
                             email_node  # Pass the pre-created email node
                         )

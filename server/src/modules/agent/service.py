@@ -8,15 +8,15 @@ from src.agents.task_extractor import TaskExtractor
 from src.agents.personality_summarizer import PersonalitySummarizer
 from src.agents.content_classifier import ContentClassifier
 from src.agents.email_domain_inferencer import DomainInferenceAgent
+from src.agents.content_summarizer import ContentSummarizer
 from src.models.user import User, EmailModel
 from src.modules.tasks.service import TaskService
 from src.modules.tasks.schemas import TaskCreate
 from src.modules.nylas.service import NylasService
-from src.models.graph.nodes import UserNode, EmailNode, TaskNode
+from src.models.graph.nodes import UserNode, EmailNode
 from .schemas import EmailData
 import asyncio
 import datetime
-import uuid
 from ...agents.task_cost_features_extractor import CostFeaturesExtractor
 from ...agents.task_utility_features_extractor import UtilityFeaturesExtractor
 from ...utils.get_text_from_html import get_text_from_html
@@ -36,6 +36,7 @@ class AgentService:
         self.cost_features = CostFeaturesExtractor()
         self.content_classifier = ContentClassifier()
         self.domain_inference_agent = DomainInferenceAgent()
+        self.content_summarizer = ContentSummarizer()
 
     async def classify_spams(self, emails: List[dict]) -> dict:
         """
@@ -82,6 +83,7 @@ class AgentService:
         user_id: str,
         email,
         user_personality: str = None,
+        email_node = None
     ):
         """
         Extract tasks from email and save them to both PostgreSQL and Neo4j
@@ -106,6 +108,9 @@ class AgentService:
             print(f"Warning: Unsupported email type: {type(email)}")
             return False
 
+        # We need the full original content for task extraction, not the summary
+        # If we're processing from webhook, email_body might already be a summary
+        # In this case, we should use the original body from the parsed_body variable if available
         task_items = await self.extract_tasks(email_body, user_personality)
         tasks = task_items.get("tasks", [])
 
@@ -127,7 +132,7 @@ class AgentService:
             cost_task_features_coroutine = self.cost_features.process(task_context)
 
             # Gather results
-            utility_result, cost_result, classification_result = await asyncio.gather(
+            utility_result, cost_result = await asyncio.gather(
                 utility_task_features_coroutine,
                 cost_task_features_coroutine,
             )
@@ -272,24 +277,37 @@ class AgentService:
                     if not user_node.emails.is_connected(email_node):
                         user_node.emails.connect(email_node)
                     
-                    # Save email to PostgreSQL with classification
+                    # Save email with summary to PostgreSQL
                     try:
+                        # Generate a summary of the email content
+                        summary_result = await self.content_summarizer.process_content(parsed_body)
+                        email_summary = summary_result.get("summary", "No summary available")
+                        
+                        # Save email with summary to PostgreSQL
                         await EmailModel.create_email(
                             user_id=user.id,
                             email_data={
                                 "id": message_id,
-                                "body": parsed_body,
+                                "body": email_summary,  # Store summary in the body field
                                 "subject": subject,
                                 "from": from_data,
                                 "classification": email_classification
                             }
                         )
-                        print(f"Email {message_id} saved to PostgreSQL with classification: {email_classification}")
+                        print(f"Email {message_id} saved to PostgreSQL with summary and classification: {email_classification}")
                     except Exception as e:
                         print(f"Error saving email to PostgreSQL: {str(e)}")
                     
-                    # Extract and save tasks
-                    await self.extract_and_save_tasks(user.id, email, user_personality, email_node)
+                    # For task extraction, create a modified email object with the original content
+                    email_for_tasks = EmailData(
+                        id=message_id,
+                        body=parsed_body,  # Use the original parsed body for task extraction
+                        subject=subject,
+                        from_=from_data
+                    )
+                    
+                    # Extract and save tasks using the original content
+                    await self.extract_and_save_tasks(user.id, email_for_tasks, user_personality, email_node)
 
                 return True
         except Exception as e:

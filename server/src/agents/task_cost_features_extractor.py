@@ -5,10 +5,17 @@ class CostFeaturesExtractor(BaseAgent):
     """
     Agent to extract action items from emails.
     """
+    
+    def __init__(self):
+        """
+        Initialize the CostFeaturesExtractor agent
+        Load the system prompt during initialization
+        """
+        super().__init__()
+        self.system_prompt = FileUtils.read_file_content("src/prompts/v1/task_cost_features_extractor.md")
 
     def process(self, task_context: str):
         """
         Calls LLM to extract tasks from an email.
         """
-        system_prompt = FileUtils.read_file_content("src/prompts/v1/task_cost_features_extractor.md")
-        return self.execute(system_prompt, task_context, response_format="json")
+        return self.execute(self.system_prompt, task_context, response_format="json")
