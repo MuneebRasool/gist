@@ -150,6 +150,7 @@ async def submit_onboarding(
             current_user.personality = []
             current_user.onboarding = True
         current_user.personality.append(result.get("summary", ""))
+
             
         await current_user.save()
         
