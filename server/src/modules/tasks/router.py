@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status,Depends
 from typing import List
-from .schemas import TaskCreate, TaskUpdate, TaskResponse
+from .schemas import TaskCreate, TaskUpdate, TaskResponse, EmailResponse
 from .service import TaskService
 from src.dependencies import get_current_user
 from src.models.user import User
