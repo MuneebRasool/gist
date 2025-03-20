@@ -148,7 +148,7 @@ class OnboardingAgentService:
 
             try:
                 classified_emails = await self.classify_spams(emails)
-            except Exception as e:
+            except Exception:
                 classified_emails = {"spam": [], "non_spam": emails}
 
             non_spam_emails = classified_emails.get("non_spam", [])
@@ -317,12 +317,14 @@ class OnboardingAgentService:
                         rating = email_ratings[email_id]
                         subject = getattr(email_data, 'subject', '')
                         snippet = getattr(email_data, 'snippet', '')
+                        body = getattr(email_data, 'body', '')
                         
                         rated_email_data.append({
                             "id": email_id,
                             "rating": rating,
                             "subject": subject,
-                            "snippet": snippet
+                            "snippet": snippet,
+                            "body": body
                         })
                 
                 rated_email_data.sort(key=lambda x: x["rating"], reverse=True)
@@ -331,6 +333,7 @@ class OnboardingAgentService:
                     context["email_interests"].append({
                         "subject": email_data["subject"],
                         "snippet": email_data["snippet"],
+                        "body": email_data["body"],
                         "rating": email_data["rating"]
                     })
             
@@ -354,49 +357,35 @@ class OnboardingAgentService:
         Returns:
             Dict[str, Any]: Domain inference results including questions and summary.
         """
-        print(f"[DEBUG] Starting domain inference for email: {email}")
-        print(f"[DEBUG] Rated emails count: {len(rated_emails) if rated_emails else 0}")
-        print(f"[DEBUG] Ratings count: {len(ratings) if ratings else 0}")
         
         try:
-            print("[DEBUG] Calling domain_inference_agent.process")
             result = await self.domain_inference_agent.process(email, rated_emails, ratings)
-            print(f"[DEBUG] Domain inference result: {result}")
             
-            print("[DEBUG] Validating questions")
             result["questions"] = self._validate_questions(result.get("questions"))
             print(f"[DEBUG] Validated questions: {result['questions']}")
             
             return result
 
         except Exception as e:
-            print(f"[ERROR] Exception in infer_user_domain: {str(e)}")
-            import traceback
-            print(f"[ERROR] Traceback: {traceback.format_exc()}")
             return self._default_response(error_msg=str(e))
 
     def _validate_questions(self, questions: Any) -> List[Dict[str, Any]]:
         """Validate and format the questions list."""
-        print(f"[DEBUG] Validating questions input: {questions}")
         
         if not isinstance(questions, list):
-            print("[DEBUG] Questions is not a list, returning defaults")
             return self._default_questions()
             
         if len(questions) == 0:
-            print("[DEBUG] Questions list is empty, returning defaults") 
             return self._default_questions()
 
         valid_questions = []
         for i, q in enumerate(questions):
-            print(f"[DEBUG] Validating question {i}: {q}")
             if (
                 isinstance(q, dict)
                 and "question" in q
                 and isinstance(q.get("options"), list)
             ):
                 valid_questions.append(q)
-                print(f"[DEBUG] Question {i} is valid")
             else:
                 print(f"[DEBUG] Question {i} is invalid")
 

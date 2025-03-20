@@ -121,6 +121,7 @@ export default function OnboardingEmailRatingPage() {
         subject: email.subject || '',
         from: Array.isArray(email.from) ? email.from : [],
         snippet: email.snippet || '',
+        body : email.body || '',
         date: email.date || 0
       }));
       
