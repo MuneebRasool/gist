@@ -12,6 +12,7 @@ from src.agents.email_domain_inferencer import DomainInferenceAgent
 from src.agents.content_summarizer import ContentSummarizer
 from src.models.user import User
 from src.modules.agent.service import AgentService
+import traceback
 
 from .schemas import EmailData
 import asyncio
@@ -273,7 +274,6 @@ class OnboardingAgentService:
 
         except Exception as e:
             print(f"Error in start_onboarding: {str(e)}")
-            import traceback
             traceback.print_exc()
             raise Exception(f"Failed to start onboarding: {str(e)}")
 

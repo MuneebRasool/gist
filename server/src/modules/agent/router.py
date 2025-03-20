@@ -126,7 +126,6 @@ async def infer_domain(request: DomainInferenceRequest):
 @router.post("/submit-onboarding", response_model=PersonalitySummaryResponse)
 async def submit_onboarding(
     request: OnboardingSubmitRequest,
-    background_tasks: BackgroundTasks,
     current_user: Annotated[User, Depends(get_current_user)]
 ):
     """
@@ -142,8 +141,6 @@ async def submit_onboarding(
         if not result or "summary" not in result:
             raise HTTPException(status_code=500, detail="Failed to process onboarding data")
         
-        # Get the decrypted Nylas grant ID
-        grant_id = current_user.get_nylas_grant_id()
 
         # Update the user's personality
         if current_user.personality is None:
@@ -154,8 +151,6 @@ async def submit_onboarding(
             
         await current_user.save()
         
-        if grant_id:
-            background_tasks.add_task(onboarding_agent.start_onboarding, grant_id, current_user.id)
         
         return PersonalitySummaryResponse(
             success=True,
@@ -168,6 +163,42 @@ async def submit_onboarding(
     except Exception as e:
         print(f"Error processing onboarding data: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error processing onboarding data: {str(e)}")
+    
+
+@router.post("/start-onboarding")
+async def Start_onboarding(
+    request: OnboardingSubmitRequest,
+    background_tasks: BackgroundTasks,
+    current_user: Annotated[User, Depends(get_current_user)]
+):
+    """
+    Process onboarding information to generate a personality summary
+    """
+    try:
+        if not request:
+            raise HTTPException(status_code=400, detail="Request data is required")
+        
+        
+        # Get the decrypted Nylas grant ID
+        grant_id = current_user.get_nylas_grant_id()
+
+        await onboarding_agent.start_onboarding(grant_id, current_user.id)
+
+        return {
+            "success": True,
+            "message": "Onboarding done successfully"
+        }
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        print(f"Error processing onboarding data: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error processing onboarding data: {str(e)}")
+    
+
+    
+
+
+
 
 
 # route handler -> background tasks (start onboarding) -> Email Processing -> Task Creation ( create_task)
