@@ -248,20 +248,11 @@ class AgentService:
                 for user in users:
                     # Fetch user personality once for all operations
                     user_personality = None
-                    if user.personality:
-                        # If personality is a list, use the most recent one
-                        if (
-                            isinstance(user.personality, list)
-                            and len(user.personality) > 0
-                        ):
-                            user_personality = user.personality[-1]
-                        # If personality is a string, use it directly
-                        elif isinstance(user.personality, str):
-                            user_personality = user.personality
-                        # If personality is a dict, convert to string
-                        elif isinstance(user.personality, dict):
-                            user_personality = str(user.personality)
-                    
+                    if user.personality and isinstance(user.personality, list):
+                        # Take all but the last personality trait
+                        user_personality = user.personality[:-1]
+                        # Join multiple personality traits with newlines
+                        user_personality = "\n".join(user_personality)
                     # Classify the email content (library or drawer) with personality context
                     personality_context = f"User personality: {user_personality}\n\nEmail content: {parsed_body}"
                     content_classification = await self.classify_content(personality_context)

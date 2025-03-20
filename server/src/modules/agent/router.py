@@ -147,13 +147,10 @@ async def submit_onboarding(
 
         # Update the user's personality
         if current_user.personality is None:
-            current_user.personality = {}
+            current_user.personality = []
             current_user.onboarding = True
-        
-        if isinstance(current_user.personality, dict):
-            current_user.personality["summary"] = result.get("summary", "")
-        else:
-            current_user.personality = {"summary": result.get("summary", "")}
+        current_user.personality.append(result.get("summary", ""))
+
             
         await current_user.save()
         
