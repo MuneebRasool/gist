@@ -227,6 +227,7 @@ async def start_onboarding(
 ):
     """
     Process onboarding information and start the onboarding process in the background
+
     """
     try:
         if not request:

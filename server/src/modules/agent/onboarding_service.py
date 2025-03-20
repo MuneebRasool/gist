@@ -158,6 +158,7 @@ class OnboardingAgentService:
                     "completed": True,
                     "error": "No non-spam emails found for processing"
                 }
+
                 classified_emails = {"spam": [], "non_spam": emails}
 
             non_spam_emails = classified_emails.get("non_spam", [])
