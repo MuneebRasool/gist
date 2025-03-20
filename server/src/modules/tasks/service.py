@@ -1,7 +1,7 @@
 from datetime import datetime, UTC
 from typing import List, Optional, Dict, Any
 from src.models.graph.nodes import TaskNode, EmailNode, UserNode
-from src.models.user import Features
+from src.models.user import Features, User
 from .schemas import TaskCreate, TaskUpdate
 import uuid
 from neomodel import db
@@ -186,3 +186,22 @@ class TaskService:
             "utility_features": features.features,
             "cost_features": features.cost
         }
+
+    @staticmethod
+    async def get_user_emails(user_id: str) -> List[Dict[str, Any]]:
+        """
+        Get all emails for a specific user
+        
+        Args:
+            user_id: The ID of the user
+            
+        Returns:
+            List[Dict[str, Any]]: List of email nodes with their messageId
+        """
+        try:
+            emails = await User.get_user_emails(user_id)
+            # Map email.message_id to messageId as expected by EmailResponse schema
+            return [{"messageId": email.message_id} for email in emails]
+        except Exception as e:
+            print(f"Error getting emails for user {user_id}: {str(e)}")
+            return []

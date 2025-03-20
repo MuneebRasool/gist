@@ -279,6 +279,25 @@ class EmailModel(models.Model):
             # If batch fails, we might want to fall back to individual creation
             return []
 
+    @classmethod
+    async def get_user_emails(cls, user_id: str) -> List["EmailModel"]:
+        """
+        Get all emails for a specific user
+        
+        Args:
+            user_id: The ID of the user
+            
+        Returns:
+            List[EmailModel]: List of email records for the user
+        """
+        try:
+            user = await User.get(id=user_id)
+            emails = await cls.filter(user=user).all()
+            return emails
+        except Exception as e:
+            print(f"Error getting user emails: {str(e)}")
+            return []
+
 
 class Features(models.Model):
     """

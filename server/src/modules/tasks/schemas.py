@@ -42,3 +42,4 @@ class TaskFeaturesResponse(BaseModel):
     
     class Config:
         from_attributes = True
+
