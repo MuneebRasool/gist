@@ -26,7 +26,7 @@ async def get_personality(current_user: Annotated[User, Depends(get_current_user
             return PersonalityResponse(
                 success=True,
                 message="No personality data found for this user",
-                personality={}
+                personality=[]
             )
         
         return PersonalityResponse(
@@ -41,7 +41,7 @@ async def get_personality(current_user: Annotated[User, Depends(get_current_user
             detail=f"Failed to retrieve personality data: {str(e)}"
         )
 
-@router.post("/personality", response_model=PersonalityResponse)
+@router.put("/personality", response_model=PersonalityResponse)
 async def update_personality(
     request: UpdatePersonalityRequest,
     current_user: Annotated[User, Depends(get_current_user)]

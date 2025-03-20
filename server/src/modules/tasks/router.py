@@ -39,8 +39,6 @@ async def get_task_by_message_id(message_id: str):
 async def get_user_tasks(user_id: str):
     """Get all tasks for a specific user"""
     tasks = await TaskService.get_tasks_by_user(user_id)
-    print("tasks")
-    print(tasks)
     return tasks
 
 @router.patch("/{task_id}", response_model=TaskResponse)

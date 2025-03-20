@@ -2,7 +2,7 @@
 Service for handling user-related operations.
 """
 
-from typing import Dict, Any, Optional
+from typing import List, Optional
 from src.models.user import User
 
 class UserService:
@@ -11,7 +11,7 @@ class UserService:
     """
     
     @staticmethod
-    async def get_user_personality(user_id: str) -> Optional[Dict[str, Any]]:
+    async def get_user_personality(user_id: str) -> Optional[List[str]]:
         """
         Get a user's personality data
         
@@ -27,14 +27,14 @@ class UserService:
                 return None
                 
 
-            return user.personality[:-1]
+            return user.personality
 
         except Exception as e:
             print(f"Error fetching user personality: {str(e)}")
             return None
     
     @staticmethod
-    async def update_user_personality(user_id: str, personality_data: Dict[str, Any]) -> bool:
+    async def update_user_personality(user_id: str, personality_data: List[str]) -> bool:
         """
         Update a user's personality data
         
@@ -51,7 +51,7 @@ class UserService:
                 return False
             
             user.personality = []
-            user.personality.append(personality_data)
+            user.personality.extend(personality_data)
 
             await user.save()
             

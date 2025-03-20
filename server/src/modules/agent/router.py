@@ -135,7 +135,14 @@ async def submit_onboarding(
         if not request:
             raise HTTPException(status_code=400, detail="Request data is required")
         
-
+        if current_user.personality is None:
+            current_user.personality = []
+        if len(current_user.personality) > 0:
+            return PersonalitySummaryResponse(
+                success=True,
+                message="Onboarding data processed successfully", 
+                personalitySummary=current_user.personality[0]
+            )
         result = await onboarding_agent.summarize_onboarding_data(request)
         
         if not result or "summary" not in result:
@@ -143,9 +150,8 @@ async def submit_onboarding(
         
 
         # Update the user's personality
-        if current_user.personality is None:
-            current_user.personality = []
-            current_user.onboarding = True
+        
+        current_user.onboarding = True
         current_user.personality.append(result.get("summary", ""))
 
             
@@ -167,18 +173,12 @@ async def submit_onboarding(
 
 @router.post("/start-onboarding")
 async def Start_onboarding(
-    request: OnboardingSubmitRequest,
-    background_tasks: BackgroundTasks,
     current_user: Annotated[User, Depends(get_current_user)]
 ):
     """
     Process onboarding information to generate a personality summary
     """
     try:
-        if not request:
-            raise HTTPException(status_code=400, detail="Request data is required")
-        
-        
         # Get the decrypted Nylas grant ID
         grant_id = current_user.get_nylas_grant_id()
 

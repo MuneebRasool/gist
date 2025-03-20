@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 class PersonalityResponse(BaseModel):
     """
@@ -7,10 +7,10 @@ class PersonalityResponse(BaseModel):
     """
     success: bool
     message: str
-    personality: Optional[Dict[str, Any]] = None
+    personality: Optional[List[str]] = None
 
 class UpdatePersonalityRequest(BaseModel):
     """
     Schema for updating a user's personality data
     """
-    personality: Dict[str, Any]
+    personality: List[str]
