@@ -10,12 +10,18 @@ from src.models.user import User
 from src.dependencies import get_current_user
 # from src.modules.nylas.service import get_nylas_service
 from typing import Annotated
+from sse_starlette.sse import EventSourceResponse
+import asyncio
+import json
 
 router = APIRouter(prefix="/agent", tags=["agent"])
 
 # Exception handler moved to main.py
 agent = AgentService()
 onboarding_agent = OnboardingAgentService()
+
+# Add a dictionary to store onboarding progress by user ID
+onboarding_progress = {}
 
 @router.get("/webhook")
 async def webhook_challenge(request: Request):
@@ -145,7 +151,7 @@ async def submit_onboarding(
         # Update the user's personality
         if current_user.personality is None:
             current_user.personality = []
-            current_user.onboarding = True
+            current_user.onboarding = "personality"
         current_user.personality.append(result.get("summary", ""))
 
             
@@ -165,29 +171,92 @@ async def submit_onboarding(
         raise HTTPException(status_code=500, detail=f"Error processing onboarding data: {str(e)}")
     
 
+@router.get("/onboarding-progress/{user_id}")
+async def get_onboarding_progress(
+    user_id: str,
+    current_user: Annotated[User, Depends(get_current_user)]
+):
+    """
+    Stream onboarding progress updates to the client using Server-Sent Events
+    """
+    if str(current_user.id) != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized to view this onboarding progress")
+    
+    async def event_generator():
+        # Initialize progress for this user if not exists
+        if user_id not in onboarding_progress:
+            onboarding_progress[user_id] = {
+                "completed": False,
+                "error": None
+            }
+        
+        # Keep connection alive until onboarding is completed
+        while not onboarding_progress.get(user_id, {}).get("completed", False):
+            # Get current progress
+            progress = onboarding_progress.get(user_id, {})
+            
+            # Send the progress as a JSON string
+            yield {
+                "event": "progress",
+                "data": json.dumps(progress)
+            }
+            
+            # Wait before sending the next update
+            await asyncio.sleep(1)
+        
+        # Send final completion message
+        yield {
+            "event": "complete",
+            "data": json.dumps({
+                "completed": True,
+                "error": None
+            })
+        }
+        
+        # Clean up after completion
+        if user_id in onboarding_progress:
+            del onboarding_progress[user_id]
+    
+    return EventSourceResponse(event_generator())
+
 @router.post("/start-onboarding")
-async def Start_onboarding(
+async def start_onboarding(
     request: OnboardingSubmitRequest,
     background_tasks: BackgroundTasks,
     current_user: Annotated[User, Depends(get_current_user)]
 ):
     """
-    Process onboarding information to generate a personality summary
+    Process onboarding information and start the onboarding process in the background
     """
     try:
         if not request:
             raise HTTPException(status_code=400, detail="Request data is required")
         
-        
         # Get the decrypted Nylas grant ID
         grant_id = current_user.get_nylas_grant_id()
+        user_id = str(current_user.id)
+        
+        # Initialize progress tracking for this user
+        onboarding_progress[user_id] = {
+            "completed": False,
+            "error": None
+        }
 
-        await onboarding_agent.start_onboarding(grant_id, current_user.id)
+        if grant_id:
+            # Start the onboarding process with progress tracking
+            background_tasks.add_task(
+                onboarding_agent.start_onboarding, 
+                grant_id, 
+                user_id, 
+                onboarding_progress
+            )
 
         return {
             "success": True,
-            "message": "Onboarding done successfully"
+            "message": "Onboarding started successfully",
+            "user_id": user_id
         }
+            
     except HTTPException as e:
         raise e
     except Exception as e:

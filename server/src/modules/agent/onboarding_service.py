@@ -121,7 +121,7 @@ class OnboardingAgentService:
         await user.save()
         return personality_task
 
-    async def start_onboarding(self, grant_id: str, user_id: str) -> None:
+    async def start_onboarding(self, grant_id: str, user_id: str, progress_tracker : dict) -> None:
         """
         Start onboarding process for a grant.
         Args:
@@ -133,6 +133,10 @@ class OnboardingAgentService:
         try:
             emails_raw = await self.agent.fetch_last_week_emails(grant_id)
             if not emails_raw:
+                progress_tracker[user_id] = {
+                    "completed": True,
+                    "error": "No emails found for the last week"
+                }
                 raise Exception("No emails found for the last week")
 
             emails = []
@@ -150,6 +154,10 @@ class OnboardingAgentService:
             try:
                 classified_emails = await self.classify_spams(emails)
             except Exception:
+                progress_tracker[user_id] = {
+                    "completed": True,
+                    "error": "No non-spam emails found for processing"
+                }
                 classified_emails = {"spam": [], "non_spam": emails}
 
             non_spam_emails = classified_emails.get("non_spam", [])
@@ -272,7 +280,20 @@ class OnboardingAgentService:
                 if task_extraction_tasks:
                     await asyncio.gather(*task_extraction_tasks)
 
+                
+            user.onboarding = "true"
+            await user.save()
+
+             # Update progress to completed
+            progress_tracker[user_id] = {
+                "completed": True,
+                "error": None
+            }
         except Exception as e:
+            progress_tracker[user_id] = {
+                "completed": True,
+                "error": str(e)
+            }
             print(f"Error in start_onboarding: {str(e)}")
             traceback.print_exc()
             raise Exception(f"Failed to start onboarding: {str(e)}")
@@ -446,6 +467,8 @@ class OnboardingAgentService:
         ]
         print(f"[DEBUG] Generated {len(questions)} default questions")
         return questions
+    
+
 # onboarindg flow 
 
 #   user signs up -> grant id is generated

@@ -26,7 +26,7 @@ class User(models.Model):
     personality = fields.JSONField(null=True, default=list)
     nylas_email = fields.CharField(max_length=255, null=True)
     nylas_grant_id = fields.TextField(null=True, description="Encrypted Nylas grant ID")
-    onboarding = fields.BooleanField(default=False)
+    onboarding = fields.CharField(max_length=255, null=True)
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
 

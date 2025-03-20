@@ -79,4 +79,3 @@ async def get_user_emails(user_id: str, current_user: User = Depends(get_current
         # Return an empty list instead of 404 error as it's a valid case to have no emails
         return []
     return emails
-
