@@ -37,6 +37,7 @@ class RatedEmail(BaseModel):
     subject: Optional[str] = ""
     from_: Optional[List[EmailParticipant]] = Field(default=[], alias="from")
     snippet: Optional[str] = ""
+    body : Optional[str] = ""
     date: Optional[int] = 0
     
     class Config:
