@@ -29,6 +29,7 @@ class EmailNode(StructuredNode):
     tasks = RelationshipTo('TaskNode', 'CONTAINS_TASK', cardinality=ZeroOrMore)
     user = RelationshipFrom('UserNode', 'HAS_EMAIL', cardinality=OneOrMore)
 
+
 class TaskNode(StructuredNode):
     """
     Task node that represents a task extracted from emails.

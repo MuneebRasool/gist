@@ -45,6 +45,7 @@ async def verify_email(verification_data: VerificationRequest):
 @router.post("/google", response_model=Token)
 async def google_auth(auth_data: GoogleAuthRequest):
     """Handle Google authentication"""
+    print(f"Handling Google auth for email: {auth_data.user_data.get('email')}")
     return await UserService.handle_google_auth(auth_data.user_data)
 
 

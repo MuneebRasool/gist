@@ -180,7 +180,6 @@ class UserService:
             return False
         await user.delete()
         return True
-
     @staticmethod
     async def handle_google_auth(user_data: Dict) -> Token:
         """Handle Google authentication"""
@@ -191,10 +190,14 @@ class UserService:
                 detail="Email not provided in Google data",
             )
 
+        print(f"Handling Google auth for email: {email}")
+
         # Check if user exists
         user = await UserService.get_user_by_email(email)
+        print(f"Existing user found: {user is not None}")
         
         if not user:
+            print("Creating new user with Google data")
             # Create new user with Google data
             user = await User.create(
                 name=user_data.get("name", ""),
@@ -204,19 +207,30 @@ class UserService:
                 verified=True,  # Google accounts are pre-verified
                 onboarding=False,  # Set onboarding to false for new users
             )
+            print(f"New user created with ID: {user.id}")
             
             # Initialize task scoring models for the new user
+            print("Initializing scoring models")
             await scoring_model.create_initial_models(str(user.id))
+            print("Scoring models initialized")
             
         elif not user.verified:
+            print(f"Verifying existing unverified user: {user.id}")
             # If user exists but not verified, mark as verified since it's Google auth
             user.verified = True
             await user.save()
+            print("User verified and saved")
+
+        # Verify user was saved correctly
+        saved_user = await UserService.get_user(str(user.id))
+        print(f"Saved user verification: {saved_user.verified}")
+        print(f"Saved user email: {saved_user.email}")
 
         # Create access token
         access_token = create_access_token(
             data={"sub": str(user.id)},
             expires_delta=timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS),
         )
+        print(f"Access token created for user: {user.id}")
 
         return Token(access_token=access_token, user=UserResponse.model_validate(user))
