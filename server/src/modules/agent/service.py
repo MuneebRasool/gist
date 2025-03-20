@@ -8,21 +8,24 @@ from src.agents.task_extractor import TaskExtractor
 from src.agents.personality_summarizer import PersonalitySummarizer
 from src.agents.content_classifier import ContentClassifier
 from src.agents.email_domain_inferencer import DomainInferenceAgent
-from src.models.user import User
+from src.agents.content_summarizer import ContentSummarizer
+from src.models.user import User, EmailModel
 from src.modules.tasks.service import TaskService
 from src.modules.tasks.schemas import TaskCreate
 from src.modules.nylas.service import NylasService
-from src.models.graph.nodes import UserNode, EmailNode, TaskNode
+from src.models.graph.nodes import UserNode, EmailNode
 from .schemas import EmailData
 import asyncio
 import datetime
-import uuid
 from ...agents.task_cost_features_extractor import CostFeaturesExtractor
 from ...agents.task_utility_features_extractor import UtilityFeaturesExtractor
 from ...utils.get_text_from_html import get_text_from_html
 from ...utils.get_task_scores import calculate_task_scores
 # from ...models.task_scoring import scoring_model
 
+# tasks -> 
+#
+#
 
 class AgentService:
     def __init__(self):
@@ -33,6 +36,7 @@ class AgentService:
         self.cost_features = CostFeaturesExtractor()
         self.content_classifier = ContentClassifier()
         self.domain_inference_agent = DomainInferenceAgent()
+        self.content_summarizer = ContentSummarizer()
 
     async def classify_spams(self, emails: List[dict]) -> dict:
         """
@@ -67,6 +71,7 @@ class AgentService:
         }
 
     async def extract_tasks(self, email_body: str, user_personality: str = None):
+        email_body = get_text_from_html(email_body)
         # Extract tasks from email
         tasks_json = await self.task_extractor.process(email_body, user_personality)
         # Remove JSON code block markers if present
@@ -78,54 +83,46 @@ class AgentService:
         user_id: str,
         email,
         user_personality: str = None,
+        email_node = None
     ):
         """
-        Extract tasks from email and save them to the database
+        Extract tasks from email and save them to both PostgreSQL and Neo4j
+        
         Args:
             user_id: The ID of the user
             email: Email object containing id, subject, body, etc.
                   Can be either a dictionary or EmailData object
             user_personality: Optional user persona information
+            email_node: Optional existing EmailNode object. If not provided, will try to find or create one.
+            
         Returns:
             bool: True if tasks were successfully extracted and saved
         """
-        # Handle both dictionary and EmailData object
         if hasattr(email, 'body') and hasattr(email, 'id'):
-            # It's a Pydantic model (EmailData)
             email_body = email.body
             email_id = email.id
         elif isinstance(email, dict):
-            # It's a dictionary
             email_body = email.get('body', '')
             email_id = email.get('id', '')
         else:
             print(f"Warning: Unsupported email type: {type(email)}")
             return False
 
-        # If user_personality is not provided, fetch it
-        if user_personality is None:
-            try:
-                user = await User.get(id=user_id)
-                if user and user.personality and isinstance(user.personality, dict):
-                    user_personality = user.personality.get("summary", "")
-            except Exception as e:
-                print(f"Error fetching user personality: {str(e)}")
-
-        # Extract tasks using personality data if available
+        # We need the full original content for task extraction, not the summary
+        # If we're processing from webhook, email_body might already be a summary
+        # In this case, we should use the original body from the parsed_body variable if available
         task_items = await self.extract_tasks(email_body, user_personality)
         tasks = task_items.get("tasks", [])
 
         if len(tasks) == 0:
-            # print("No tasks found in email")
             return True
         else:
             print(f"Found {len(tasks)} tasks in email")
-
+                
         context = f"""
                     user personality: {user_personality}
                     email: {email_body}
                 """
-
         for item in tasks:
             task_context = context + f"\ntask: {item}"
 
@@ -133,18 +130,15 @@ class AgentService:
                 task_context
             )
             cost_task_features_coroutine = self.cost_features.process(task_context)
-            classification_coroutine = self.classify_content(task_context)
 
             # Gather results
-            utility_result, cost_result, classification_result = await asyncio.gather(
+            utility_result, cost_result = await asyncio.gather(
                 utility_task_features_coroutine,
                 cost_task_features_coroutine,
-                classification_coroutine,
             )
 
             utility_features = utility_result.get("utility_features", {})
             cost_features = cost_result.get("cost_features", {})
-            classification = classification_result.get("type", "Drawer")
             
             # Use the new scoring model to calculate scores with user-specific models
             relevance_score, utility_score, cost_score = await calculate_task_scores(
@@ -164,15 +158,12 @@ class AgentService:
                     relevance_score=relevance_score,
                     utility_score=utility_score,
                     cost_score=cost_score,
-                    classification=classification,
+                    classification="",
                 ),
                 user_id=user_id,
                 utility_features=utility_features,
                 cost_features=cost_features
             )
-
-            # Features are now saved in the create_task method
-
         return True
 
     async def fetch_last_week_emails(self, grant_id: str):
@@ -227,10 +218,9 @@ class AgentService:
                 from_data = message_data.get("from", [{}])
                 grant_id = message_data.get("grant_id")
 
-                # print(f"Got message from {from_data[0].get('email')}")
+                # Check if the email has already been processed
                 email_node = EmailNode.nodes.get_or_none(messageId=message_id)
                 if email_node:
-                    # print(f"Email {message_id} already processed, skipping")
                     return True
                 else:
                     email_node = EmailNode(messageId=message_id).save()
@@ -246,11 +236,7 @@ class AgentService:
                 email = EmailData(
                     id=message_id, body=parsed_body, subject=subject, from_=from_data
                 )
-
-                # Classify if the email is spam or not
                 classification_result = await self.classify_spams([email])
-
-                # Check if the email is classified as spam
                 non_spam_emails = classification_result.get("non_spam", [])
 
                 if len(non_spam_emails) == 0:
@@ -275,34 +261,53 @@ class AgentService:
                         # If personality is a dict, convert to string
                         elif isinstance(user.personality, dict):
                             user_personality = str(user.personality)
+                    
+                    # Classify the email content (library or drawer) with personality context
+                    personality_context = f"User personality: {user_personality}\n\nEmail content: {parsed_body}"
+                    content_classification = await self.classify_content(personality_context)
+                    email_classification = content_classification.get("type", "drawer").lower()
+                    print(f"Email classified as: {email_classification} for user {user.id}")
 
-                    # Extract tasks using personality data if available
-                    task_result = await self.extract_tasks(email.body, user_personality)
-                    tasks = task_result.get("tasks", [])
-
-                    if len(tasks) == 0:
-                        print("No tasks found in email")
-                        continue
-                    else:
-                        try:
-                            user_node = UserNode.nodes.get(userid=user.id)
-                        except UserNode.DoesNotExist:
-                            user_node = UserNode(userid=user.id).save()
+                    # Connect user to email in Neo4j
+                    try:
+                        user_node = UserNode.nodes.get(userid=user.id)
+                    except UserNode.DoesNotExist:
+                        user_node = UserNode(userid=user.id).save()
+                    
+                    if not user_node.emails.is_connected(email_node):
                         user_node.emails.connect(email_node)
-                        print(f"Found {len(tasks)} tasks in email")
-
-                        # Create task nodes for each task
-                        for task in tasks:
-                            task_node = TaskNode(
-                                task_id=str(uuid.uuid4()),
-                                task=task.get("title", ""),
-                                deadline=task.get("due_date", "No Deadline"),
-                                priority=task.get("priority", "high"),
-                            ).save()
-                            email_node.tasks.connect(task_node)
+                    
+                    # Save email with summary to PostgreSQL
+                    try:
+                        # Generate a summary of the email content
+                        summary_result = await self.content_summarizer.process_content(parsed_body)
+                        email_summary = summary_result.get("summary", "No summary available")
                         
-                        # Pass the user_personality to extract_and_save_tasks to avoid fetching it again
-                        await self.extract_and_save_tasks(user.id, email, user_personality)
+                        # Save email with summary to PostgreSQL
+                        await EmailModel.create_email(
+                            user_id=user.id,
+                            email_data={
+                                "id": message_id,
+                                "body": email_summary,  # Store summary in the body field
+                                "subject": subject,
+                                "from": from_data,
+                                "classification": email_classification
+                            }
+                        )
+                        print(f"Email {message_id} saved to PostgreSQL with summary and classification: {email_classification}")
+                    except Exception as e:
+                        print(f"Error saving email to PostgreSQL: {str(e)}")
+                    
+                    # For task extraction, create a modified email object with the original content
+                    email_for_tasks = EmailData(
+                        id=message_id,
+                        body=parsed_body,  # Use the original parsed body for task extraction
+                        subject=subject,
+                        from_=from_data
+                    )
+                    
+                    # Extract and save tasks using the original content
+                    await self.extract_and_save_tasks(user.id, email_for_tasks, user_personality, email_node)
 
                 return True
         except Exception as e:
@@ -336,7 +341,7 @@ class AgentService:
                 result["type"] = "Drawer"  # Default to Drawer
 
             # Validate that type is one of the expected values
-            valid_types = ["Library", "Main Focus-View", "Drawer"]
+            valid_types = ["Library", "Drawer"]
             if result["type"] not in valid_types:
                 print(
                     f"Invalid type value in content classification result: {result['type']}"

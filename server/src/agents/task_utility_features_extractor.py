@@ -8,14 +8,17 @@ class UtilityFeaturesExtractor(BaseAgent):
     """
     Agent to extract action items from emails.
     """
-
-    def process(self, task_context: str):
+    
+    def __init__(self):
         """
-        Calls LLM to extract tasks from an email.
+        Initialize the UtilityFeaturesExtractor agent
+        Load the system prompt and configure tool schema during initialization
         """
-
+        super().__init__()
+        self.system_prompt = FileUtils.read_file_content("src/prompts/v1/task_utility_features_extractor.md")
+        
         # Create tool schema manually
-        tool_schema = {
+        self.tool_schema = {
             "type": "function",
             "function": {
                 "name": "get_task_deadline",
@@ -33,5 +36,8 @@ class UtilityFeaturesExtractor(BaseAgent):
             }
         }
 
-        system_prompt = FileUtils.read_file_content("src/prompts/v1/task_utility_features_extractor.md")
-        return self.execute(system_prompt, task_context, response_format="json", tool_schemas=[tool_schema])
+    def process(self, task_context: str):
+        """
+        Calls LLM to extract tasks from an email.
+        """
+        return self.execute(self.system_prompt, task_context, response_format="json", tool_schemas=[self.tool_schema])

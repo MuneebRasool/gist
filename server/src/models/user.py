@@ -67,7 +67,6 @@ class User(models.Model):
         exclude = ["password_hash"]
 
 
-
 class UserModel(models.Model):
     """
     UserModel model that represents the user_models table in the database.
@@ -136,6 +135,168 @@ class UserModel(models.Model):
         new_model = await cls.create(user=user)
         return new_model
     
+class EmailModel(models.Model):
+    """
+    EmailModel to store email data in PostgreSQL database.
+    """
+    id = fields.UUIDField(pk=True, default=uuid.uuid4)
+    user = fields.ForeignKeyField("models.User", related_name="emails", on_delete=fields.CASCADE)
+    message_id = fields.CharField(max_length=255, unique=True)
+    body = fields.TextField(description="Email body content")
+    subject = fields.CharField(max_length=255, null=True)
+    from_ = fields.CharField(max_length=255, null=True)
+    snippet = fields.CharField(max_length=255, null=True)
+    date = fields.DatetimeField(auto_now_add=True)
+    to = fields.CharField(max_length=255, null=True)
+    classification = fields.CharField(max_length=10, default="drawer", 
+                                     choices=[("drawer", "Drawer"), ("library", "Library")])
+    created_at = fields.DatetimeField(auto_now_add=True)
+    updated_at = fields.DatetimeField(auto_now=True)
+
+    class Meta:
+        table = "emails"
+
+    def __str__(self):
+        return f"Email {self.message_id} ({self.subject})"
+        
+    @classmethod
+    async def create_email(cls, user_id: str, email_data: dict) -> "EmailModel":
+        """
+        Create a new email record
+        
+        Args:
+            user_id: The ID of the user
+            email_data: Dictionary containing email data
+            
+        Returns:
+            EmailModel: The created email record
+        """
+        try:
+            user = await User.get(id=user_id)
+            
+            # Extract values with defaults for optional fields
+            message_id = email_data.get("id", "")
+            body = email_data.get("body", "")
+            subject = email_data.get("subject", None)
+            
+            # Handle from_ which could be a list of dicts or a string
+            from_data = email_data.get("from", [])
+            from_str = ""
+            
+            if isinstance(from_data, list) and len(from_data) > 0:
+                if isinstance(from_data[0], dict):
+                    # Extract name and email if available
+                    name = from_data[0].get("name", "")
+                    email = from_data[0].get("email", "")
+                    from_str = f"{name} <{email}>" if name else email
+                else:
+                    from_str = str(from_data[0])
+            elif isinstance(from_data, str):
+                from_str = from_data
+                
+            # Create the email record
+            email = await cls.create(
+                id=uuid.uuid4(),
+                user=user,
+                message_id=message_id,
+                body=body,
+                subject=subject,
+                from_=from_str,
+                snippet=email_data.get("snippet", None),
+                to=email_data.get("to", None),
+                classification=email_data.get("classification", "drawer")
+            )
+            
+            return email
+        except Exception as e:
+            print(f"Error creating email record: {str(e)}")
+            raise
+            
+    @classmethod
+    async def batch_create_emails(cls, user_id: str, email_data_list: List[dict]) -> List["EmailModel"]:
+        """
+        Create multiple email records in a single batch operation
+        
+        Args:
+            user_id: The ID of the user
+            email_data_list: List of dictionaries containing email data
+            
+        Returns:
+            List[EmailModel]: The created email records
+        """
+        try:
+            if not email_data_list:
+                return []
+                
+            user = await User.get(id=user_id)
+            
+            # Prepare all email models
+            email_models = []
+            for email_data in email_data_list:
+                # Skip if no message_id (required field)
+                if not email_data.get("id"):
+                    continue
+                    
+                # Handle from_ which could be a list of dicts or a string
+                from_data = email_data.get("from", [])
+                from_str = ""
+                
+                if isinstance(from_data, list) and len(from_data) > 0:
+                    if isinstance(from_data[0], dict):
+                        # Extract name and email if available
+                        name = from_data[0].get("name", "")
+                        email = from_data[0].get("email", "")
+                        from_str = f"{name} <{email}>" if name else email
+                    else:
+                        from_str = str(from_data[0])
+                elif isinstance(from_data, str):
+                    from_str = from_data
+                
+                # Create email model instance (not saved yet)
+                email_models.append(
+                    cls(
+                        id=uuid.uuid4(),
+                        user=user,
+                        message_id=email_data.get("id", ""),
+                        body=email_data.get("body", ""),
+                        subject=email_data.get("subject", None),
+                        from_=from_str,
+                        snippet=email_data.get("snippet", None),
+                        to=email_data.get("to", None),
+                        classification=email_data.get("classification", "drawer")
+                    )
+                )
+            
+            # Save all emails in a batch operation
+            if email_models:
+                created_emails = await cls.bulk_create(email_models)
+                return created_emails
+            
+            return []
+            
+        except Exception as e:
+            print(f"Error batch creating email records: {str(e)}")
+            # If batch fails, we might want to fall back to individual creation
+            return []
+
+    @classmethod
+    async def get_user_emails(cls, user_id: str) -> List["EmailModel"]:
+        """
+        Get all emails for a specific user
+        
+        Args:
+            user_id: The ID of the user
+            
+        Returns:
+            List[EmailModel]: List of email records for the user
+        """
+        try:
+            user = await User.get(id=user_id)
+            emails = await cls.filter(user=user).all()
+            return emails
+        except Exception as e:
+            print(f"Error getting user emails: {str(e)}")
+            return []
 
 
 class Features(models.Model):

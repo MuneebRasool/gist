@@ -148,6 +148,7 @@ async def submit_onboarding(
         # Update the user's personality
         if current_user.personality is None:
             current_user.personality = {}
+            current_user.onboarding = True
         
         if isinstance(current_user.personality, dict):
             current_user.personality["summary"] = result.get("summary", "")
@@ -157,8 +158,6 @@ async def submit_onboarding(
         await current_user.save()
         
         if grant_id:
-            # Add the onboarding task to background tasks
-            # FastAPI can handle async functions in background tasks
             background_tasks.add_task(onboarding_agent.start_onboarding, grant_id, current_user.id)
         
         return PersonalitySummaryResponse(

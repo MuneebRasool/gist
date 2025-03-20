@@ -6,13 +6,21 @@ class PersonalitySummarizer(BaseAgent):
     Provides an agent to generate a summary of a user's personality based on input data
     """
     
+    def __init__(self):
+        """
+        Initialize the PersonalitySummarizer agent
+        Load the system prompts during initialization
+        """
+        super().__init__()
+        self.personality_prompt = FileUtils.read_file_content("src/prompts/v1/personality_summarizer.md")
+        self.onboarding_prompt = FileUtils.read_file_content("src/prompts/v1/onboarding_personality_summarizer.md")
+    
     def process(self, user_emails: list):
         """
         Calls LLM to summarize user personality
         """
-        system_prompt = FileUtils.read_file_content("src/prompts/v1/personality_summarizer.md")
         email_content = "\n\n".join([f"Email: {email}" for email in user_emails])
-        return self.execute(system_prompt, email_content)
+        return self.execute(self.personality_prompt, email_content)
         
     async def process_onboarding(self, onboarding_data: str):
         """
@@ -38,12 +46,11 @@ class PersonalitySummarizer(BaseAgent):
                 print(f"❌ PERSONALITY SUMMARIZER: Invalid JSON: {str(json_err)}")
                 # Continue anyway, as the original string will be passed to the LLM
             
-            print("🟣 PERSONALITY SUMMARIZER: Loading prompt template")
-            system_prompt = FileUtils.read_file_content("src/prompts/v1/onboarding_personality_summarizer.md")
-            print(f"🟣 PERSONALITY SUMMARIZER: Prompt loaded, length: {len(system_prompt)} characters")
+            print("🟣 PERSONALITY SUMMARIZER: Using pre-loaded prompt template")
+            print(f"🟣 PERSONALITY SUMMARIZER: Prompt loaded, length: {len(self.onboarding_prompt)} characters")
             
             print("🟣 PERSONALITY SUMMARIZER: Calling LLM")
-            result = await self.execute(system_prompt, onboarding_data, response_format="text")
+            result = await self.execute(self.onboarding_prompt, onboarding_data, response_format="text")
             print(f"🟣 PERSONALITY SUMMARIZER: LLM response received, length: {len(result)} characters")
             print(f"🟣 PERSONALITY SUMMARIZER: Summary sample: {result}...")
             print("---------------------------------------\n")

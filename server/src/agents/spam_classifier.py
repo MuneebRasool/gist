@@ -5,6 +5,14 @@ class SpamClassifier(BaseAgent):
     """
     Agent to classify emails as Spam or Not Spam.
     """
+    
+    def __init__(self):
+        """
+        Initialize the SpamClassifier agent
+        Load the system prompt during initialization
+        """
+        super().__init__()
+        self.system_prompt = FileUtils.read_file_content("src/prompts/v1/spam_classifier.md")
 
     async def process(self, email_body: str):
         """
@@ -30,8 +38,7 @@ class SpamClassifier(BaseAgent):
                 print("Email body too short or empty, defaulting to not_spam")
                 return "not_spam"
                 
-            system_prompt = FileUtils.read_file_content("src/prompts/v1/spam_classifier.md")
-            result = await self.execute(system_prompt, email_body)
+            result = await self.execute(self.system_prompt, email_body)
             
             # Validate and normalize result
             if result and isinstance(result, str):
