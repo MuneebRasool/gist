@@ -1,7 +1,7 @@
 """
 Utility function to calculate task scores using the TaskScoringModel
 """
-from typing import Dict, Any, Tuple, Optional
+from typing import Dict, Any, Tuple, Optional, List
 from src.models.task_scoring import scoring_model
 
 async def calculate_task_scores(

@@ -154,123 +154,128 @@ class OnboardingAgentService:
 
             non_spam_emails = classified_emails.get("non_spam", [])
             
-            # If no non-spam emails found, exit early
             if not non_spam_emails:
                 print("No non-spam emails found for processing")
                 return
                 
-            # Get or create user node once
-            try:
-                user_node = UserNode.nodes.get_or_none(userid=user_id)
-                if not user_node:
-                    user_node = UserNode(userid=user_id).save()
-            except Exception as e:
-                print(f"Error creating user node: {str(e)}")
-                # Continue even if Neo4j user node creation fails
-                user_node = None
-                
-            # Get user personality once for all operations
+
             user = await User.get(id=user_id)
             user_personality = None
             if user.personality:
-                # Handle ArrayField of CharField
                 if isinstance(user.personality, list):
-                    # Take the last entry if list is not empty
                     user_personality = user.personality[-1] if user.personality else None
                 else:
-                    # If somehow it's not a list, convert to string
                     user_personality = str(user.personality)
                 
-            # Prepare data for batch saving to PostgreSQL
-            email_data_list = []
-            email_nodes = {}  # Store email nodes by ID for reuse
+            emails_without_tasks = []
+            task_extraction_results = []
             
-            # Process email classification tasks in parallel with personality context
-            classification_tasks = []
             for email in non_spam_emails:
-                # Include user personality in classification for personalized results
-                personality_context = f"User personality: {user_personality}\n\nEmail content: {email.body}"
-                classification_tasks.append(self.agent.classify_content(personality_context))
-            
-            # Wait for all classifications to complete
-            classification_results = await asyncio.gather(*classification_tasks)
-            
-            # Process each email with its classification
-            for i, email in enumerate(non_spam_emails):
-                # Get the classification result for this email
-                content_classification = classification_results[i]
-                email_classification = content_classification.get("type", "drawer").lower()
-                print(f"Email {email.id} classified as: {email_classification}")
-                
-                # Create or get Neo4j EmailNode for each email
                 try:
-                    email_node = EmailNode.nodes.get_or_none(messageId=email.id)
-                    if not email_node:
-                        email_node = EmailNode(messageId=email.id).save()
-                        
-                    # Connect email to user in Neo4j if we have both nodes
-                    if user_node and not user_node.emails.is_connected(email_node):
-                        user_node.emails.connect(email_node)
-                        
-                    # Store the node for later use
-                    email_nodes[email.id] = email_node
-                except Exception as e:
-                    print(f"Error creating Neo4j email node for {email.id}: {str(e)}")
-                    # Set to None to indicate no node was created
-                    email_nodes[email.id] = None
-                
-                # Generate a summary of the email content
-                try:
-                    summary_result = await self.content_summarizer.process_content(email.body)
-                    email_summary = summary_result.get("summary", "No summary available")
-                    print(f"Generated summary for email {email.id}")
-                except Exception as e:
-                    print(f"Error generating summary for email {email.id}: {str(e)}")
-                    email_summary = "Failed to generate summary: " + str(e)
-                
-                # Prepare data for PostgreSQL batch save with classification and summary
-                email_data_list.append({
-                    "id": email.id,
-                    "body": email_summary,  # Store the summary in the body field
-                    "subject": email.subject,
-                    "from": email.from_,
-                    "snippet": getattr(email, "snippet", ""),
-                    "to": getattr(email, "to", ""),
-                    "classification": email_classification
-                })
-            
-            # Batch save emails to PostgreSQL
-            if email_data_list:
-                try:
-                    created_emails = await EmailModel.batch_create_emails(user_id, email_data_list)
-                    print(f"Batch saved {len(created_emails)} emails to PostgreSQL")
-                except Exception as e:
-                    print(f"Error batch saving emails to PostgreSQL: {str(e)}")
-                    # Continue even if batch saving fails
+                    # Extract tasks from email
+                    tasks = await self.agent.extract_and_save_tasks(
+                        user_id, 
+                        email,
+                        user_personality,
+                    )
+                    task_extraction_results.append(tasks)
                     
-            # Process each email using agent.extract_and_save_tasks with the pre-created nodes
-            if non_spam_emails:
-                task_extraction_tasks = []
-                for email in non_spam_emails:
-                    try:
-                        # Use the pre-created EmailNode
-                        email_node = email_nodes.get(email.id)
+                    # If no tasks were extracted, mark this email for saving
+                    if not tasks:
+                        emails_without_tasks.append((email))
+                        print(f"No tasks extracted from email {email.id}, will save it")
+                    else:
+                        print(f"Tasks extracted from email {email.id}, skipping email save")
                         
-                        # We need to pass the original email content for task extraction
-                        # The summarized version is already saved in PostgreSQL
-                        task = self.agent.extract_and_save_tasks(
-                            user_id, 
-                            email,  # Original email with full content
-                            user_personality,
-                            email_node  # Pass the pre-created email node
-                        )
-                        task_extraction_tasks.append(task)
-                    except Exception as e:
-                        print(f"Error extracting tasks from email {email.id}: {str(e)}")
-                        # Continue with next email
+                except Exception as e:
+                    print(f"Error extracting tasks from email {email.id}: {str(e)}")
+                    # If task extraction fails, we'll save the email just in case
+                    emails_without_tasks.append((email, None))
+            
+            # Only process emails that didn't contribute to tasks
+            if emails_without_tasks:
+                print(f"Processing {len(emails_without_tasks)} emails that didn't contribute to tasks")
+                email_data_list = []
                 
-                if task_extraction_tasks:
-                    await asyncio.gather(*task_extraction_tasks)
+                # Process emails in parallel
+                classification_tasks = []
+                summarization_tasks = []
+                
+                for email in emails_without_tasks:
+                    # Handle different tuple formats (email) vs (email, None)
+                    if isinstance(email, tuple):
+                        email_obj = email[0]
+                    else:
+                        email_obj = email
+                        
+                    personality_context = f"User personality: {user_personality}\n\nEmail content: {email_obj.body}"
+                    classification_tasks.append(self.agent.classify_content(personality_context))
+                    summarization_tasks.append(self.content_summarizer.process_content(email_obj.body))
+                
+                # Gather results from parallel processing
+                classification_results = await asyncio.gather(*classification_tasks)
+                summarization_results = await asyncio.gather(*summarization_tasks)
+                
+                # Process results and prepare for batch save
+                for i, email in enumerate(emails_without_tasks):
+                    # Handle different tuple formats (email) vs (email, None)
+                    if isinstance(email, tuple):
+                        email_obj = email[0]
+                    else:
+                        email_obj = email
+                    
+                    # Get content classification
+                    content_classification = classification_results[i]
+                    email_classification = content_classification.get("type", "drawer").lower()
+                    print(f"Email {email_obj.id} classified as: {email_classification}")
+                    
+                    # Get email summary
+                    summary_result = summarization_results[i]
+                    email_summary = summary_result.get("summary", "No summary available")
+                    
+                    # Save classification and snippet to Neo4j email node
+                    try:
+                        email_node = EmailNode.nodes.get_or_none(messageId=email_obj.id)
+                        if not email_node:
+                            email_node = EmailNode(messageId=email_obj.id).save()
+                        
+                        # Save snippet and classification to Neo4j node
+                        email_snippet = getattr(email_obj, "snippet", "")
+                        email_node.snippet = email_snippet
+                        email_node.classification = email_classification
+                        email_node.save()
+                        
+                        # Connect to user node if needed
+                        try:
+                            user_node = UserNode.nodes.get_or_none(userid=user_id)
+                            if user_node and not user_node.emails.is_connected(email_node):
+                                user_node.emails.connect(email_node)
+                        except Exception as e:
+                            print(f"Error connecting email node to user node: {str(e)}")
+                            
+                    except Exception as e:
+                        print(f"Error saving classification to Neo4j for email {email_obj.id}: {str(e)}")
+                    
+                    # Prepare data for batch save
+                    email_data_list.append({
+                        "id": email_obj.id,
+                        "body": email_summary,  # Store the summary in the body field
+                        "subject": email_obj.subject,
+                        "from": email_obj.from_,
+                    })
+                
+                # Batch save emails to PostgreSQL
+                if email_data_list:
+                    try:
+                        created_emails = await EmailModel.batch_create_emails(user_id, email_data_list)
+                        if created_emails:
+                            print(f"Successfully saved {len(created_emails)} out of {len(email_data_list)} emails to PostgreSQL")
+                        else:
+                            print("No new emails were saved to PostgreSQL (they might already exist)")
+                    except Exception as e:
+                        print(f"Error during email saving process: {str(e)}")
+            else:
+                print("All emails contributed to tasks, no emails saved to database")
 
         except Exception as e:
             print(f"Error in start_onboarding: {str(e)}")

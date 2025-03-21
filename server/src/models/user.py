@@ -99,7 +99,10 @@ class UserModel(models.Model):
     def _deserialize_model(model_bytes: bytes) -> SGDRegressor:
         """Deserialize bytes back into an SGDRegressor model."""
         if not model_bytes:
-            return SGDRegressor()
+            # Create a default model and ensure it's fitted with minimal data
+            model = SGDRegressor()
+            model.fit(np.array([[0.5]]), np.array([0.5]))  # Fit with minimal data
+            return model
         buffer = BytesIO(model_bytes)
         # print("buffer.getvalue()  deserialization")
         # print(buffer.getvalue())
@@ -117,9 +120,9 @@ class UserModel(models.Model):
     async def set_models(self, utility_model: SGDRegressor, cost_model: SGDRegressor) -> None:
         """Serialize and set the utility and cost models."""
         if not hasattr(utility_model, 'coef_'):
-            utility_model.fit(np.array([[0]]), np.array([0]))
+            utility_model.fit(np.array([[0.5]]), np.array([0.5]))
         if not hasattr(cost_model, 'coef_'):
-            cost_model.fit(np.array([[0]]), np.array([0]))
+            cost_model.fit(np.array([[0.5]]), np.array([0.5]))
 
         self.utility_model = self._serialize_model(utility_model)
         self.cost_model = self._serialize_model(cost_model)
@@ -145,11 +148,7 @@ class EmailModel(models.Model):
     body = fields.TextField(description="Email body content")
     subject = fields.CharField(max_length=255, null=True)
     from_ = fields.CharField(max_length=255, null=True)
-    snippet = fields.CharField(max_length=255, null=True)
     date = fields.DatetimeField(auto_now_add=True)
-    to = fields.CharField(max_length=255, null=True)
-    classification = fields.CharField(max_length=10, default="drawer", 
-                                     choices=[("drawer", "Drawer"), ("library", "Library")])
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
 
@@ -202,9 +201,6 @@ class EmailModel(models.Model):
                 body=body,
                 subject=subject,
                 from_=from_str,
-                snippet=email_data.get("snippet", None),
-                to=email_data.get("to", None),
-                classification=email_data.get("classification", "drawer")
             )
             
             return email
@@ -261,22 +257,31 @@ class EmailModel(models.Model):
                         body=email_data.get("body", ""),
                         subject=email_data.get("subject", None),
                         from_=from_str,
-                        snippet=email_data.get("snippet", None),
-                        to=email_data.get("to", None),
-                        classification=email_data.get("classification", "drawer")
                     )
                 )
             
             # Save all emails in a batch operation
             if email_models:
-                created_emails = await cls.bulk_create(email_models)
-                return created_emails
+                try:
+                    created_emails = await cls.bulk_create(email_models)
+                    print(f"Successfully bulk created {len(created_emails) if created_emails else 0} emails")
+                    return created_emails if created_emails else []
+                except Exception as e:
+                    print(f"Error in bulk create: {str(e)}")
+                    # Fallback to individual creation
+                    created_emails = []
+                    for model in email_models:
+                        try:
+                            await model.save()
+                            created_emails.append(model)
+                        except Exception as individual_e:
+                            print(f"Error saving individual email {model.message_id}: {str(individual_e)}")
+                    return created_emails
             
             return []
             
         except Exception as e:
             print(f"Error batch creating email records: {str(e)}")
-            # If batch fails, we might want to fall back to individual creation
             return []
 
     @classmethod

@@ -8,6 +8,7 @@ from typing import Dict, Any, Tuple, Optional
 from src.models.user import UserModel
 from src.modules.tasks.service import TaskService
 from pathlib import Path
+import joblib
 
 
 
@@ -244,7 +245,6 @@ class TaskScoringModel:
             if utility_model_path.exists() and cost_model_path.exists():
                 print(f"Loading pre-trained models from {model_dir}")
                 try:
-                    import joblib
                     utility_model = joblib.load(utility_model_path)
                     cost_model = joblib.load(cost_model_path)
                     print("Successfully loaded pre-trained models")
