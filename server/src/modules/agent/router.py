@@ -123,9 +123,11 @@ async def infer_domain(request: DomainInferenceRequest):
         raise HTTPException(status_code=500, detail=f"Error inferring domain: {str(e)}")
 
 
+
 @router.post("/submit-onboarding", response_model=PersonalitySummaryResponse)
 async def submit_onboarding(
     request: OnboardingSubmitRequest,
+    background_tasks: BackgroundTasks,
     current_user: Annotated[User, Depends(get_current_user)]
 ):
     """
@@ -135,28 +137,29 @@ async def submit_onboarding(
         if not request:
             raise HTTPException(status_code=400, detail="Request data is required")
         
-        if current_user.personality is None:
-            current_user.personality = []
-        if len(current_user.personality) > 0:
-            return PersonalitySummaryResponse(
-                success=True,
-                message="Onboarding data processed successfully", 
-                personalitySummary=current_user.personality[0]
-            )
+
         result = await onboarding_agent.summarize_onboarding_data(request)
         
         if not result or "summary" not in result:
             raise HTTPException(status_code=500, detail="Failed to process onboarding data")
         
+        # Get the decrypted Nylas grant ID
+        grant_id = current_user.get_nylas_grant_id()
 
         # Update the user's personality
+        if current_user.personality is None:
+            current_user.personality = {}
+            current_user.onboarding = True
         
-        current_user.onboarding = True
-        current_user.personality.append(result.get("summary", ""))
-
+        if isinstance(current_user.personality, dict):
+            current_user.personality["summary"] = result.get("summary", "")
+        else:
+            current_user.personality = {"summary": result.get("summary", "")}
             
         await current_user.save()
         
+        if grant_id:
+            background_tasks.add_task(onboarding_agent.start_onboarding, grant_id, current_user.id)
         
         return PersonalitySummaryResponse(
             success=True,
@@ -169,7 +172,6 @@ async def submit_onboarding(
     except Exception as e:
         print(f"Error processing onboarding data: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error processing onboarding data: {str(e)}")
-    
 
 @router.post("/start-onboarding")
 async def Start_onboarding(

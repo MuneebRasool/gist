@@ -78,6 +78,7 @@ class AgentService:
 
         return tasks_json
 
+
     async def extract_and_save_tasks(
         self,
         user_id: str,
@@ -115,7 +116,7 @@ class AgentService:
         tasks = task_items.get("tasks", [])
 
         if len(tasks) == 0:
-            return True
+            return False
         else:
             print(f"Found {len(tasks)} tasks in email")
                 
@@ -253,43 +254,8 @@ class AgentService:
                         user_personality = user.personality[:-1]
                         # Join multiple personality traits with newlines
                         user_personality = "\n".join(user_personality)
-                    # Classify the email content (library or drawer) with personality context
-                    personality_context = f"User personality: {user_personality}\n\nEmail content: {parsed_body}"
-                    content_classification = await self.classify_content(personality_context)
-                    email_classification = content_classification.get("type", "drawer").lower()
-                    print(f"Email classified as: {email_classification} for user {user.id}")
-
-                    # Connect user to email in Neo4j
-                    try:
-                        user_node = UserNode.nodes.get(userid=user.id)
-                    except UserNode.DoesNotExist:
-                        user_node = UserNode(userid=user.id).save()
                     
-                    if not user_node.emails.is_connected(email_node):
-                        user_node.emails.connect(email_node)
-                    
-                    # Save email with summary to PostgreSQL
-                    try:
-                        # Generate a summary of the email content
-                        summary_result = await self.content_summarizer.process_content(parsed_body)
-                        email_summary = summary_result.get("summary", "No summary available")
-                        
-                        # Save email with summary to PostgreSQL
-                        await EmailModel.create_email(
-                            user_id=user.id,
-                            email_data={
-                                "id": message_id,
-                                "body": email_summary,  # Store summary in the body field
-                                "subject": subject,
-                                "from": from_data,
-                                "classification": email_classification
-                            }
-                        )
-                        print(f"Email {message_id} saved to PostgreSQL with summary and classification: {email_classification}")
-                    except Exception as e:
-                        print(f"Error saving email to PostgreSQL: {str(e)}")
-                    
-                    # For task extraction, create a modified email object with the original content
+                    # Try to extract tasks from email
                     email_for_tasks = EmailData(
                         id=message_id,
                         body=parsed_body,  # Use the original parsed body for task extraction
@@ -297,8 +263,70 @@ class AgentService:
                         from_=from_data
                     )
                     
-                    # Extract and save tasks using the original content
-                    await self.extract_and_save_tasks(user.id, email_for_tasks, user_personality, email_node)
+                    # Try to extract tasks from email - if successful, we're done
+                    tasks_extracted = await self.extract_and_save_tasks(
+                        user.id, 
+                        email_for_tasks, 
+                        user_personality, 
+                        email_node
+                    )
+                    
+                    # If no tasks were extracted, classify and save the email separately
+                    if not tasks_extracted:
+                        print(f"No tasks extracted from email {message_id}, processing as regular email")
+                        
+                        # Classify the email content with personality context
+                        personality_context = f"User personality: {user_personality}\n\nEmail content: {parsed_body}"
+                        
+                        # Run content classification and summarization in parallel
+                        classification_coroutine = self.classify_content(personality_context)
+                        summary_coroutine = self.content_summarizer.process_content(parsed_body)
+                        
+                        content_classification, summary_result = await asyncio.gather(
+                            classification_coroutine,
+                            summary_coroutine
+                        )
+                        
+                        email_classification = content_classification.get("type", "drawer").lower()
+                        email_summary = summary_result.get("summary", "No summary available")
+                        
+                        print(f"Email classified as: {email_classification} for user {user.id}")
+                        
+                        # Save classification and snippet to Neo4j email node
+                        try:
+                            # Update the email node properties
+                            email_node.snippet = email_summary
+                            email_node.classification = email_classification
+                            email_node.save()
+                            
+                            # Connect user to email in Neo4j if not already connected
+                            try:
+                                user_node = UserNode.nodes.get(userid=user.id)
+                            except UserNode.DoesNotExist:
+                                user_node = UserNode(userid=user.id).save()
+                            
+                            if not user_node.emails.is_connected(email_node):
+                                user_node.emails.connect(email_node)
+                        except Exception as e:
+                            print(f"Error updating Neo4j email node: {str(e)}")
+                        
+                        # Save email with summary to PostgreSQL
+                        try:
+                            await EmailModel.create_email(
+                                user_id=user.id,
+                                email_data={
+                                    "id": message_id,
+                                    "body": email_summary,  # Store summary in the body field
+                                    "subject": subject,
+                                    "from": from_data,
+                                    "classification": email_classification
+                                }
+                            )
+                            print(f"Email {message_id} saved to PostgreSQL with summary and classification: {email_classification}")
+                        except Exception as e:
+                            print(f"Error saving email to PostgreSQL: {str(e)}")
+                    else:
+                        print(f"Tasks extracted from email {message_id}, skipping email save")
 
                 return True
         except Exception as e:
