@@ -33,3 +33,9 @@ export interface TaskResponse {
 	createdAt: string;
 	updatedAt: string;
 }
+
+export interface TaskEmailResponse {
+	messageId: string;
+	snippet: string;
+	classification: string;
+}

@@ -4,6 +4,7 @@ import Loading from './loading';
 import { Suspense } from 'react';
 import Providers from './providers';
 import FloatingFooter from '@/components/app/FloatingNavbar';
+import { Background } from '@/components/app/Background';
 
 export const metadata: Metadata = {
 	title: 'Gist',
@@ -22,9 +23,8 @@ export default function RootLayout({
 		<html lang='en' suppressHydrationWarning>
 			<body className={`antialiased`}>
 				<Providers>
-					<Suspense fallback={<Loading />}>
-						{children}
-					</Suspense>
+					<Background />
+					<Suspense fallback={<Loading />}>{children}</Suspense>
 				</Providers>
 			</body>
 		</html>

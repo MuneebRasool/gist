@@ -15,5 +15,6 @@
             "database": "gistdev",
             "password": "Database2025"
         }
-    ]
+    ],
+    "omlet.rootPath": "web"
 }

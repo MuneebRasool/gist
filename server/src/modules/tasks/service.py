@@ -306,9 +306,9 @@ class TaskService:
             results, _ = db.cypher_query(query, {'user_id': str(user_id), 'classification': classification})
             return [
                 {
-                    "messageId": row[0].messageId,
-                    "snippet": row[0].snippet,
-                    "classification": row[0].classification
+                    "messageId": row[0].get('messageId'),
+                    "snippet": row[0].get('snippet'),
+                    "classification": row[0].get('classification')
                 }
                 for row in results
             ]

@@ -10,7 +10,7 @@ const GoogleSignin = () => {
 	return (
 		<Button
 			variant='outline'
-			className='h-12 w-full rounded-lg border-gray-200 bg-white font-medium hover:bg-gray-50'
+			className='h-14 w-full items-center rounded-lg border-gray-200 bg-white text-lg font-medium hover:bg-gray-50'
 			onClick={async () => {
 				setIsLoading(true);
 				await signIn('google', {
@@ -20,11 +20,7 @@ const GoogleSignin = () => {
 			}}
 			disabled={isLoading}
 		>
-			{isLoading ? (
-				<Loader2 className='mr-2 h-5 w-5 animate-spin' />
-			) : (
-				<GoogleIcon className='mr-2 h-5 w-5' />
-			)}
+			{isLoading ? <Loader2 className='mr-2 h-6 w-6 animate-spin' /> : <GoogleIcon className='mr-2 h-8 w-8' />}
 			Sign up with Google
 		</Button>
 	);

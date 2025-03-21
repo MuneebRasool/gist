@@ -10,11 +10,7 @@ import { TaskResponse } from '@/types/tasks';
 
 export default function DashboardPage() {
 	const { tasks, fetchTasks, isLoading, updateTaskOrder } = useTasksStore();
-	const { data: session } = useSession();
-
-	const filteredTasks = useMemo(() => {
-		return tasks.filter(task => task.classification === 'Main Focus-View');
-	}, [tasks]);
+	const { data: session, status } = useSession();
 
 	useEffect(() => {
 		if (session?.user?.id) {
@@ -23,7 +19,7 @@ export default function DashboardPage() {
 	}, [session?.user?.id, fetchTasks]);
 
 	const handleTasksReordered = (reorderedTasks: TaskResponse[]) => {
-		const taskIds = reorderedTasks.map(task => task.task_id);
+		const taskIds = reorderedTasks.map((task) => task.task_id);
 		updateTaskOrder(taskIds);
 	};
 
@@ -37,29 +33,27 @@ export default function DashboardPage() {
 		console.log('Drawer clicked');
 	};
 
+	if (status === 'loading') {
+		return <Loading text='Loading...' />;
+	}
+
 	if (isLoading) {
 		return <Loading text='Fetching your tasks...' />;
 	}
 
 	return (
-		<div className='space-y-8 pt-10 relative h-full'>
-			<div className='max-w-7xl mx-auto h-full'>
-				<h1 className='text-4xl font-semibold text-gray-800'>Your Focus Today</h1>
-				<div className="flex flex-col gap-56 mt-6 justify-between"> {/* Changed gap from 4 to 24 (100px) */}
-					<SortableTaskList 
-						tasks={filteredTasks} 
-						emptyMessage={{
-							title: "No Focus Tasks Found",
-							description: "No main focus tasks found. Tasks classified as main focus will appear here."
-						}}
-						onTasksReordered={handleTasksReordered}
-					/>
-
-					<FloatingButtons
-						onLibraryClick={handleLibraryClick}
-						onDrawerClick={handleDrawerClick}
-					/>
-				</div>
+		<div className='mx-auto flex max-h-[calc(100dvh-68px)] w-full flex-col space-y-3 overflow-hidden p-3'>
+			<h1 className='text-3xl font-semibold'>Your Focus Today</h1>
+			<div className='flex flex-1 flex-col justify-between gap-4 overflow-hidden'>
+				<SortableTaskList
+					tasks={tasks}
+					emptyMessage={{
+						title: 'No Focus Tasks Found',
+						description: 'No main focus tasks found. Tasks classified as main focus will appear here.',
+					}}
+					onTasksReordered={handleTasksReordered}
+				/>
+				<FloatingButtons />
 			</div>
 		</div>
 	);

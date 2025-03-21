@@ -1,38 +1,31 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Library, Inbox } from 'lucide-react';
+import Link from 'next/link';
 
-interface FloatingButtonsProps {
-  onLibraryClick?: () => void;
-  onDrawerClick?: () => void;
-}
-
-const FloatingButtons: React.FC<FloatingButtonsProps> = ({
-  onLibraryClick,
-  onDrawerClick,
-}) => {
-  return (
-    <div className="w-full max-w-7xl h-full">
-      <div className="flex gap-4 w-full">
-        <Button
-          onClick={onLibraryClick}
-          className="flex-1 h-14 bg-white/40 hover:bg-white/50 backdrop-blur-md text-gray-800 rounded-2xl shadow-lg transition-all duration-200 flex items-center justify-center gap-2 text-lg font-medium"
-          variant="ghost"
-        >
-          <Library className="h-5 w-5" />
-          Library
-        </Button>
-        <Button
-          onClick={onDrawerClick}
-          className="flex-1 h-14 bg-white/40 hover:bg-white/50 backdrop-blur-md text-gray-800 rounded-2xl shadow-lg transition-all duration-200 flex items-center justify-center gap-2 text-lg font-medium"
-          variant="ghost"
-        >
-          <Inbox className="h-5 w-5" />
-          Drawer
-        </Button>
-      </div>
-    </div>
-  );
+const FloatingButtons: React.FC = () => {
+	return (
+		<div className='flex w-full gap-4'>
+			<Link href='/app/dashboard/library' className='flex-1'>
+				<Button
+					className='flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-background/40 text-lg font-medium backdrop-blur-md transition-all duration-200 hover:bg-background/50'
+					variant='ghost'
+				>
+					<Library className='h-5 w-5' />
+					Library
+				</Button>
+			</Link>
+			<Link href='/app/dashboard/drawer' className='flex-1'>
+				<Button
+					className='flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-background/40 text-lg font-medium backdrop-blur-md transition-all duration-200 hover:bg-background/50'
+					variant='ghost'
+				>
+					<Inbox className='h-5 w-5' />
+					Drawer
+				</Button>
+			</Link>
+		</div>
+	);
 };
 
-export default FloatingButtons; 
+export default FloatingButtons;

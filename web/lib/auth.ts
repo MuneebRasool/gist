@@ -115,7 +115,10 @@ export const authOptions: NextAuthOptions = {
 				},
 			};
 		},
-		jwt: ({ token, user }) => {
+		jwt: ({ token, user, trigger, session }) => {
+			if (trigger === 'update') {
+				return { ...token, onboarding: session?.onboarding };
+			}
 			if (user) {
 				return {
 					...token,
