@@ -253,8 +253,6 @@ class OnboardingAgentService:
                         created_emails = await EmailModel.batch_create_emails(user_id, email_data_list)
                         if created_emails:
                             print(f"Successfully saved {len(created_emails)} out of {len(email_data_list)} emails to PostgreSQL")
-                        else:
-                            print("No new emails were saved to PostgreSQL (they might already exist)")
                     except Exception as e:
                         print(f"Error during email saving process: {str(e)}")
             else:

@@ -80,7 +80,6 @@ async def batch_calculate_task_scores(
     elif len(deadlines) != num_tasks:
         raise ValueError("deadlines must have the same length as feature lists")
     
-    # Prepare all task data for batch processing
     all_features = []
     for i in range(num_tasks):
         task_data = {
@@ -92,19 +91,15 @@ async def batch_calculate_task_scores(
         features = scoring_model.extract_features(task_data)
         all_features.append(features)
     
-    # Use batch prediction methods to get scores all at once
-    # This loads the models only once for the entire batch
     print(f"Making batch predictions for {num_tasks} tasks")
     utility_scores = await scoring_model.batch_predict_utility(all_features, user_id)
     cost_scores = await scoring_model.batch_predict_cost(all_features, user_id)
     
-    # Calculate all relevance scores
     relevance_scores = [
         scoring_model.calculate_relevance(utility_scores[i], cost_scores[i])
         for i in range(num_tasks)
     ]
-    
-    # Return all scores as list of tuples
+
     return [
         (relevance_scores[i], utility_scores[i], cost_scores[i])
         for i in range(num_tasks)
