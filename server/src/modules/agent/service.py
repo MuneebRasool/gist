@@ -295,7 +295,7 @@ class AgentService:
                         # Save classification and snippet to Neo4j email node
                         try:
                             # Update the email node properties
-                            email_node.snippet = parsed_body[:200] if parsed_body else ""  # Store first 200 chars as snippet
+                            email_node.snippet = email_summary
                             email_node.classification = email_classification
                             email_node.save()
                             

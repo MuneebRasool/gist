@@ -16,19 +16,6 @@ import joblib
 class TaskScoringModel:
     def __init__(self):
         # Initialize default models for utility and cost prediction
-        self.utility_model = SGDRegressor(
-            loss='squared_error',
-            penalty='l2',
-            alpha=0.001,
-            learning_rate='adaptive'
-        )
-        self.cost_model = SGDRegressor(
-            loss='squared_error',
-            penalty='l2',
-            alpha=0.001,
-            learning_rate='adaptive'
-        )
-        self.is_initialized = False
         
         # Weights for relevance score calculation
         self.alpha = 0.8  # Weight for utility score
@@ -188,19 +175,18 @@ class TaskScoringModel:
         try:
             user_model = await UserModel.get_or_create(user_id)
             if user_model:
-                self.utility_model = await user_model.get_utility_model()
-                self.cost_model = await user_model.get_cost_model()
-                self.is_initialized = True
+                utility_model = await user_model.get_utility_model()
+                cost_model = await user_model.get_cost_model()
                 print(f"Loaded models for user {user_id}")
-                return True
+                return utility_model, cost_model
             else:
                 print(f"No models found for user {user_id}, using default models")
-                return False
+                return self._create_default_models()
         except Exception as e:
             print(f"Error loading models for user {user_id}: {str(e)}")
             return False
     
-    async def save_user_models(self, user_id: str) -> bool:
+    async def save_user_models(self, user_id: str, utility_model, cost_model) -> bool:
         """
         Save the current models to the database for a specific user
         
@@ -216,7 +202,7 @@ class TaskScoringModel:
             print(f"Retrieved or created model for user {user_id}")
                 
             # Set the models on the instance
-            await user_model.set_models(self.utility_model, self.cost_model)
+            await user_model.set_models(utility_model, cost_model)
             print(f"Saved models for user {user_id}")
             return True
         except Exception as e:
@@ -320,20 +306,15 @@ class TaskScoringModel:
         utility_features, cost_features = features
         
         # Load user models if user_id is provided and models aren't already loaded
-        if user_id and not self.is_initialized:
-            await self.load_user_models(user_id)
-        
-        if not self.is_initialized:
-            self.utility_model.partial_fit(utility_features, [y['utility']])
-            self.cost_model.partial_fit(cost_features, [y['cost']])
-            self.is_initialized = True
-        else:
-            self.utility_model.partial_fit(utility_features, [y['utility']])
-            self.cost_model.partial_fit(cost_features, [y['cost']])
+        if user_id:
+            utility_model, cost_model = await self.load_user_models(user_id)
+            if utility_model and cost_model:
+                utility_model.partial_fit(utility_features, [y['utility']])
+                cost_model.partial_fit(cost_features, [y['cost']])
         
         # Save updated models to database if user_id is provided
         if user_id:
-            await self.save_user_models(user_id)
+            await self.save_user_models(user_id, utility_model, cost_model)
     
     async def predict_utility(self, features: Tuple[np.ndarray, np.ndarray], user_id: Optional[str] = None) -> float:
         """
@@ -350,22 +331,20 @@ class TaskScoringModel:
         
         # Always try to load user models if user_id is provided
         if user_id:
-            await self.load_user_models(user_id)
+            utility_model, cost_model = await self.load_user_models(user_id)
+            # Ensure we only use the expected number of features (12)
+            expected_features = 12
+            if utility_features.shape[1] > expected_features:
+                print(f"WARNING: Utility features have {utility_features.shape[1]} dimensions, but model expects {expected_features}. Slicing to first {expected_features} features.")
+                utility_features = utility_features[:, :expected_features]
+            elif utility_features.shape[1] < expected_features:
+                print(f"ERROR: Utility features have only {utility_features.shape[1]} dimensions, but model expects {expected_features}.")
+                return 0.5  # Return default score if not enough features
             
-        if not self.is_initialized:
+            prediction = float(utility_model.predict(utility_features)[0])
+            return max(0.0, min(1.0, prediction))  # Ensure score is between 0 and 1
+        else:
             return 0.5
-        
-        # Ensure we only use the expected number of features (12)
-        expected_features = 12
-        if utility_features.shape[1] > expected_features:
-            print(f"WARNING: Utility features have {utility_features.shape[1]} dimensions, but model expects {expected_features}. Slicing to first {expected_features} features.")
-            utility_features = utility_features[:, :expected_features]
-        elif utility_features.shape[1] < expected_features:
-            print(f"ERROR: Utility features have only {utility_features.shape[1]} dimensions, but model expects {expected_features}.")
-            return 0.5  # Return default score if not enough features
-        
-        prediction = float(self.utility_model.predict(utility_features)[0])
-        return max(0.0, min(1.0, prediction))  # Ensure score is between 0 and 1
     
     async def predict_cost(self, features: Tuple[np.ndarray, np.ndarray], user_id: Optional[str] = None) -> float:
         """
@@ -382,22 +361,20 @@ class TaskScoringModel:
         
         # Always try to load user models if user_id is provided
         if user_id:
-            await self.load_user_models(user_id)
+            utility_model, cost_model = await self.load_user_models(user_id)
+            # Ensure we only use the expected number of features (6)
+            expected_features = 6
+            if cost_features.shape[1] > expected_features:
+                print(f"WARNING: Cost features have {cost_features.shape[1]} dimensions, but model expects {expected_features}. Slicing to first {expected_features} features.")
+                cost_features = cost_features[:, :expected_features]
+            elif cost_features.shape[1] < expected_features:
+                print(f"ERROR: Cost features have only {cost_features.shape[1]} dimensions, but model expects {expected_features}.")
+                return 0.5  # Return default score if not enough features
             
-        if not self.is_initialized:
+            prediction = float(cost_model.predict(cost_features)[0])
+            return max(0.0, min(1.0, prediction))  # Ensure score is between 0 and 1
+        else:
             return 0.5
-        
-        # Ensure we only use the expected number of features (6)
-        expected_features = 6
-        if cost_features.shape[1] > expected_features:
-            print(f"WARNING: Cost features have {cost_features.shape[1]} dimensions, but model expects {expected_features}. Slicing to first {expected_features} features.")
-            cost_features = cost_features[:, :expected_features]
-        elif cost_features.shape[1] < expected_features:
-            print(f"ERROR: Cost features have only {cost_features.shape[1]} dimensions, but model expects {expected_features}.")
-            return 0.5  # Return default score if not enough features
-        
-        prediction = float(self.cost_model.predict(cost_features)[0])
-        return max(0.0, min(1.0, prediction))  # Ensure score is between 0 and 1
     
     def calculate_relevance(self, utility_score: float, cost_score: float) -> float:
         """Calculate relevance score from utility and cost scores"""

@@ -239,9 +239,7 @@ class OnboardingAgentService:
                         if not email_node:
                             email_node = EmailNode(messageId=email_obj.id).save()
                         
-                        # Save snippet and classification to Neo4j node
-                        email_snippet = getattr(email_obj, "snippet", "")
-                        email_node.snippet = email_snippet
+                        email_node.snippet = email_summary
                         email_node.classification = email_classification
                         email_node.save()
                         
@@ -270,8 +268,6 @@ class OnboardingAgentService:
                         created_emails = await EmailModel.batch_create_emails(user_id, email_data_list)
                         if created_emails:
                             print(f"Successfully saved {len(created_emails)} out of {len(email_data_list)} emails to PostgreSQL")
-                        else:
-                            print("No new emails were saved to PostgreSQL (they might already exist)")
                     except Exception as e:
                         print(f"Error during email saving process: {str(e)}")
             else:

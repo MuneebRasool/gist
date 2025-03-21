@@ -264,7 +264,6 @@ class EmailModel(models.Model):
             if email_models:
                 try:
                     created_emails = await cls.bulk_create(email_models)
-                    print(f"Successfully bulk created {len(created_emails) if created_emails else 0} emails")
                     return created_emails if created_emails else []
                 except Exception as e:
                     print(f"Error in bulk create: {str(e)}")
