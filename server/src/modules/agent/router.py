@@ -127,7 +127,6 @@ async def infer_domain(request: DomainInferenceRequest):
 @router.post("/submit-onboarding", response_model=PersonalitySummaryResponse)
 async def submit_onboarding(
     request: OnboardingSubmitRequest,
-    background_tasks: BackgroundTasks,
     current_user: Annotated[User, Depends(get_current_user)]
 ):
     """
@@ -146,21 +145,18 @@ async def submit_onboarding(
         # Get the decrypted Nylas grant ID
         grant_id = current_user.get_nylas_grant_id()
 
+        current_user.onboarding = True
         # Update the user's personality
         if current_user.personality is None:
-            current_user.personality = {}
-            current_user.onboarding = True
+            current_user.personality = []
         
-        if isinstance(current_user.personality, dict):
-            current_user.personality["summary"] = result.get("summary", "")
+        if isinstance(current_user.personality, list):  
+            current_user.personality.append( result.get("summary", ""))
         else:
-            current_user.personality = {"summary": result.get("summary", "")}
+            current_user.personality = [result.get("summary", "")]
             
         await current_user.save()
-        
-        if grant_id:
-            background_tasks.add_task(onboarding_agent.start_onboarding, grant_id, current_user.id)
-        
+    
         return PersonalitySummaryResponse(
             success=True,
             message="Onboarding data processed successfully", 

@@ -1,5 +1,5 @@
 import { ApiClient } from '@/lib/api-client';
-import { TaskCreate, TaskUpdate, TaskResponse } from '@/types/tasks';
+import { TaskCreate, TaskUpdate, TaskResponse, TaskEmailResponse } from '@/types/tasks';
 
 /**
  * Tasks service for managing tasks
@@ -35,6 +35,20 @@ export class TasksService {
 	 */
 	static async getUserTasks(userId: string) {
 		return await ApiClient.get<TaskResponse[]>(`/api/tasks/user/${userId}`);
+	}
+	/**
+	 * Get all tasks for a specific user in the library
+	 * @param userId User ID
+	 */
+	static async getUserLibraryTasks(userId: string) {
+		return await ApiClient.get<TaskEmailResponse[]>(`/api/tasks/${userId}/emails/library`);
+	}
+	/**
+	 * Get all tasks for a specific user in the drawer
+	 * @param userId User ID
+	 */
+	static async getUserDrawerTasks(userId: string) {
+		return await ApiClient.get<TaskEmailResponse[]>(`/api/tasks/${userId}/emails/drawer`);
 	}
 
 	/**

@@ -21,22 +21,20 @@ import { signOut } from 'next-auth/react';
 
 const navItems = [
 	{ icon: Home, label: 'Home', href: '/app/dashboard' },
-	{ icon: Rows2, label: 'Drawer', href: '/app/dashboard/drawer' },
-	{ icon: Book, label: 'Library', href: '/app/dashboard/library' },
 	{ icon: Bell, label: 'Notifications', href: '/app/dashboard/notifications' },
 	{ icon: Settings, label: 'Settings', href: '/app/dashboard/settings' },
 ];
 
 interface SidebarProps {
-	topOffset?: number;
+	children?: React.ReactNode;
 }
 
 // Create a custom event for sidebar collapse state
 const SIDEBAR_COLLAPSE_EVENT = 'sidebar-collapse-change';
 
-export default function Sidebar({ topOffset = 0 }: SidebarProps) {
+export default function Sidebar({ children }: SidebarProps) {
 	const pathname = usePathname();
-	const [isCollapsed, setIsCollapsed] = useState(false);
+	const [isCollapsed, setIsCollapsed] = useState(true);
 
 	// Emit custom event when collapsed state changes
 	useEffect(() => {
@@ -47,54 +45,73 @@ export default function Sidebar({ topOffset = 0 }: SidebarProps) {
 	}, [isCollapsed]);
 
 	return (
-		<aside
-			className={cn(
-				'fixed left-0 ml-4 flex h-[calc(100vh-120px)] flex-col pb-5 backdrop-blur-sm transition-all duration-300',
-				isCollapsed ? 'w-16' : 'w-56'
-			)}
-			style={{ top: `calc(${topOffset}px + 120px)` }}
-		>
-			<div className='flex flex-col items-center gap-6'>
-				<div className={`flex ${isCollapsed ? 'justify-center' : 'w-full justify-start px-4'}`}>
-					<button
-						onClick={() => setIsCollapsed(!isCollapsed)}
-						className={cn(
-							'flex h-12 w-12 items-center justify-center gap-3 rounded-xl text-muted-foreground hover:bg-white/30'
-						)}
-					>
-						{isCollapsed ? <ChevronRight size={24} /> : <ChevronLeft size={24} />}
+		<div className='flex h-dvh flex-col gap-4 pt-4'>
+			<div className='flex items-center justify-between gap-2 px-8'>
+				<div className='flex items-center gap-2'>
+					<div className='h-8 w-8 rounded-full bg-gray-400/20'></div>
+					<div className='text-lg text-gray-600'>
+						Press <kbd className='rounded bg-gray-200/20 px-1.5 py-0.5 text-sm'>⌘</kbd> +{' '}
+						<kbd className='rounded bg-gray-200/20 px-1.5 py-0.5 text-sm'>K</kbd> to chat with Gist or add the{' '}
+						<kbd className='rounded bg-gray-200/20 px-1.5 py-0.5 text-sm'>Space Bar</kbd> to talk
+					</div>
+				</div>
+				<div>
+					<button className='rounded-full bg-gray-400/20 p-2 hover:bg-gray-400/30'>
+						<Mic className='h-5 w-5 text-gray-600' />
 					</button>
 				</div>
-				{navItems.map((item) => (
-					<Link
-						key={item.href}
-						href={item.href}
-						className={cn(
-							'group relative flex h-12 items-center gap-3 rounded-xl px-3 transition-all duration-200 hover:bg-white/30',
-							pathname === item.href ? 'bg-white/30' : 'text-muted-foreground',
-							isCollapsed ? 'w-12 justify-center' : 'w-48 justify-start'
-						)}
-					>
-						<item.icon className='h-6 w-6 transition-transform duration-200 group-hover:scale-110' />
-						{!isCollapsed && <span className='font-medium'>{item.label}</span>}
-					</Link>
-				))}
 			</div>
-
-			<div className='mt-auto flex justify-center'>
-				<button
-					onClick={() => {
-						signOut();
-					}}
+			<div className='flex flex-1'>
+				<aside
 					className={cn(
-						'flex h-12 items-center gap-3 rounded-xl text-gray-600 transition-all duration-200 hover:bg-white/30',
-						isCollapsed ? 'w-12 justify-center' : 'w-48 justify-start px-3'
+						'ml-4 flex h-full flex-col pb-5 backdrop-blur-sm transition-all duration-300',
+						isCollapsed ? 'w-16' : 'w-56'
 					)}
 				>
-					<LogOut className='h-6 w-6' />
-					{!isCollapsed && <span className='font-medium'>Logout</span>}
-				</button>
+					<div className='flex flex-col items-center gap-6'>
+						<div className={`flex ${isCollapsed ? 'justify-center' : 'w-full justify-start px-4'}`}>
+							<button
+								onClick={() => setIsCollapsed(!isCollapsed)}
+								className={cn(
+									'flex h-12 w-12 items-center justify-center gap-3 rounded-xl text-muted-foreground hover:bg-white/30'
+								)}
+							>
+								{isCollapsed ? <ChevronRight size={24} /> : <ChevronLeft size={24} />}
+							</button>
+						</div>
+						{navItems.map((item) => (
+							<Link
+								key={item.href}
+								href={item.href}
+								className={cn(
+									'group relative flex h-12 items-center gap-3 rounded-xl px-3 transition-all duration-200 hover:bg-white/30',
+									pathname === item.href ? 'bg-white/30' : 'text-muted-foreground',
+									isCollapsed ? 'w-12 justify-center' : 'w-48 justify-start'
+								)}
+							>
+								<item.icon className='h-6 w-6 transition-transform duration-200 group-hover:scale-110' />
+								{!isCollapsed && <span className='font-medium'>{item.label}</span>}
+							</Link>
+						))}
+					</div>
+
+					<div className='mt-auto flex justify-center'>
+						<button
+							onClick={() => {
+								signOut();
+							}}
+							className={cn(
+								'flex h-12 items-center gap-3 rounded-xl text-gray-600 transition-all duration-200 hover:bg-white/30',
+								isCollapsed ? 'w-12 justify-center' : 'w-48 justify-start px-3'
+							)}
+						>
+							<LogOut className='h-6 w-6' />
+							{!isCollapsed && <span className='font-medium'>Logout</span>}
+						</button>
+					</div>
+				</aside>
+				<div className={`max-h-[calc(100dvh-68px)] flex-1 px-2 transition-all duration-300`}>{children}</div>
 			</div>
-		</aside>
+		</div>
 	);
 }

@@ -1,54 +1,55 @@
 'use client';
-
-import { useTasksStore } from '@/store/tasks';
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import Loading from '@/app/loading';
 import SortableTaskList from '@/components/app/tasks/SortableTaskList';
-import { TaskResponse } from '@/types/tasks';
+import { TaskEmailResponse } from '@/types/tasks';
+import { TasksService } from '@/services/tasks.service';
+import TaskEmail from '@/components/app/tasks/TaskEmails/TaskEmail';
+import { Mic } from 'lucide-react';
 
 export default function DashboardPage() {
-	const { tasks, fetchTasks, isLoading, updateTaskOrder } = useTasksStore();
 	const { data: session } = useSession();
-
-	// Filter tasks with classification = "library"
-	const filteredTasks = useMemo(() => {
-		return tasks.filter(task => task.classification === 'Library');
-	}, [tasks]);
-
+	const [tasks, setTasks] = useState<TaskEmailResponse[]>([]);
+	const [isLoading, setIsLoading] = useState(true);
+	const fetchTasks = useCallback(async (userId: string) => {
+		setIsLoading(true);
+		const tasks = await TasksService.getUserLibraryTasks(userId);
+		if (tasks.data) {
+			setTasks(tasks.data);
+		}
+		setIsLoading(false);
+	}, []);
 	useEffect(() => {
 		if (session?.user?.id) {
 			fetchTasks(session.user.id);
 		}
 	}, [session?.user?.id, fetchTasks]);
 
-	// Handle task reordering
-	const handleTasksReordered = (reorderedTasks: TaskResponse[]) => {
-		// Extract the task IDs in the new order
-		const taskIds = reorderedTasks.map(task => task.task_id);
-		
-		// Update the task order in the store
-		updateTaskOrder(taskIds);
-		
-		// The API call for feedback is now handled in the SortableTaskList component
-	};
-
 	if (isLoading) {
 		return <Loading text='Fetching your tasks...' />;
 	}
 
 	return (
-		<div className='space-y-8'>
-			<h1 className='text-4xl font-bold tracking-tight text-gray-900'>Task Library</h1>
+		<div className='flex max-h-[calc(100dvh-68px)] flex-col space-y-4 overflow-hidden pb-3'>
+			<h1 className='text-3xl font-semibold tracking-tight'>Task Library</h1>
 
-			<SortableTaskList 
-				tasks={filteredTasks} 
-				emptyMessage={{
-					title: "Library Empty",
-					description: "No library tasks found. Tasks classified as library will appear here."
-				}}
-				onTasksReordered={handleTasksReordered}
-			/>
+			<div className='flex flex-1 flex-col gap-4 rounded-3xl bg-white/80 p-4 backdrop-blur-md'>
+				{tasks.map((task) => (
+					<TaskEmail key={task.messageId} email={task} />
+				))}
+				{tasks.length === 0 && (
+					<div className='flex flex-1 flex-col items-center gap-6 overflow-y-auto rounded-3xl bg-white/30 py-12 backdrop-blur-md'>
+						<div className='rounded-full bg-primary/20 p-3'>
+							<Mic className='h-6 w-6 text-primary' />
+						</div>
+						<div className='text-center'>
+							<h3 className='text-lg font-medium text-gray-800'>No tasks found</h3>
+							<p className='text-sm text-gray-600'>Add a task to your library to get started</p>
+						</div>
+					</div>
+				)}
+			</div>
 		</div>
 	);
 }
