@@ -1,10 +1,11 @@
 from datetime import datetime, UTC
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 from src.models.graph.nodes import TaskNode, EmailNode, UserNode
 from src.models.user import Features, User
 from .schemas import TaskCreate, TaskUpdate
 import uuid
 from neomodel import db
+from src.models.user import EmailModel
 
 class TaskService:
 
@@ -62,6 +63,84 @@ class TaskService:
                 print(f"Error saving features for task {task.task_id}: {str(e)}")
         
         return task
+    
+    @staticmethod
+    async def batch_create_tasks(
+        task_data_list: List[TaskCreate], 
+        user_id: str, 
+        utility_features_list: Optional[List[Dict[str, Any]]] = None, 
+        cost_features_list: Optional[List[Dict[str, Any]]] = None,
+        message_ids: Optional[List[str]] = None
+    ) -> List[TaskNode]:
+        """
+        Create multiple tasks at once and connect them to their respective emails
+        
+        Args:
+            task_data_list: List of task data to create
+            user_id: The ID of the user
+            utility_features_list: Optional list of dictionaries containing utility features
+            cost_features_list: Optional list of dictionaries containing cost features
+            message_ids: Optional list of message IDs (if not included in TaskCreate objects)
+            
+        Returns:
+            List[TaskNode]: The created task nodes
+        """
+        created_tasks = []
+        
+        # Validate input
+        if message_ids and len(message_ids) != len(task_data_list):
+            raise ValueError("message_ids must have the same length as task_data_list")
+            
+        if utility_features_list and len(utility_features_list) != len(task_data_list):
+            raise ValueError("utility_features_list must have the same length as task_data_list")
+            
+        if cost_features_list and len(cost_features_list) != len(task_data_list):
+            raise ValueError("cost_features_list must have the same length as task_data_list")
+        
+        # For each task, create the task and connect it to the email
+        for i, task_data in enumerate(task_data_list):
+            try:
+                # Determine message ID
+                message_id = message_ids[i] if message_ids else task_data.messageId
+                
+                # Get or create email node
+                email = TaskService.ensure_graph_nodes(user_id, message_id)
+                
+                # Create task node
+                task = TaskNode(
+                    task_id=str(uuid.uuid4()),
+                    task=task_data.task,
+                    priority=task_data.priority,
+                    deadline=task_data.deadline if task_data.deadline else "No Deadline",
+                    utility_score=task_data.utility_score,
+                    cost_score=task_data.cost_score,
+                    relevance_score=task_data.relevance_score,
+                    classification=task_data.classification
+                ).save()
+                
+                # Connect task to email
+                email.tasks.connect(task)
+                task.messageId = message_id
+                
+                # Save features if provided
+                if utility_features_list and cost_features_list:
+                    try:
+                        await Features.create_features(
+                            user_id=user_id,
+                            task_id=task.task_id,
+                            utility_features=utility_features_list[i],
+                            cost_features=cost_features_list[i]
+                        )
+                    except Exception as e:
+                        print(f"Error saving features for task {task.task_id}: {str(e)}")
+                
+                created_tasks.append(task)
+            except Exception as e:
+                print(f"Error creating task {i}: {str(e)}")
+                # Continue with next task instead of failing the entire batch
+        
+        print(f"Created {len(created_tasks)} tasks out of {len(task_data_list)} requested")
+        return created_tasks
     
     @staticmethod
     def ensure_graph_nodes(user_id: str, message_id: str) -> EmailNode:
@@ -205,3 +284,63 @@ class TaskService:
         except Exception as e:
             print(f"Error getting emails for user {user_id}: {str(e)}")
             return []
+
+    @staticmethod
+    async def get_emails_by_classification(user_id: str, classification: str) -> List[Dict[str, Any]]:
+        """
+        Get all emails for a specific user with the specified classification in Neo4j
+        
+        Args:
+            user_id: The ID of the user
+            classification: The classification to filter by (e.g., "drawer", "library")
+            
+        Returns:
+            List[Dict[str, Any]]: List of email nodes with the specified classification
+        """
+        query = """
+        MATCH (u:UserNode {userid: $user_id})-[:HAS_EMAIL]->(e:EmailNode)
+        WHERE e.classification = $classification
+        RETURN e
+        """
+        try:
+            results, _ = db.cypher_query(query, {'user_id': str(user_id), 'classification': classification})
+            return [
+                {
+                    "messageId": row[0].messageId,
+                    "snippet": row[0].snippet,
+                    "classification": row[0].classification
+                }
+                for row in results
+            ]
+        except Exception as e:
+            print(f"Error getting {classification} emails for user {user_id}: {str(e)}")
+            return []
+
+    @staticmethod
+    async def get_email_by_message_id(message_id: str, user_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """
+        Get a single email from Postgres Email model based on message_id
+        
+        Args:
+            message_id: The message ID of the email
+            user_id: Optional user ID to filter by (for security)
+            
+        Returns:
+            Optional[Dict[str, Any]]: Email data if found, None otherwise
+        """
+        
+        try:
+            if user_id:
+                email = await EmailModel.get_by_message_id(message_id, user_id)
+                
+            return {
+                "id": str(email.id),
+                "messageId": email.message_id,
+                "subject": email.subject,
+                "body": email.body,
+                "from": email.from_,
+                "date": email.date.isoformat() if email.date else None,
+            }
+        except Exception as e:
+            print(f"Error getting email with message ID {message_id}: {str(e)}")
+            return None

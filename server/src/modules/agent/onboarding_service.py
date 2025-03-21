@@ -167,30 +167,13 @@ class OnboardingAgentService:
                 else:
                     user_personality = str(user.personality)
                 
-            emails_without_tasks = []
-            task_extraction_results = []
-            
-            for email in non_spam_emails:
-                try:
-                    # Extract tasks from email
-                    tasks = await self.agent.extract_and_save_tasks(
-                        user_id, 
-                        email,
-                        user_personality,
-                    )
-                    task_extraction_results.append(tasks)
-                    
-                    # If no tasks were extracted, mark this email for saving
-                    if not tasks:
-                        emails_without_tasks.append((email))
-                        print(f"No tasks extracted from email {email.id}, will save it")
-                    else:
-                        print(f"Tasks extracted from email {email.id}, skipping email save")
-                        
-                except Exception as e:
-                    print(f"Error extracting tasks from email {email.id}: {str(e)}")
-                    # If task extraction fails, we'll save the email just in case
-                    emails_without_tasks.append((email, None))
+            # Process non-spam emails in batch to extract tasks
+            print(f"Processing {len(non_spam_emails)} non-spam emails in batch")
+            success, emails_without_tasks = await self.agent.batch_extract_and_save_tasks(
+                user_id,
+                non_spam_emails,
+                user_personality
+            )
             
             # Only process emails that didn't contribute to tasks
             if emails_without_tasks:
@@ -239,10 +222,13 @@ class OnboardingAgentService:
                         if not email_node:
                             email_node = EmailNode(messageId=email_obj.id).save()
                         
-                        email_node.snippet = email_summary
+                        # Save snippet and classification to Neo4j node
+                        email_snippet = getattr(email_obj, "snippet", "")
+                        email_node.snippet = email_snippet
                         email_node.classification = email_classification
                         email_node.save()
                         
+
                         # Connect to user node if needed
                         try:
                             user_node = UserNode.nodes.get_or_none(userid=user_id)

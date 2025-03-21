@@ -2,7 +2,7 @@
 Service for handling agent-related operations.
 """
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Tuple
 from src.agents.spam_classifier import SpamClassifier
 from src.agents.task_extractor import TaskExtractor
 from src.agents.personality_summarizer import PersonalitySummarizer
@@ -20,7 +20,7 @@ import datetime
 from ...agents.task_cost_features_extractor import CostFeaturesExtractor
 from ...agents.task_utility_features_extractor import UtilityFeaturesExtractor
 from ...utils.get_text_from_html import get_text_from_html
-from ...utils.get_task_scores import calculate_task_scores
+from ...utils.get_task_scores import calculate_task_scores, batch_calculate_task_scores
 # from ...models.task_scoring import scoring_model
 
 # tasks -> 
@@ -167,6 +167,153 @@ class AgentService:
             )
         return True
 
+    async def batch_extract_and_save_tasks(
+        self,
+        user_id: str,
+        emails: List,
+        user_personality: str = None
+    ) -> Tuple[bool, List]:
+        """
+        Extract tasks from multiple emails and save them in batch
+        
+        Args:
+            user_id: The ID of the user
+            emails: List of email objects containing id, subject, body, etc.
+                   Can be either dictionaries or EmailData objects
+            user_personality: Optional user persona information
+            
+        Returns:
+            Tuple containing: 
+            - bool: True if tasks were successfully extracted from any email
+            - List: Emails that didn't yield any tasks
+        """
+        # Container for emails that didn't yield tasks
+        emails_without_tasks = []
+        
+        # Extract tasks from all emails
+        all_extracted_tasks = []
+        task_to_email_map = {}
+        
+        for email in emails:
+            # Extract email body and ID
+            if hasattr(email, 'body') and hasattr(email, 'id'):
+                email_body = email.body
+                email_id = email.id
+            elif isinstance(email, dict):
+                email_body = email.get('body', '')
+                email_id = email.get('id', '')
+            else:
+                print(f"Warning: Unsupported email type: {type(email)}")
+                emails_without_tasks.append(email)
+                continue
+                
+            # Extract tasks
+            task_items = await self.extract_tasks(email_body, user_personality)
+            tasks = task_items.get("tasks", [])
+            
+            if len(tasks) == 0:
+                emails_without_tasks.append(email)
+            else:
+                print(f"Found {len(tasks)} tasks in email {email_id}")
+                
+                # Build context once per email
+                email_context = f"""
+                    user personality: {user_personality}
+                    email: {email_body}
+                """
+                
+                # Track tasks with their source email
+                for task in tasks:
+                    # Include the email context with each task
+                    task_with_context = {
+                        "task": task,
+                        "context": email_context + f"\ntask: {task}"
+                    }
+                    all_extracted_tasks.append(task_with_context)
+                    task_to_email_map[len(all_extracted_tasks) - 1] = email_id
+        
+        if not all_extracted_tasks:
+            print("No tasks extracted from any emails")
+            return False, emails
+            
+        # Extract features in parallel for all tasks
+        utility_coroutines = [
+            self.utility_features_extractor.process(task_info["context"]) 
+            for task_info in all_extracted_tasks
+        ]
+        
+        cost_coroutines = [
+            self.cost_features.process(task_info["context"])
+            for task_info in all_extracted_tasks
+        ]
+        
+        # Gather all results
+        print(f"Extracting features for {len(all_extracted_tasks)} tasks in parallel")
+        utility_results, cost_results = await asyncio.gather(
+            asyncio.gather(*utility_coroutines),
+            asyncio.gather(*cost_coroutines)
+        )
+        
+        # Prepare inputs for batch score calculation
+        priorities = [
+            task_info["task"].get("priority", "medium") 
+            for task_info in all_extracted_tasks
+        ]
+        
+        deadlines = [
+            task_info["task"].get("due_date") 
+            for task_info in all_extracted_tasks
+        ]
+        
+        utility_features_list = [
+            result.get("utility_features", {}) 
+            for result in utility_results
+        ]
+        
+        cost_features_list = [
+            result.get("cost_features", {}) 
+            for result in cost_results
+        ]
+        
+        # Calculate scores in batch
+        print("Calculating scores in batch")
+        all_scores = await batch_calculate_task_scores(
+            utility_features=utility_features_list,
+            cost_features=cost_features_list,
+            priorities=priorities,
+            deadlines=deadlines,
+            user_id=user_id
+        )
+        
+        # Create task objects for batch creation
+        task_create_objects = []
+        for i, task_info in enumerate(all_extracted_tasks):
+            task = task_info["task"]
+            relevance_score, utility_score, cost_score = all_scores[i]
+            
+            task_data = TaskCreate(
+                task=task.get("title"),
+                deadline=task.get("due_date"),
+                priority=task.get("priority"),
+                messageId=task_to_email_map[i],
+                relevance_score=relevance_score,
+                utility_score=utility_score,
+                cost_score=cost_score,
+                classification=""
+            )
+            task_create_objects.append(task_data)
+        
+        # Save all tasks at once
+        print(f"Saving {len(task_create_objects)} tasks in batch")
+        await TaskService.batch_create_tasks(
+            task_data_list=task_create_objects,
+            user_id=user_id,
+            utility_features_list=utility_features_list,
+            cost_features_list=cost_features_list
+        )
+        
+        return True, emails_without_tasks
+
     async def fetch_last_week_emails(self, grant_id: str):
         """
         Fetch last week emails of the user
@@ -237,13 +384,15 @@ class AgentService:
                 email = EmailData(
                     id=message_id, body=parsed_body, subject=subject, from_=from_data
                 )
+                
+                # Check if this is spam
                 classification_result = await self.classify_spams([email])
                 non_spam_emails = classification_result.get("non_spam", [])
 
                 if len(non_spam_emails) == 0:
                     raise Exception("Email classified as spam, skipping processing")
 
-                print(f"Email {message_id} classified as not spam, extracting tasks")
+                print(f"Email {message_id} classified as not spam, processing")
 
                 # Process for each user
                 for user in users:
@@ -255,27 +404,31 @@ class AgentService:
                         # Join multiple personality traits with newlines
                         user_personality = "\n".join(user_personality)
                     
-                    # Try to extract tasks from email
+
+                    # Create email object with the original parsed body
+
                     email_for_tasks = EmailData(
                         id=message_id,
-                        body=parsed_body,  # Use the original parsed body for task extraction
+                        body=parsed_body,
                         subject=subject,
                         from_=from_data
                     )
                     
-                    # Try to extract tasks from email - if successful, we're done
-                    tasks_extracted = await self.extract_and_save_tasks(
-                        user.id, 
-                        email_for_tasks, 
-                        user_personality, 
-                        email_node
+                    # Process the email for tasks using batch method
+                    # This is a single email but we use the batch method for consistency
+                    print(f"Extracting tasks from email {message_id}")
+                    success, emails_without_tasks = await self.batch_extract_and_save_tasks(
+                        user.id,
+                        [email_for_tasks],
+                        user_personality
                     )
                     
-                    # If no tasks were extracted, classify and save the email separately
-                    if not tasks_extracted:
+                    # If no tasks were extracted or extraction failed, process as a regular email
+                    if not success or emails_without_tasks:
                         print(f"No tasks extracted from email {message_id}, processing as regular email")
                         
-                        # Classify the email content with personality context
+                        # Classify and summarize the email in parallel
+
                         personality_context = f"User personality: {user_personality}\n\nEmail content: {parsed_body}"
                         
                         # Run content classification and summarization in parallel
@@ -292,14 +445,13 @@ class AgentService:
                         
                         print(f"Email classified as: {email_classification} for user {user.id}")
                         
-                        # Save classification and snippet to Neo4j email node
+                        # Update the email node
                         try:
-                            # Update the email node properties
+
                             email_node.snippet = email_summary
                             email_node.classification = email_classification
                             email_node.save()
                             
-                            # Connect user to email in Neo4j if not already connected
                             try:
                                 user_node = UserNode.nodes.get(userid=user.id)
                             except UserNode.DoesNotExist:
