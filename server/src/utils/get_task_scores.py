@@ -104,3 +104,4 @@ async def batch_calculate_task_scores(
         (relevance_scores[i], utility_scores[i], cost_scores[i])
         for i in range(num_tasks)
     ]
+

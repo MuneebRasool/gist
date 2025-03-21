@@ -404,7 +404,9 @@ class AgentService:
                         # Join multiple personality traits with newlines
                         user_personality = "\n".join(user_personality)
                     
+
                     # Create email object with the original parsed body
+
                     email_for_tasks = EmailData(
                         id=message_id,
                         body=parsed_body,
@@ -426,6 +428,7 @@ class AgentService:
                         print(f"No tasks extracted from email {message_id}, processing as regular email")
                         
                         # Classify and summarize the email in parallel
+
                         personality_context = f"User personality: {user_personality}\n\nEmail content: {parsed_body}"
                         
                         # Run content classification and summarization in parallel
@@ -444,11 +447,11 @@ class AgentService:
                         
                         # Update the email node
                         try:
+
                             email_node.snippet = email_summary
                             email_node.classification = email_classification
                             email_node.save()
                             
-                            # Connect to user node if not already connected
                             try:
                                 user_node = UserNode.nodes.get(userid=user.id)
                             except UserNode.DoesNotExist:

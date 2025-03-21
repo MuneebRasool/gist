@@ -228,6 +228,7 @@ class OnboardingAgentService:
                         email_node.classification = email_classification
                         email_node.save()
                         
+
                         # Connect to user node if needed
                         try:
                             user_node = UserNode.nodes.get_or_none(userid=user_id)

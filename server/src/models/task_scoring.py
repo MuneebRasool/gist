@@ -375,6 +375,7 @@ class TaskScoringModel:
             return max(0.0, min(1.0, prediction))  # Ensure score is between 0 and 1
         else:
             return 0.5
+
     
     async def batch_predict_utility(self, features_list: List[Tuple[np.ndarray, np.ndarray]], user_id: Optional[str] = None) -> List[float]:
         """
@@ -461,6 +462,7 @@ class TaskScoringModel:
         else:
             # Return default scores if no user_id
             return [0.5] * len(features_list)
+
     
     def calculate_relevance(self, utility_score: float, cost_score: float) -> float:
         """Calculate relevance score from utility and cost scores"""
