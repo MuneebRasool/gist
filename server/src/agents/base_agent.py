@@ -10,7 +10,7 @@ class BaseAgent:
     
     def __init__(
             self, 
-            model="gpt-4o",
+            model="gpt-4o-mini",
             base_url= settings.LLM_BASE_URL, 
             api_key= settings.LLM_API_KEY,
     ):

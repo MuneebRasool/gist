@@ -4,7 +4,7 @@ Task scoring model using SGDRegressor for continuous learning
 from sklearn.linear_model import SGDRegressor
 import numpy as np
 from datetime import datetime
-from typing import Dict, Any, Tuple, Optional
+from typing import Dict, Any, Tuple, Optional, List
 from src.models.user import UserModel
 from src.modules.tasks.service import TaskService
 from pathlib import Path
@@ -375,6 +375,92 @@ class TaskScoringModel:
             return max(0.0, min(1.0, prediction))  # Ensure score is between 0 and 1
         else:
             return 0.5
+    
+    async def batch_predict_utility(self, features_list: List[Tuple[np.ndarray, np.ndarray]], user_id: Optional[str] = None) -> List[float]:
+        """
+        Get utility score predictions for multiple tasks at once
+        
+        Args:
+            features_list: List of feature tuples, each containing (utility_features, cost_features)
+            user_id: Optional user ID to load models from database
+            
+        Returns:
+            List[float]: List of utility scores between 0 and 1
+        """
+        # Extract only utility features from each tuple
+        utility_features_list = [features[0] for features in features_list]
+        
+        # Load models only once
+        if user_id:
+            utility_model, _ = await self.load_user_models(user_id)
+            
+            # Process all utility features at once
+            expected_features = 12
+            predictions = []
+            
+            for utility_features in utility_features_list:
+                # Ensure we only use the expected number of features
+                if utility_features.shape[1] > expected_features:
+                    print(f"WARNING: Utility features have {utility_features.shape[1]} dimensions, but model expects {expected_features}. Slicing.")
+                    utility_features = utility_features[:, :expected_features]
+                elif utility_features.shape[1] < expected_features:
+                    print(f"ERROR: Utility features have only {utility_features.shape[1]} dimensions, but model expects {expected_features}.")
+                    predictions.append(0.5)  # Add default score
+                    continue
+                
+                # Make prediction
+                prediction = float(utility_model.predict(utility_features)[0])
+                # Ensure score is between 0 and 1
+                prediction = max(0.0, min(1.0, prediction))
+                predictions.append(prediction)
+                
+            return predictions
+        else:
+            # Return default scores if no user_id
+            return [0.5] * len(features_list)
+    
+    async def batch_predict_cost(self, features_list: List[Tuple[np.ndarray, np.ndarray]], user_id: Optional[str] = None) -> List[float]:
+        """
+        Get cost score predictions for multiple tasks at once
+        
+        Args:
+            features_list: List of feature tuples, each containing (utility_features, cost_features)
+            user_id: Optional user ID to load models from database
+            
+        Returns:
+            List[float]: List of cost scores between 0 and 1
+        """
+        # Extract only cost features from each tuple
+        cost_features_list = [features[1] for features in features_list]
+        
+        # Load models only once
+        if user_id:
+            _, cost_model = await self.load_user_models(user_id)
+            
+            # Process all cost features at once
+            expected_features = 6
+            predictions = []
+            
+            for cost_features in cost_features_list:
+                # Ensure we only use the expected number of features
+                if cost_features.shape[1] > expected_features:
+                    print(f"WARNING: Cost features have {cost_features.shape[1]} dimensions, but model expects {expected_features}. Slicing.")
+                    cost_features = cost_features[:, :expected_features]
+                elif cost_features.shape[1] < expected_features:
+                    print(f"ERROR: Cost features have only {cost_features.shape[1]} dimensions, but model expects {expected_features}.")
+                    predictions.append(0.5)  # Add default score
+                    continue
+                
+                # Make prediction
+                prediction = float(cost_model.predict(cost_features)[0])
+                # Ensure score is between 0 and 1
+                prediction = max(0.0, min(1.0, prediction))
+                predictions.append(prediction)
+                
+            return predictions
+        else:
+            # Return default scores if no user_id
+            return [0.5] * len(features_list)
     
     def calculate_relevance(self, utility_score: float, cost_score: float) -> float:
         """Calculate relevance score from utility and cost scores"""

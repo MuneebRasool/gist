@@ -157,6 +157,19 @@ class EmailModel(models.Model):
 
     def __str__(self):
         return f"Email {self.message_id} ({self.subject})"
+    
+    @classmethod
+    async def get_by_message_id(cls, message_id: str) -> Optional["EmailModel"]:
+        """
+        Get email by message ID
+        
+        Args:
+            message_id: The ID of the email message
+            
+        Returns:
+            Optional[EmailModel]: The email record if found, None otherwise
+        """
+        return await cls.filter(message_id=message_id).first()
         
     @classmethod
     async def create_email(cls, user_id: str, email_data: dict) -> "EmailModel":
