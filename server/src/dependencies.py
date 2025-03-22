@@ -32,6 +32,8 @@ async def get_current_user(
     Raises:
         HTTPException: If user is not found or token is invalid
     """
+    print("+++++++++++++++++++")
+    print(credentials)
     payload = verify_token(credentials.credentials)
     user_id = payload.get("sub")
     if user_id is None:

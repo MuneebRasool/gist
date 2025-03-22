@@ -20,7 +20,7 @@ interface OnboardingState {
 	// UI state
 	isLoading: boolean;
 	isCompleted: boolean;
-	currentStep: 'email-rating' | 'questions' | 'reviewPersonality' | 'completed';
+	currentStep: 'email-rating' | 'questions' | 'reviewPersonality' | 'task_generation' | 'completed';
 
 	// Actions
 	setRatedEmails: (emails: SimplifiedEmail[]) => void;
@@ -33,7 +33,7 @@ interface OnboardingState {
 	setIsLoading: (isLoading: boolean) => void;
 	setIsCompleted: (isCompleted: boolean) => void;
 	setTopEmails: (emails: EmailMessage[]) => void;
-	setCurrentStep: (step: 'email-rating' | 'questions' | 'reviewPersonality' | 'completed') => void;
+	setCurrentStep: (step: 'email-rating' | 'questions' | 'reviewPersonality' | 'task_generation' | 'completed') => void;
 	resetState: () => void;
 }
 
