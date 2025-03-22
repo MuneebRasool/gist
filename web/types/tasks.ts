@@ -37,5 +37,6 @@ export interface TaskResponse {
 export interface TaskEmailResponse {
 	messageId: string;
 	snippet: string;
+	subject : string;
 	classification: string;
 }

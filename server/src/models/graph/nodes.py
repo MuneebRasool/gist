@@ -27,6 +27,7 @@ class EmailNode(StructuredNode):
 
     messageId = StringProperty(required=True)
     snippet = StringProperty(default=None)
+    subject = StringProperty(default=None)
     classification = StringProperty(default=None)
     tasks = RelationshipTo('TaskNode', 'CONTAINS_TASK', cardinality=ZeroOrMore)
     user = RelationshipFrom('UserNode', 'HAS_EMAIL', cardinality=OneOrMore)

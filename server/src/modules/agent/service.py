@@ -449,6 +449,7 @@ class AgentService:
                         try:
 
                             email_node.snippet = email_summary
+                            email_node.subject = subject
                             email_node.classification = email_classification
                             email_node.save()
                             

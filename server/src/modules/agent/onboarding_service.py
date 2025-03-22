@@ -222,9 +222,8 @@ class OnboardingAgentService:
                         if not email_node:
                             email_node = EmailNode(messageId=email_obj.id).save()
                         
-                        # Save snippet and classification to Neo4j node
-                        email_snippet = getattr(email_obj, "snippet", "")
-                        email_node.snippet = email_snippet
+                        email_node.snippet = email_summary
+                        email_node.subject = email_obj.subject or "No subject"
                         email_node.classification = email_classification
                         email_node.save()
                         

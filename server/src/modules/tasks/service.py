@@ -308,6 +308,7 @@ class TaskService:
                 {
                     "messageId": row[0].get('messageId'),
                     "snippet": row[0].get('snippet'),
+                    "subject": row[0].get('subject'),
                     "classification": row[0].get('classification')
                 }
                 for row in results

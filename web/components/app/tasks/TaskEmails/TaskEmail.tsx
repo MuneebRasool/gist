@@ -11,7 +11,7 @@ const TaskEmail = ({ email }: TaskEmailProps) => {
 	return (
 		<div className='flex items-center justify-between gap-4 p-4'>
 			<div>
-				<h3 className='text-lg font-medium'>Email {email.messageId}</h3>
+				<h3 className='text-lg font-medium'>Email {email.subject}</h3>
 				<div className='line-clamp-2 text-muted-foreground'>{email.snippet}</div>
 			</div>
 			<div className='flex'>
