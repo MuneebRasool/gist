@@ -42,7 +42,7 @@ export default function DashboardPage() {
 	}
 
 	return (
-		<div className='mx-auto flex max-h-[calc(100dvh-68px)] w-full flex-col space-y-3 overflow-hidden p-3'>
+		<div className='mx-auto flex h-[calc(100dvh-68px)] w-full flex-col space-y-3 overflow-hidden p-3'>
 			<h1 className='text-3xl font-semibold'>Your Focus Today</h1>
 			<div className='flex flex-1 flex-col justify-between gap-4 overflow-hidden'>
 				<SortableTaskList

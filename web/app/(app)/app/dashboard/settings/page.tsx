@@ -1,8 +1,10 @@
 'use client';
 import GmailConnect from '@/components/app/settings/GmailConnect';
 import UserInfo from '@/components/app/settings/UserInfo';
+import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Settings2 } from 'lucide-react';
+import { LogOut, Settings2 } from 'lucide-react';
+import { signOut } from 'next-auth/react';
 import React from 'react';
 
 const Settings = () => {
@@ -15,6 +17,12 @@ const Settings = () => {
 						<h1 className='text-xl font-semibold'>Settings</h1>
 					</div>
 					<p className='text-muted-foreground'>Manage all your Settings</p>
+				</div>
+				<div>
+					<Button size='sm' onClick={() => signOut()}>
+						<LogOut className='h-4 w-4' />
+						Logout
+					</Button>
 				</div>
 			</div>
 			<Separator />

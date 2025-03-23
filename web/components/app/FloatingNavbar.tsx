@@ -16,16 +16,9 @@ import {
 } from '../ui/alert-dialog';
 import ProfileDropdown from './ProfileDropdown';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
-import { useNylasStatusStore } from '@/store';
 
 const FloatingFooter = () => {
 	const [open, setOpen] = useState(false);
-	const { checkConnection } = useNylasStatusStore();
-	const { data } = useSession();
-
-	useEffect(() => {
-		checkConnection();
-	}, [checkConnection, data?.user.id]);
 	return (
 		<TooltipProvider>
 			<div

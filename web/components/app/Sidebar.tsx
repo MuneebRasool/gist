@@ -22,7 +22,6 @@ import { signOut } from 'next-auth/react';
 const navItems = [
 	{ icon: Home, label: 'Home', href: '/app/dashboard' },
 	{ icon: Bell, label: 'Notifications', href: '/app/dashboard/notifications' },
-	{ icon: Settings, label: 'Settings', href: '/app/dashboard/settings' },
 ];
 
 interface SidebarProps {
@@ -96,18 +95,17 @@ export default function Sidebar({ children }: SidebarProps) {
 					</div>
 
 					<div className='mt-auto flex justify-center'>
-						<button
-							onClick={() => {
-								signOut();
-							}}
-							className={cn(
-								'flex h-12 items-center gap-3 rounded-xl text-gray-600 transition-all duration-200 hover:bg-white/30',
-								isCollapsed ? 'w-12 justify-center' : 'w-48 justify-start px-3'
-							)}
-						>
-							<LogOut className='h-6 w-6' />
-							{!isCollapsed && <span className='font-medium'>Logout</span>}
-						</button>
+						<Link href='/app/dashboard/settings'>
+							<button
+								className={cn(
+									'flex h-12 items-center gap-3 rounded-xl text-gray-600 transition-all duration-200 hover:bg-white/30',
+									isCollapsed ? 'w-12 justify-center' : 'w-48 justify-start px-3'
+								)}
+							>
+								<Settings className='h-6 w-6' />
+								{!isCollapsed && <span className='font-medium'>Settings</span>}
+							</button>
+						</Link>
 					</div>
 				</aside>
 				<div className={`max-h-[calc(100dvh-68px)] flex-1 px-2 transition-all duration-300`}>{children}</div>

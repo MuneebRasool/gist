@@ -1,30 +1,14 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Loading from '@/app/loading';
 import SortableTaskList from '@/components/app/tasks/SortableTaskList';
-import { TaskEmailResponse } from '@/types/tasks';
-import { TasksService } from '@/services/tasks.service';
+import { useDrawerTasksStore } from '@/store/drawerTasks';
 import TaskEmail from '@/components/app/tasks/TaskEmails/TaskEmail';
 import { Mic } from 'lucide-react';
 
-export default function DashboardPage() {
-	const { data: session } = useSession();
-	const [tasks, setTasks] = useState<TaskEmailResponse[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
-	const fetchTasks = useCallback(async (userId: string) => {
-		setIsLoading(true);
-		const tasks = await TasksService.getUserDrawerTasks(userId);
-		if (tasks.data) {
-			setTasks(tasks.data);
-		}
-		setIsLoading(false);
-	}, []);
-	useEffect(() => {
-		if (session?.user?.id) {
-			fetchTasks(session.user.id);
-		}
-	}, [session?.user?.id, fetchTasks]);
+export default function DrawerPage() {
+	const { tasks, isLoading } = useDrawerTasksStore();
 
 	if (isLoading) {
 		return <Loading text='Fetching your tasks...' />;
