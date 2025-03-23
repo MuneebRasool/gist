@@ -56,11 +56,11 @@ class OnboardingAgentService:
             if user.domain_inf:
                 domain_inf = user.domain_inf
 
-            user_personality = ''
-            if user.personality:
-                user_personality = user.personality[-1]
+            # user_personality = ''
+            # if user.personality:
+            #     user_personality = user.personality[-1]
             
-            domain_inf = f"{domain_inf} {user_personality}"
+            # domain_inf = f"{domain_inf} {user_personality}"
 
 
 
