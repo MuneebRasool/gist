@@ -258,6 +258,12 @@ class OnboardingAgentService:
             else:
                 print("All emails contributed to tasks, no emails saved to database")
 
+            # Make sure to load a fresh user object and set onboarding flag
+            user = await User.get(id=user_id)
+            user.task_gen = False
+            await user.save()
+            print(f"User {user_id} onboarding completed successfully")
+
         except Exception as e:
             print(f"Error in start_onboarding: {str(e)}")
             traceback.print_exc()

@@ -36,7 +36,7 @@ export default function OnboardingPage() {
 		return <QuestionsStep />;
 	}
 
-	if (currentStep === 'reviewPersonality') {
+	if (currentStep === 'reviewPersonality' || 'task_generation') {
 		return <ReviewPersonalityStep />;
 	}
 
