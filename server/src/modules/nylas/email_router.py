@@ -19,7 +19,7 @@ email_extractor = EmailExtractorAgent()
 @router.get("/onboarding/message", response_model=MessageList)
 async def get_filtered_onboarding_message(
     current_user: User = Depends(get_current_user),
-    limit: int = Query(10, ge=1, le=100),
+    limit: int = Query(5, ge=1, le=10, description="Number of relevant messages to return"),
     offset: Optional[str] = None,
     unread: Optional[bool] = None,
     starred: Optional[bool] = None,
@@ -31,11 +31,15 @@ async def get_filtered_onboarding_message(
     """
     Get filtered email messages for user onboarding.
     
-    This endpoint fetches emails from the last two weeks, filters out spam,
-    and uses AI to select the most relevant messages based on the user's domain.
+    This endpoint fetches emails from the last two weeks and performs advanced filtering:
+    1. Removes spam emails using AI classification
+    2. Groups emails by conversation threads
+    3. Analyzes email content for relevance to user's domain
+    4. Scores emails based on importance, actionability, and business impact
+    5. Returns the top most relevant emails with explanations
     
     Args:
-        limit: Number of relevant messages to return (1-100)
+        limit: Number of relevant messages to return (1-10)
         offset: Cursor for pagination (not used in this endpoint)
         unread: Filter by unread status
         starred: Filter by starred status
@@ -45,7 +49,7 @@ async def get_filtered_onboarding_message(
         received_before: Filter by received date before unix timestamp
         
     Returns:
-        MessageList containing filtered relevant messages
+        MessageList containing filtered relevant messages with explanations
     """
     try:
         if not current_user.nylas_grant_id:
@@ -79,7 +83,7 @@ async def get_filtered_onboarding_message(
             agent_service=agent,
             email_extractor_agent=email_extractor,
             user_domain=user_domain,
-            fetch_limit=100,  # Fetch up to 100 emails from last 2 weeks
+            fetch_limit=200,  # Fetch up to 200 emails from last 2 weeks
             return_limit=limit,  # Return only up to the requested limit after filtering
             query_params=params
         )

@@ -92,6 +92,12 @@ You will receive a JSON object containing:
    - `body` : the main content of the email
    - `from`: Sender name
    - `rating`: User's importance rating (1-5, where 5 is most important and 1 is least important)
+     - **Rating Scale:**
+       - **1**: Not important at all, most probably spam
+       - **2**: Slightly important
+       - **3**: Moderately important
+       - **4**: Very important
+       - **5**: Extremely important and very relevant to user's work
 
 ## Analysis Guidelines
 

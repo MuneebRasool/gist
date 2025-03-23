@@ -29,8 +29,19 @@ class EmailMessage(BaseModel):
 class EmailData(BaseModel):
     id: str
     body: str
-    subject: Optional[str]
-    from_: Optional[List[dict]]
+    subject: Optional[str] = None
+    from_: Optional[List[dict] | dict] = None  # Allow both list and dict formats
+    # Additional fields for better email analysis
+    date: Optional[int] = None  # Timestamp for email date
+    to: Optional[List[dict]] = None
+    cc: Optional[List[dict]] = None
+    reply_to: Optional[List[dict]] = None
+    thread_id: Optional[str] = None
+    has_attachments: Optional[bool] = False
+    # Fields for relevance analysis results
+    relevance_score: Optional[float] = None
+    relevance_explanation: Optional[str] = None
+    category: Optional[str] = None
 
 
 class MessageList(BaseModel):

@@ -173,7 +173,7 @@ class NylasService:
         agent_service,
         email_extractor_agent,
         user_domain: str,
-        fetch_limit: int = 100,
+        fetch_limit: int = 200,  # Fetch more emails to find the most relevant ones
         return_limit: int = 5,
         offset: Optional[str] = None,
         query_params: Optional[Dict[str, Any]] = None,
@@ -186,8 +186,8 @@ class NylasService:
             agent_service: Instance of AgentService to use for spam classification
             email_extractor_agent: Instance of EmailExtractorAgent for relevance selection
             user_domain: User's email domain for context
-            fetch_limit: Number of messages to fetch initially (default 100)
-            return_limit: Maximum number of relevant messages to return (default 5)
+            fetch_limit: Number of messages to fetch initially
+            return_limit: Maximum number of relevant messages to return
             offset: Cursor for pagination
             query_params: Additional query parameters for filtering messages
             
@@ -213,47 +213,113 @@ class NylasService:
             # Convert the list of dictionaries to EmailData objects
             emails = []
             for email in emails_raw:
-                parsed_email_body = get_text_from_html(email.get("body", ""))
-                emails.append(
-                    EmailData(
-                        id=email.get("id"),
-                        body=parsed_email_body,
-                        subject=email.get("subject"),
-                        from_=email.get("from"),
+                try:
+                    parsed_email_body = get_text_from_html(email.get("body", ""))
+                    # Extract date from email if available
+                    date = email.get("date") or email.get("received_at")
+                    
+                    # Get from_ field, which can be a list or dict
+                    from_field = email.get("from")
+                    # Leave from_field as is (it can be a list or dict now)
+                    
+                    emails.append(
+                        EmailData(
+                            id=email.get("id"),
+                            body=parsed_email_body,
+                            subject=email.get("subject", ""),
+                            from_=from_field,  # Pass the original format (list or dict)
+                            date=date,
+                            to=email.get("to", []),
+                            cc=email.get("cc", []),
+                            thread_id=email.get("thread_id", ""),
+                            reply_to=email.get("reply_to", []),
+                            has_attachments=bool(email.get("attachments", []))
+                        )
                     )
-                )
+                except Exception as e:
+                    print(f"Error creating EmailData for message {email.get('id')}: {str(e)}")
+                    continue
             
+            print(f"Fetched {len(emails)} emails from the last two weeks")
+            
+            # Filter out spam emails
             print("Calling classify_spams...")
             try:
                 classification_result = await agent_service.classify_spams(emails)
                 print("classify_spams completed successfully")
                 non_spam_messages = classification_result.get("non_spam", [])
+                print(f"Found {len(non_spam_messages)} non-spam messages")
             except Exception as e:
                 print(f"Error in classify_spams: {str(e)}")
                 non_spam_messages = emails
             
-            print(f"Found {len(non_spam_messages)} non-spam messages")
-            
+            # Process and score the non-spam emails
+            selected_emails_data = []
             try:
+                # Score and select the most relevant emails
+                print("Scoring and selecting most relevant emails...")
                 selected_emails = await email_extractor_agent.process_email_batches(
                     emails=non_spam_messages,
                     user_domain=user_domain,
                     max_selected=return_limit
                 )
-                print(f"Selected {len(selected_emails)} relevant emails")
+                
+                if selected_emails:
+                    print(f"Selected {len(selected_emails)} relevant emails")
+                    # Format for response
+                    for item in selected_emails:
+                        email = item["selected_email"]
+                        # Convert EmailData to dict for response
+                        email_dict = email.__dict__ if hasattr(email, "__dict__") else {}
+                        
+                        # Add metadata from our scoring
+                        email_dict["relevance_score"] = item.get("score", 0)
+                        email_dict["relevance_explanation"] = item.get("explanation", "")
+                        
+                        selected_emails_data.append(email_dict)
+                else:
+                    print("No emails selected, using fallback method")
+                    # Fallback: take the most recent non-spam messages
+                    for email in non_spam_messages[:return_limit]:
+                        email_dict = email.__dict__ if hasattr(email, "__dict__") else {}
+                        email_dict["relevance_explanation"] = "Recent email (selected by fallback method)"
+                        selected_emails_data.append(email_dict)
+                
             except Exception as e:
-                print(f"Error in email extractor: {str(e)}")
-                # Return first return_limit messages in case of error
-                selected_emails = [{"selected_email": email, "explanation": "Error in email extraction"} 
-                                for email in non_spam_messages[:return_limit]]
+                print(f"Error in email scoring/selection: {str(e)}")
+                import traceback
+                print(f"Traceback: {traceback.format_exc()}")
+                
+                # Fallback: return most recent non-spam emails
+                for email in non_spam_messages[:return_limit]:
+                    email_dict = email.__dict__ if hasattr(email, "__dict__") else {}
+                    email_dict["relevance_explanation"] = "Recent email (selected after extraction error)"
+                    selected_emails_data.append(email_dict)
+            
+            # Convert any EmailData objects to JSON-compatible dicts
+            for i, email_dict in enumerate(selected_emails_data):
+                # Handle nested objects that aren't JSON-serializable
+                for key, value in list(email_dict.items()):
+                    if hasattr(value, "__dict__"):
+                        email_dict[key] = value.__dict__
+                
+                # Ensure we don't have invalid None values where strings are expected
+                if email_dict.get("subject") is None:
+                    email_dict["subject"] = ""
+                if email_dict.get("body") is None:
+                    email_dict["body"] = ""
+                    
+                selected_emails_data[i] = email_dict
             
             return {
-                "data": [result["selected_email"] for result in selected_emails],
-                "next_cursor": None,  # Since we're fetching a specific time window
+                "data": selected_emails_data,
+                "next_cursor": None  # No pagination for filtered results
             }
             
         except Exception as e:
+            import traceback
             print(f"Error in get_filtered_onboarding_messages: {str(e)}")
+            print(f"Traceback: {traceback.format_exc()}")
             raise Exception(f"Failed to get filtered onboarding messages: {str(e)}")
         
 

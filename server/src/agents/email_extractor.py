@@ -2,7 +2,10 @@
 
 from typing import List, Dict, Any
 import json
+import asyncio
 from .base_agent import BaseAgent
+from .domain_inference_agent import DomainInferenceAgent
+from .email_scorer import EmailScorerAgent
 from ..modules.nylas.schemas import EmailData
 from ..utils.file_utils import FileUtils
 
@@ -14,6 +17,8 @@ class EmailExtractorAgent(BaseAgent):
         """Initialize the email extractor agent."""
         super().__init__()
         self.SYSTEM_PROMPT = FileUtils.read_file_content("src/prompts/v1/email_extractor_prompt.md")
+        self.domain_inference_agent = DomainInferenceAgent()
+        self.email_scorer_agent = EmailScorerAgent()
 
     async def extract_relevant_email(
         self, emails: List[EmailData], user_domain: str
@@ -34,10 +39,19 @@ class EmailExtractorAgent(BaseAgent):
         # Format emails for the prompt
         formatted_emails = []
         for email in emails:
+            # Handle from_ field that could be a list or dict
+            from_field = email.from_
+            if isinstance(from_field, list) and from_field:
+                # Extract the first sender if it's a list
+                from_data = from_field[0]
+            else:
+                # Use as is if it's a dict or None
+                from_data = from_field or {}
+            
             formatted_emails.append({
                 "subject": email.subject,
                 "body": email.body,
-                "from": email.from_,
+                "from": from_data,
                 "id": email.id
             })
 
@@ -56,46 +70,121 @@ class EmailExtractorAgent(BaseAgent):
             
         return response
 
+    async def score_emails_by_domain(
+        self, 
+        emails: List[EmailData], 
+        user_email: str
+    ) -> List[Dict[str, Any]]:
+        """
+        Score each email individually based on user's domain context.
+        
+        Args:
+            emails: List of EmailData objects to analyze
+            user_email: User's email address
+            
+        Returns:
+            List of dicts containing scored emails and explanations
+        """
+        if not emails:
+            return []
+            
+        # First, infer the user's domain context
+        domain_context = await self.domain_inference_agent.infer_domain(user_email)
+        print(f"Inferred domain context: {domain_context}")
+        
+        # Score each email individually
+        scoring_tasks = []
+        for email in emails:
+            scoring_tasks.append(self.email_scorer_agent.score_email(email, domain_context))
+            
+        # Execute scoring tasks in parallel
+        scored_emails = await asyncio.gather(*scoring_tasks)
+        
+        # Sort by score (highest first)
+        scored_emails.sort(key=lambda x: x.get("score", 0), reverse=True)
+        
+        return scored_emails
+
     async def process_email_batches(
         self,
         emails: List[EmailData],
         user_domain: str,
         batch_size: int = 5,
-        max_selected: int = 10
+        max_selected: int = 5
     ) -> List[Dict[str, Any]]:
         """
-        Process emails in batches and select the most relevant ones.
+        Process emails and select the most relevant ones.
         
         Args:
             emails: List of all emails to process
             user_domain: User's email domain for context
-            batch_size: Number of emails to process in each batch
+            batch_size: Number of emails to process in each batch (unused in new approach)
             max_selected: Maximum number of selected emails to return
             
         Returns:
             List of selected emails with explanations
         """
-        selected_emails = []
-        
-        # Process emails in batches
-        for i in range(0, len(emails), batch_size):
-            batch = emails[i:i + batch_size]
+        if not emails:
+            return []
             
+        try:
+            # Extract user email from domain
+            user_email = f"user@{user_domain}"
+            
+            # Get scored emails
+            scored_emails = await self.score_emails_by_domain(emails, user_email)
+            
+            # Take top max_selected emails
+            top_emails = scored_emails[:max_selected]
+            
+            # Format results for output
+            results = []
+            for item in top_emails:
+                # Find the corresponding EmailData object
+                email_id = item.get("email_id")
+                email_obj = next((e for e in emails if e.id == email_id), None)
+                
+                if email_obj:
+                    results.append({
+                        "selected_email": email_obj,
+                        "explanation": item.get("explanation", "No explanation provided"),
+                        "score": item.get("score", 0),
+                        "category": item.get("categories", {})
+                    })
+            
+            return results
+            
+        except Exception as e:
+            print(f"Error in process_email_batches: {str(e)}")
+            
+            # Fallback to original method if error occurs
             try:
-                result = await self.extract_relevant_email(batch, user_domain)
-                selected_index = result["selected_email_index"]
+                selected_emails = []
                 
-                selected_emails.append({
-                    "selected_email": batch[selected_index],
-                    "explanation": result.get("explanation", "No explanation provided")
-                })
-                
-                # Stop if we've reached the maximum number of selections
-                if len(selected_emails) >= max_selected:
-                    break
+                # Process emails in batches
+                for i in range(0, len(emails), batch_size):
+                    batch = emails[i:i + batch_size]
                     
+                    try:
+                        result = await self.extract_relevant_email(batch, user_domain)
+                        selected_index = result["selected_email_index"]
+                        
+                        selected_emails.append({
+                            "selected_email": batch[selected_index],
+                            "explanation": result.get("explanation", "No explanation provided"),
+                            "score": 25  # Middle score as fallback
+                        })
+                        
+                        # Stop if we've reached the maximum number of selections
+                        if len(selected_emails) >= max_selected:
+                            break
+                            
+                    except Exception as e:
+                        print(f"Error processing batch {i//batch_size + 1}: {str(e)}")
+                        continue
+                
+                return selected_emails[:max_selected]
+                
             except Exception as e:
-                print(f"Error processing batch {i//batch_size + 1}: {str(e)}")
-                continue
-        
-        return selected_emails[:max_selected] 
+                print(f"Error in fallback method: {str(e)}")
+                return [] 
