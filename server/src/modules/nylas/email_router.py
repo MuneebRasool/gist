@@ -7,6 +7,7 @@ from src.modules.nylas.service import NylasService
 from src.modules.nylas.schemas import MessageList,EmailMessage
 from src.modules.agent.onboarding_service import OnboardingAgentService
 from src.agents.email_extractor import EmailExtractorAgent
+from src.agents.domain_inference_agent import DomainInferenceAgent
 
 router = APIRouter(
     prefix="/nylas/email",
@@ -15,6 +16,7 @@ router = APIRouter(
 
 agent = OnboardingAgentService()
 email_extractor = EmailExtractorAgent()
+domain_inf = DomainInferenceAgent()
 
 @router.get("/onboarding/message", response_model=MessageList)
 async def get_filtered_onboarding_message(
@@ -59,8 +61,20 @@ async def get_filtered_onboarding_message(
             )
 
         # Extract user's email domain
-        user_domain = current_user.email.split('@')[-1]
+        print("getting emails")
+        user_domain = current_user.nylas_email
+        print(user_domain)
+        inf = await domain_inf.infer_domain(user_domain)
+        inf = inf["context_guess"] + " " + inf["reasoning"]
 
+        print("getting emails")
+
+        if current_user.domain_inf is None:
+            current_user.domain_inf = inf
+        await current_user.save()
+
+        print("all fine")
+        
         # Build query parameters
         params = {}
         if unread is not None:
@@ -83,11 +97,12 @@ async def get_filtered_onboarding_message(
             agent_service=agent,
             email_extractor_agent=email_extractor,
             user_domain=user_domain,
-            fetch_limit=200,  # Fetch up to 200 emails from last 2 weeks
+            user_id = current_user.id,
+            fetch_limit=200,
             return_limit=limit,  # Return only up to the requested limit after filtering
             query_params=params
         )
-        
+
         return MessageList(**messages)
         
     except Exception as e:
@@ -95,7 +110,6 @@ async def get_filtered_onboarding_message(
             status_code=500,
             detail=f"Failed to get filtered onboarding messages: {str(e)}"
         )
-
 @router.get("/messages", response_model=MessageList)
 async def get_messages(
     current_user: User = Depends(get_current_user),

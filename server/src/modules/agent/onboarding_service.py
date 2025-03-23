@@ -35,13 +35,14 @@ class OnboardingAgentService:
         self.content_summarizer = ContentSummarizer()
         self.agent = AgentService()
 
-    async def classify_spams(self, emails: List[dict]) -> dict:
+    async def classify_spams(self, emails: List[dict], user_id : str) -> dict:
         """
         Process batch of emails whether these are spam or not spam
 
         Args:
             emails: List of email objects containing message_id, subject, body, etc.
-                   Can be either dictionaries or EmailData objects
+                Can be either dictionaries or EmailData objects
+            user_id: The ID of the user for personalized spam detection
 
         Returns:
             dict: Results of processing including spam and non-spam emails
@@ -49,13 +50,15 @@ class OnboardingAgentService:
         try:
             if emails and isinstance(emails[0], dict):
                 print(f"First email keys: {list(emails[0].keys())}")
-            
+
+            user = await User.get(id=user_id)
+            domain_inf = None
+            if user.domain_inf:
+                domain_inf = user.domain_inf
+
             async def classify_email(email):
                 try:
                     email_body = ""
-                    
-                    
-                    # Handle different email formats to extract body
                     try:
                         if hasattr(email, 'body'):
                             email_body = email.body
@@ -76,12 +79,14 @@ class OnboardingAgentService:
                     except (AttributeError, TypeError):
                         email_body = "Error extracting content"
                     
-                    is_spam = await self.spam_classifier.process(email_body)
+                    is_spam = await self.spam_classifier.process(email_body, domain_inf)
                     return (email, is_spam.lower() == "spam")
                 except Exception:
                     return (email, False)
 
             process_limit = min(20, len(emails))
+
+
             
             tasks = [
                 classify_email(email) for email in emails[:process_limit]
@@ -148,7 +153,7 @@ class OnboardingAgentService:
                 )
 
             try:
-                classified_emails = await self.classify_spams(emails)
+                classified_emails = await self.classify_spams(emails, user_id)
             except Exception:
                 classified_emails = {"spam": [], "non_spam": emails}
 

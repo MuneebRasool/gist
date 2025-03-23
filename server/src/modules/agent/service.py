@@ -38,37 +38,85 @@ class AgentService:
         self.domain_inference_agent = DomainInferenceAgent()
         self.content_summarizer = ContentSummarizer()
 
-    async def classify_spams(self, emails: List[dict]) -> dict:
+    async def classify_spams(self, emails: List[dict], user_id : str) -> dict:
         """
         Process batch of emails whether these are spam or not spam
-        
+
         Args:
-            user_id: The ID of the user
             emails: List of email objects containing message_id, subject, body, etc.
-            
+                Can be either dictionaries or EmailData objects
+            user_id: The ID of the user for personalized spam detection
+
         Returns:
-            dict: Results of processing including tasks and personality insights
+            dict: Results of processing including spam and non-spam emails
         """
-        # Filter out spam emails first
-        async def classify_email(email):
-            is_spam = await self.spam_classifier.process(email.body)
-            return (email, is_spam.lower() == 'spam')
+        try:
+            if emails and isinstance(emails[0], dict):
+                print(f"First email keys: {list(emails[0].keys())}")
 
-        tasks = [classify_email(email) for email in emails[:20]]  # Process top 20 emails
-        results = await asyncio.gather(*tasks)
-        
-        spam_emails = []
-        non_spam_emails = []
-        for email, is_spam in results:
-            if is_spam:
-                spam_emails.append(email)
-            else:
-                non_spam_emails.append(email)
+            user = await User.get(id=user_id)
+            domain_inf = None
+            if user.domain_inf:
+                domain_inf = user.domain_inf
 
-        return {
-            "spam": spam_emails,
-            "non_spam": non_spam_emails
-        }
+            user_personality = ''
+            if user.personality is not None:
+                user_personality = user.personality[-1]
+
+            domain_inf = f"{domain_inf} {user_personality}"
+
+            async def classify_email(email):
+                try:
+                    email_body = ""
+                    try:
+                        if hasattr(email, 'body'):
+                            email_body = email.body
+                        elif isinstance(email, dict):
+                            if 'body' in email:
+                                email_body = email['body']
+                            elif 'body_data' in email and isinstance(email['body_data'], dict):
+                                if 'text' in email['body_data']:
+                                    email_body = email['body_data']['text']
+                                elif 'html' in email['body_data']:
+                                    email_body = get_text_from_html(email['body_data']['html'])
+                        else:
+                            email_body = getattr(email, "body", "") or getattr(email, "snippet", "")
+                            
+                        if not email_body:
+                            email_body = "No content available"
+                            
+                    except (AttributeError, TypeError):
+                        email_body = "Error extracting content"
+                    
+                    is_spam = await self.spam_classifier.process(email_body, domain_inf)
+                    return (email, is_spam.lower() == "spam")
+                except Exception:
+                    return (email, False)
+
+            process_limit = min(20, len(emails))
+
+
+            
+            tasks = [
+                classify_email(email) for email in emails[:process_limit]
+            ]
+            results = await asyncio.gather(*tasks)
+
+            spam_emails = []
+            non_spam_emails = []
+            for email, is_spam in results:
+                if is_spam:
+                    spam_emails.append(email)
+                else:
+                    non_spam_emails.append(email)
+
+            return {"spam": spam_emails, "non_spam": non_spam_emails}
+            
+        except Exception as e:
+            import traceback
+            print(f"Error in classify_spams: {str(e)}")
+            print(f"Traceback: {traceback.format_exc()}")
+            return {"spam": [], "non_spam": emails}
 
     async def extract_tasks(self, email_body: str, user_personality: str = None):
         email_body = get_text_from_html(email_body)
@@ -385,17 +433,16 @@ class AgentService:
                     id=message_id, body=parsed_body, subject=subject, from_=from_data
                 )
                 
-                # Check if this is spam
-                classification_result = await self.classify_spams([email])
-                non_spam_emails = classification_result.get("non_spam", [])
-
-                if len(non_spam_emails) == 0:
-                    raise Exception("Email classified as spam, skipping processing")
-
-                print(f"Email {message_id} classified as not spam, processing")
 
                 # Process for each user
                 for user in users:
+                    classification_result = await self.classify_spams([email], user.id)
+                    non_spam_emails = classification_result.get("non_spam", [])
+                    if len(non_spam_emails) == 0:
+                        print(f"Email {message_id} classified as spam for user {user.id}, skipping processing")
+                        continue 
+
+                    print(f"Email {message_id} classified as not spam, processing for user {user.id}")
                     # Fetch user personality once for all operations
                     user_personality = None
                     if user.personality and isinstance(user.personality, list):
