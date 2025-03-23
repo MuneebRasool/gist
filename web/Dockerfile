@@ -40,6 +40,7 @@ COPY --from=base /app/package.json ./package.json
 # Copy the .next folder from the base stage to the .next directory in the release stage.
 COPY --from=base /app/.next ./.next
 
+COPY --from=base /app/public ./public
 
 # Define the default command to be executed when the container is started with pnpm start.
 CMD ["pnpm", "start"]
