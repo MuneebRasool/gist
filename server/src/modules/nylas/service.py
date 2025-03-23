@@ -122,8 +122,11 @@ class NylasService:
             Exception: If fetching the message fails
         """
         try:
-            message = self.client.messages.find(identifier=grant_id, id=message_id)
-            return message.to_dict()
+            message = self.client.messages.find(
+                identifier=grant_id,
+                message_id=message_id
+            )
+            return message.data.to_dict()
         except Exception as e:
             raise Exception(f"{str(e)}")
 

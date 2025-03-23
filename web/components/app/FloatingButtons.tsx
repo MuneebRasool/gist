@@ -26,6 +26,11 @@ const FloatingButtons: React.FC = () => {
 								{libraryTasks.slice(0, 3).map((task) => (
 									<TaskEmail key={task.messageId} email={task} />
 								))}
+								{libraryTasks.length === 0 && (
+									<div className='flex h-full items-center justify-center'>
+										<p className='text-muted-foreground'>No tasks found</p>
+									</div>
+								)}
 							</div>
 						</div>
 					</div>
@@ -53,6 +58,11 @@ const FloatingButtons: React.FC = () => {
 								{tasks.slice(0, 3).map((task) => (
 									<TaskEmail key={task.messageId} email={task} />
 								))}
+								{tasks.length === 0 && (
+									<div className='flex h-full items-center justify-center'>
+										<p className='text-muted-foreground'>No tasks found</p>
+									</div>
+								)}
 							</div>
 						</div>
 					</div>
