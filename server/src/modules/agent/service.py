@@ -385,17 +385,16 @@ class AgentService:
                     id=message_id, body=parsed_body, subject=subject, from_=from_data
                 )
                 
-                # Check if this is spam
-                classification_result = await self.classify_spams([email])
-                non_spam_emails = classification_result.get("non_spam", [])
-
-                if len(non_spam_emails) == 0:
-                    raise Exception("Email classified as spam, skipping processing")
-
-                print(f"Email {message_id} classified as not spam, processing")
 
                 # Process for each user
                 for user in users:
+                    classification_result = await self.classify_spams([email], user.id)
+                    non_spam_emails = classification_result.get("non_spam", [])
+                    if len(non_spam_emails) == 0:
+                        print(f"Email {message_id} classified as spam for user {user.id}, skipping processing")
+                        continue 
+
+                    print(f"Email {message_id} classified as not spam, processing for user {user.id}")
                     # Fetch user personality once for all operations
                     user_personality = None
                     if user.personality and isinstance(user.personality, list):

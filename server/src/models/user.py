@@ -27,6 +27,7 @@ class User(models.Model):
     nylas_email = fields.CharField(max_length=255, null=True)
     nylas_grant_id = fields.TextField(null=True, description="Encrypted Nylas grant ID")
     onboarding = fields.BooleanField(default=False)
+    domain_inf = fields.CharField(max_length=255, null=True)
     task_gen = fields.BooleanField(default=False)
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)

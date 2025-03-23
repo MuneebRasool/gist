@@ -176,6 +176,7 @@ class NylasService:
         agent_service,
         email_extractor_agent,
         user_domain: str,
+        user_id:str,
         fetch_limit: int = 200,  # Fetch more emails to find the most relevant ones
         return_limit: int = 5,
         offset: Optional[str] = None,
@@ -248,7 +249,7 @@ class NylasService:
             # Filter out spam emails
             print("Calling classify_spams...")
             try:
-                classification_result = await agent_service.classify_spams(emails)
+                classification_result = await agent_service.classify_spams(emails, user_id)
                 print("classify_spams completed successfully")
                 non_spam_messages = classification_result.get("non_spam", [])
                 print(f"Found {len(non_spam_messages)} non-spam messages")

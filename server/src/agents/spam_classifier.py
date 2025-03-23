@@ -14,12 +14,13 @@ class SpamClassifier(BaseAgent):
         super().__init__()
         self.system_prompt = FileUtils.read_file_content("src/prompts/v1/spam_classifier.md")
 
-    async def process(self, email_body: str):
+    async def process(self, email_body: str, user_personality: str = None):
         """
         Calls LLM to classify spam.
         
         Args:
             email_body: The email body text to classify
+            user_personality: User's personality/domain information to provide context
             
         Returns:
             str: "spam" or "not_spam"
@@ -37,8 +38,15 @@ class SpamClassifier(BaseAgent):
             if not email_body or len(email_body.strip()) < 5:
                 print("Email body too short or empty, defaulting to not_spam")
                 return "not_spam"
+            
+            # Prepare the input with user personality context if available
+            if user_personality:
+                input_text = f"User context: {user_personality}\n\nEmail content: {email_body}"
+                print(f"Including user personality context of length: {len(user_personality)}")
+            else:
+                input_text = email_body
                 
-            result = await self.execute(self.system_prompt, email_body)
+            result = await self.execute(self.system_prompt, input_text)
             
             # Validate and normalize result
             if result and isinstance(result, str):
