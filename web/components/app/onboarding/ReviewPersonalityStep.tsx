@@ -38,10 +38,11 @@ export function ReviewPersonalityStep() {
 
 	const redirectToDashboard = useCallback(() => {
 		update({ onboarding: true });
-		resetState();
-		router.push('/app/dashboard');
 		setCurrentStep('completed');
-	}, [update, resetState, router, setCurrentStep]);
+		localStorage.removeItem('onboarding-storage');
+		
+		router.push('/app/dashboard');
+	}, [update, setCurrentStep, router]);
 
 	const fetchPersonalityData = useCallback(async () => {
 		if (currentStep !== 'reviewPersonality' || summary) {
@@ -88,7 +89,6 @@ export function ReviewPersonalityStep() {
 					eventSourceRef.current.close();
 					eventSourceRef.current = null;
 				}
-				setCurrentStep('completed');
 				redirectToDashboard();
 				setIsProcessing(false);
 				break;
@@ -105,7 +105,7 @@ export function ReviewPersonalityStep() {
 				}
 				break;
 		}
-	}, [redirectToDashboard, setCurrentStep]);
+	}, [redirectToDashboard]);
 
 	const startStatusStream = useCallback(async () => {
 		if (!isComponentMounted.current) return;

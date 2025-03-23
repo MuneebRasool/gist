@@ -155,7 +155,6 @@ export class OnboardingService {
 		// Note: Headers may not work in all browsers with EventSource
 		// but we include them anyway as a fallback
 		const eventSource = new EventSource(url.toString(), {
-			withCredentials: true,
 			headers: {
 				Authorization: `Bearer ${session.user.token}`
 			}
