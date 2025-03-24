@@ -43,7 +43,7 @@ const SortableTaskItem = ({ task, isDragging, isCompleted, onToggleComplete }: S
 	};
 
 	return (
-		<div ref={setNodeRef} style={style} {...attributes} {...listeners} className='px-6 py-4'>
+		<div ref={setNodeRef} style={style} {...attributes} {...listeners} className='px-6 py-12'>
 			<div className='flex items-start gap-4'>
 				<button
 					onClick={(e) => {
