@@ -21,11 +21,19 @@ export default function EmailCard({ email, currentRating = 5, onRate, onNext, is
 	}, [currentRating]);
 
 	const getRatingLabel = (rating: number) => {
-		if (rating <= 1) return 'Irrelevant';
-		if (rating <= 2) return 'Low Priority';
-		if (rating <= 3) return 'Somewhat Important';
+		if (rating <= 1) return 'Spam';
+		if (rating <= 2) return 'Low Relevance';
+		if (rating <= 3) return 'For Later / Keep on File';
 		if (rating <= 4) return 'Important';
-		return 'Critical';
+		return 'Priority';
+	};
+
+	const getRatingDescription = (rating: number) => {
+		if (rating <= 1) return 'Unwanted, irrelevant, or outright junk';
+		if (rating <= 2) return 'Not immediately useful but also not junk';
+		if (rating <= 3) return 'Important but not requiring action';
+		if (rating <= 4) return 'Needs attention but not urgent';
+		return 'Urgent and actionable';
 	};
 
 	const handleSliderChange = (value: number[]) => {
@@ -86,7 +94,10 @@ export default function EmailCard({ email, currentRating = 5, onRate, onNext, is
 
 			<div className='space-y-5 border-t border-gray-50 p-4'>
 				<div className='space-y-3'>
-					<div className='text-center text-sm text-gray-600'>{getRatingLabel(sliderValue)}</div>
+					<div className='text-center'>
+						<div className='text-base font-medium text-gray-900'>{getRatingLabel(sliderValue)}</div>
+						<div className='mt-1 text-sm text-gray-600'>{getRatingDescription(sliderValue)}</div>
+					</div>
 					<div>
 						<Slider
 							value={[sliderValue]}
@@ -97,8 +108,8 @@ export default function EmailCard({ email, currentRating = 5, onRate, onNext, is
 							className='w-full'
 						/>
 						<div className='mt-3 flex justify-between px-0.5'>
-							<span className='text-sm text-gray-500'>Not Important</span>
-							<span className='text-sm text-gray-500'>Very Important</span>
+							<span className='text-sm text-gray-500'>Spam</span>
+							<span className='text-sm text-gray-500'>Priority</span>
 						</div>
 					</div>
 				</div>

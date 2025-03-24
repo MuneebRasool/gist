@@ -21,11 +21,11 @@ You will receive a JSON object containing:
    - `from`: Sender name
    - `rating`: User's importance rating (1-5, where 5 is most important and 1 is least important)
      - **Rating Scale:**
-       - **1**: Not important at all, most probably spam
-       - **2**: Slightly important
-       - **3**: Moderately important
-       - **4**: Very important
-       - **5**: Extremely important and very relevant to user's work
+       - **1**: Spam – Unwanted, irrelevant, or outright junk. → Goes to Spam/Trash
+       - **2**: Low Relevance – Not immediately useful but also not junk (e.g., soft promotions, secondary newsletters). → Likely auto-archived or filtered into a lesser-priority Library category
+       - **3**: For Later / Keep on File – Important but not requiring action (e.g., receipts, confirmations, newsletters of interest). → Goes to Library
+       - **4**: Important – Needs attention but not urgent (e.g., follow-ups, pending approvals). → Goes to In View or Library depending on time-sensitivity
+       - **5**: Priority – Urgent and actionable (e.g., calendar invites, investor emails, deadlines). → Goes to In View
 
 ## **Steps for Analysis:**  
 1. **Domain Inference:**  
