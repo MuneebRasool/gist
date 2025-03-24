@@ -5,6 +5,7 @@ from nylas import Client
 from nylas.models.auth import CodeExchangeRequest, CodeExchangeResponse
 from .schemas import EmailData
 from ...utils.get_text_from_html import get_text_from_html
+from src.models.user import User
 from src.config.settings import (
     NYLAS_CLIENT_ID,
     NYLAS_API_KEY,
@@ -147,6 +148,8 @@ class NylasService:
         Returns:
             List of email objects
         """
+
+        user = await User.get_by_grant_id(grant_id)
         # Calculate 2 weeks ago timestamp in seconds (UTC)
         two_weeks_ago = int(
             (datetime.datetime.now() - datetime.timedelta(days=14)).timestamp()
@@ -156,6 +159,7 @@ class NylasService:
         params = {
             "received_after": two_weeks_ago,
             "limit": limit,
+            "to":[user.nylas_email]
         }
         
         if query_params:
@@ -167,7 +171,6 @@ class NylasService:
             limit=limit,
             query_params=params
         )
-        
         return emails.get("data", [])
 
     async def get_filtered_onboarding_messages(

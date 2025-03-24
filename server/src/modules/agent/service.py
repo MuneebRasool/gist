@@ -368,6 +368,8 @@ class AgentService:
             List of email objects
         """
         nylas_service = NylasService()
+
+        user = await User.get_by_grant_id(grant_id)
         # Calculate 1 week ago timestamp in seconds (UTC)
         one_week_ago = int(
             (datetime.datetime.now() - datetime.timedelta(days=10)).timestamp()
@@ -378,6 +380,7 @@ class AgentService:
             limit=100,
             query_params={
                 "received_after": one_week_ago,
+                "to": [user.nylas_email]
             },
         )
         return emails.get("data", [])
