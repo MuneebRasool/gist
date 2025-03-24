@@ -61,13 +61,12 @@ class EmailScorerAgent(BaseAgent):
 
         # Prepare the prompt
         prompt = (
-            f"User's domain context: {json.dumps(domain_context, indent=2)}\n\n"
             f"Email to score: {json.dumps(formatted_email, indent=2)}"
         )
 
         # Get response from the model
         response = await self.execute(
-            system_prompt=self.SYSTEM_PROMPT,
+            system_prompt=self.SYSTEM_PROMPT.replace('{{user_domain_context', json.dumps(domain_context, indent=2)),
             user_input=prompt,
             response_format="json"
         )

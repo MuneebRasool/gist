@@ -27,8 +27,8 @@ class TaskExtractor(BaseAgent):
         """
         # If user personality is provided, include it in the input
         if user_personality:
-            input_text = f"USER PERSONALITY:\n{user_personality}\n\nEMAIL CONTENT:\n{email_body}"
+            input_text = f"EMAIL CONTENT:\n{email_body}"
         else:
             input_text = email_body
             
-        return await self.execute(self.system_prompt, input_text, response_format="json")
+        return await self.execute(self.system_prompt.replace('{{user_context}}', user_personality), input_text, response_format="json")
