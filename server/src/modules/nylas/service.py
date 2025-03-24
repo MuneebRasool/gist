@@ -247,23 +247,23 @@ class NylasService:
             print(f"Fetched {len(emails)} emails from the last two weeks")
             
             # Filter out spam emails
-            print("Calling classify_spams...")
-            try:
-                classification_result = await agent_service.classify_spams(emails, user_id)
-                print("classify_spams completed successfully")
-                non_spam_messages = classification_result.get("non_spam", [])
-                print(f"Found {len(non_spam_messages)} non-spam messages")
-            except Exception as e:
-                print(f"Error in classify_spams: {str(e)}")
-                non_spam_messages = emails
-            
+            # print("Calling classify_spams...")
+            # try:
+            #     classification_result = await agent_service.classify_spams(emails, user_id)
+            #     print("classify_spams completed successfully")
+            #     non_spam_messages = classification_result.get("non_spam", [])
+            #     print(f"Found {len(non_spam_messages)} non-spam messages")
+            # except Exception as e:
+            #     print(f"Error in classify_spams: {str(e)}")
+            #     non_spam_messages = emails
+            #
             # Process and score the non-spam emails
             selected_emails_data = []
             try:
                 # Score and select the most relevant emails
                 print("Scoring and selecting most relevant emails...")
                 selected_emails = await email_extractor_agent.process_email_batches(
-                    emails=non_spam_messages,
+                    emails=emails,
                     user_domain=user_domain,
                     max_selected=return_limit
                 )
@@ -284,7 +284,7 @@ class NylasService:
                 else:
                     print("No emails selected, using fallback method")
                     # Fallback: take the most recent non-spam messages
-                    for email in non_spam_messages[:return_limit]:
+                    for email in emails[:return_limit]:
                         email_dict = email.__dict__ if hasattr(email, "__dict__") else {}
                         email_dict["relevance_explanation"] = "Recent email (selected by fallback method)"
                         selected_emails_data.append(email_dict)
@@ -295,7 +295,7 @@ class NylasService:
                 print(f"Traceback: {traceback.format_exc()}")
                 
                 # Fallback: return most recent non-spam emails
-                for email in non_spam_messages[:return_limit]:
+                for email in emails[:return_limit]:
                     email_dict = email.__dict__ if hasattr(email, "__dict__") else {}
                     email_dict["relevance_explanation"] = "Recent email (selected after extraction error)"
                     selected_emails_data.append(email_dict)

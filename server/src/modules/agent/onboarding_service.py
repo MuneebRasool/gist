@@ -5,7 +5,6 @@ Service for handling agent-related operations.
 import json
 from typing import List, Dict, Any, Optional
 from src.agents.spam_classifier import SpamClassifier
-from src.agents.task_extractor import TaskExtractor
 from src.agents.personality_summarizer import PersonalitySummarizer
 from src.agents.content_classifier import ContentClassifier
 from src.agents.email_domain_inferencer import DomainInferenceAgent
@@ -26,7 +25,6 @@ from src.models.user import EmailModel
 class OnboardingAgentService:
     def __init__(self):
         self.spam_classifier = SpamClassifier()
-        self.task_extractor = TaskExtractor()
         self.personality_summarizer = PersonalitySummarizer()
         self.utility_features_extractor = UtilityFeaturesExtractor()
         self.cost_features = CostFeaturesExtractor()
@@ -52,9 +50,9 @@ class OnboardingAgentService:
                 print(f"First email keys: {list(emails[0].keys())}")
 
             user = await User.get(id=user_id)
-            domain_inf = None
-            if user.domain_inf:
-                domain_inf = user.domain_inf
+            user_context = None
+            if user.domain_inf or user.personality:
+                user_context = user.personality + '\n' + user.domain_inf
 
             async def classify_email(email):
                 try:
@@ -79,14 +77,12 @@ class OnboardingAgentService:
                     except (AttributeError, TypeError):
                         email_body = "Error extracting content"
                     
-                    is_spam = await self.spam_classifier.process(email_body, domain_inf)
+                    is_spam = await self.spam_classifier.process(email_body, user_context)
                     return (email, is_spam.lower() == "spam")
                 except Exception:
                     return (email, False)
 
             process_limit = min(20, len(emails))
-
-
             
             tasks = [
                 classify_email(email) for email in emails[:process_limit]
@@ -136,7 +132,7 @@ class OnboardingAgentService:
             Exception: If starting onboarding fails
         """
         try:
-            emails_raw = await self.agent.fetch_last_week_emails(grant_id)
+            emails_raw = await self.agent.fetch_last_ten_emails(grant_id)
             if not emails_raw:
                 raise Exception("No emails found for the last week")
 
@@ -174,6 +170,7 @@ class OnboardingAgentService:
                 
             # Process non-spam emails in batch to extract tasks
             print(f"Processing {len(non_spam_emails)} non-spam emails in batch")
+
             success, emails_without_tasks = await self.agent.batch_extract_and_save_tasks(
                 user_id,
                 non_spam_emails,
