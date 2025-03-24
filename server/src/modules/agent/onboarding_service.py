@@ -52,7 +52,13 @@ class OnboardingAgentService:
             user = await User.get(id=user_id)
             user_context = None
             if user.domain_inf or user.personality:
-                user_context = user.personality + '\n' + user.domain_inf
+                if user.personality:
+                    if isinstance(user.personality, list):
+                        user_personality = user.personality[-1] if user.personality else None
+                        user_context = user_personality + '\n' + user.domain_inf
+                    else:
+                        user_personality = str(user.personality)
+                        user_context = user_personality + '\n' + user.domain_inf
 
             async def classify_email(email):
                 try:
