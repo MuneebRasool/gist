@@ -161,7 +161,7 @@ class NylasService:
         """
         try:
             two_weeks_ago = int(
-                (datetime.datetime.now() - datetime.timedelta(days=50)).timestamp()
+                (datetime.datetime.now() - datetime.timedelta(days=21)).timestamp()
             )
 
             params = {
