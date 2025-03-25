@@ -107,7 +107,6 @@ export const QuestionsStep = () => {
 			>
 				<div className='rounded-3xl bg-background/80 shadow-sm backdrop-blur-sm'>
 					<div className='flex items-center justify-between border-b px-8 py-6'>
-						<h2 className='text-lg font-semibold sm:text-2xl'>You are ,</h2>
 						<ProgressBar
 							currentQuestionIndex={currentQuestionIndex}
 							totalQuestions={questions.length}

@@ -1,14 +1,10 @@
-# **Domain Inference & Email Prioritization Prompt**
-
 ## **Task:**  
 Analyze the user's email domain to infer their professional field and role, then ask targeted yes/no questions to understand:  
 - What kind of work they do.  
 - Their professional priorities.
-- Why they rated specific emails as high or low priority.
-- Their email prioritization patterns to improve our notification system.
+- Their general email prioritization patterns to improve our notification system.
 
 ---
-
 
 ## Input Format
 
@@ -35,7 +31,7 @@ You will receive a JSON object containing:
 
 2. **Question Focus:**  
    - **Work Context Questions** → Ask specific yes/no questions about their role and industry.
-   - **Email Rating Questions** → Ask direct yes/no questions about specific emails they've rated.
+   - **Priority Pattern Questions** → Ask general questions about their email prioritization habits based on domain context.
 
 ---
 
@@ -50,12 +46,12 @@ You will receive a JSON object containing:
   - [ ] Yes
   - [ ] No
 
-### **Email Rating Questions**  
-- **I noticed you rated [specific high-priority email subject] as high priority. Was it because it contained time-sensitive information requiring immediate action?**  
+### **Priority Pattern Questions**  
+- **In your role, do you typically need to respond to time-sensitive requests within 24 hours?**  
   - [ ] Yes
   - [ ] No
 
-- **For the email [specific low-priority email subject] that you marked as low priority, was it because the content wasn't directly relevant to your current work?**  
+- **Do you often receive emails that require coordination with multiple stakeholders?**  
   - [ ] Yes
   - [ ] No
 
@@ -65,8 +61,8 @@ You will receive a JSON object containing:
 - Always ask all 4 questions to every professional user.
 - All questions must be yes/no format.
 - Make educated guesses about the user's industry or role based on their email domain when framing work context questions.
-- For email rating questions, reference specific emails that the user has already rated.
-- Use actual email subjects when referring to specific emails the user has rated.
+- For priority pattern questions, focus on general patterns relevant to their domain rather than specific emails.
+- Use the domain context to tailor questions about email handling patterns.
 - If the answer to a question is "No," consider following up with another yes/no question about a different potential aspect.
 
 ---
@@ -85,15 +81,15 @@ You will receive a JSON object containing:
             "options": ["Yes", "No"]
         },
         {
-            "question": "I noticed you rated '[specific high-priority email subject]' as high priority. Was it because it contained time-sensitive information requiring immediate action?",
+            "question": "In your role, do you typically need to respond to time-sensitive requests within 24 hours?",
             "options": ["Yes", "No"]
         },
         {
-            "question": "For the email '[specific low-priority email subject]' that you marked as low priority, was it because the content wasn't directly relevant to your current work?",
+            "question": "Do you often receive emails that require coordination with multiple stakeholders?",
             "options": ["Yes", "No"]
         }
     ],
-    "summary": "User [is/is not] in the technology/software industry and [does/does not] primarily manage teams or projects. They prioritize emails that [contain/don't contain] time-sensitive information and deprioritize emails that [are/are not] directly relevant to their current work."
+    "summary": "User [is/is not] in the technology/software industry and [does/does not] primarily manage teams or projects. Their role [requires/does not require] quick responses to time-sensitive requests and [involves/does not involve] frequent stakeholder coordination."
 }
 ```
 

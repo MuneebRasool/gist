@@ -345,7 +345,7 @@ class OnboardingAgentService:
         except Exception as e:
             return {"summary": f"Error processing onboarding data: {str(e)}"}
 
-    async def infer_user_domain(self, email: str, rated_emails: Optional[List[Any]] = None, ratings: Optional[Dict[str, int]] = None) -> Dict[str, Any]:
+    async def infer_user_domain(self, email: str, domain_inf : str, rated_emails: Optional[List[Any]] = None, ratings: Optional[Dict[str, int]] = None) -> Dict[str, Any]:
         """
         Infer user's profession and context from their email domain and rated emails if available.
 
@@ -359,7 +359,7 @@ class OnboardingAgentService:
         """
         
         try:
-            result = await self.domain_inference_agent.process(email, rated_emails, ratings)
+            result = await self.domain_inference_agent.process(email, rated_emails, ratings, domain_inf)
             
             result["questions"] = self._validate_questions(result.get("questions"))
             print(f"[DEBUG] Validated questions: {result['questions']}")

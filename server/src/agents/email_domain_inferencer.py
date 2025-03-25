@@ -12,14 +12,15 @@ class DomainInferenceAgent(BaseAgent):
         super().__init__(**kwargs)
         self.SYSTEM_PROMPT = FileUtils.read_file_content("src/prompts/v1/domain_inference.md")
         self.DOMAIN_INFERENCE_PROMPT = (
-            "Analyze this email address to infer the professional domain: {domain}.\n"
+            "this professional email address belongs to user: {domain}.\n"
+            "we have performed analysis on it and here is what we have got : {domain_inf}"
             "Additionally, consider the following emails and their ratings which are given by user in terms of importance:\n"
             "{rated_emails_section}\n"
             "Based on this information, generate relevant questions."
         )
 
 
-    async def process(self,  email: str, rated_emails: Optional[List[Any]] = None, ratings: Optional[Dict[str, int]] = None) -> dict:
+    async def process(self,  email: str, rated_emails: Optional[List[Any]] = None, ratings: Optional[Dict[str, int]] = None, domain_inf = str) -> dict:
         """
         Process an email to infer domain and generate questions
         
@@ -56,8 +57,7 @@ class DomainInferenceAgent(BaseAgent):
                 rated_emails_section = "\n".join(rated_emails_list)
             else:
                 rated_emails_section = "No rated emails provided."
-
-            user_prompt = self.DOMAIN_INFERENCE_PROMPT.replace('{domain}', email).replace('{rated_emails_section}', rated_emails_section)
+            user_prompt = self.DOMAIN_INFERENCE_PROMPT.replace('{domain}', email).replace('{rated_emails_section}', rated_emails_section).replace('{domain_inf}', domain_inf)
 
             response = await self.execute(
                 system_prompt=self.SYSTEM_PROMPT,

@@ -55,7 +55,7 @@ async def nylas_webhook(request: Request,background_tasks: BackgroundTasks):
 
 
 @router.post("/infer-domain", response_model=DomainInferenceResponse)
-async def infer_domain(request: DomainInferenceRequest):
+async def infer_domain(request: DomainInferenceRequest, current_user: Annotated[User, Depends(get_current_user)]):
     """
     Infer the user's professional domain based on their email and rated emails if provided
     """
@@ -92,7 +92,7 @@ async def infer_domain(request: DomainInferenceRequest):
         else:
             print("No ratings provided for domain inference")
             
-        result = await onboarding_agent.infer_user_domain(request.email, rated_emails, ratings)
+        result = await onboarding_agent.infer_user_domain(request.email, current_user.domain_inf, rated_emails, ratings)
         
         if not result:
             return HTTPException(status_code=500, detail="Failed to infer domain")
