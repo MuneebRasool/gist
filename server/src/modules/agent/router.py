@@ -55,7 +55,7 @@ async def nylas_webhook(request: Request,background_tasks: BackgroundTasks):
 
 
 @router.post("/infer-domain", response_model=DomainInferenceResponse)
-async def infer_domain(request: DomainInferenceRequest, current_user: Annotated[User, Depends(get_current_user)]):
+async def infer_domain(request: DomainInferenceRequest, current_user: User = Depends(get_current_user)):
     """
     Infer the user's professional domain based on their email and rated emails if provided
     """
@@ -82,7 +82,7 @@ async def infer_domain(request: DomainInferenceRequest, current_user: Annotated[
         # Pass rated emails to the infer_user_domain function if provided
         rated_emails = request.ratedEmails
         ratings = request.ratings
-        
+
         # Log ratings information for debugging
         if ratings:
             print(f"Passing {len(ratings)} ratings to infer_user_domain")
@@ -91,9 +91,15 @@ async def infer_domain(request: DomainInferenceRequest, current_user: Annotated[
                 print(f"Sample ratings: {sample_ratings}")
         else:
             print("No ratings provided for domain inference")
-            
-        result = await onboarding_agent.infer_user_domain(request.email, current_user.domain_inf, rated_emails, ratings)
-        
+        print("current user")
+        print(current_user)
+        print(current_user.nylas_email)
+        print(current_user.nylas_grant_id)
+        grant_id = current_user.get_nylas_grant_id()
+        print("actual grant id : ")
+        print(grant_id)
+        result = await onboarding_agent.infer_user_domain(request.email, current_user.domain_inf, grant_id, current_user.nylas_email,rated_emails, ratings)
+
         if not result:
             return HTTPException(status_code=500, detail="Failed to infer domain")
         
@@ -125,7 +131,6 @@ async def infer_domain(request: DomainInferenceRequest, current_user: Annotated[
     except Exception as e:
         print(f"Error in domain inference endpoint: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error inferring domain: {str(e)}")
-
 
 
 @router.post("/submit-onboarding", response_model=PersonalitySummaryResponse)
@@ -181,12 +186,14 @@ async def Start_onboarding(
     try:
         # Get the decrypted Nylas grant ID
         grant_id = current_user.get_nylas_grant_id()
+        
+        print(current_user)
 
         current_user.task_gen = True
         await current_user.save()
 
         # Add the onboarding process to background tasks
-        background_tasks.add_task(onboarding_agent.start_onboarding, grant_id, current_user.id)
+        background_tasks.add_task(onboarding_agent.start_onboarding, grant_id, current_user.id, current_user.nylas_email)
 
         return {
             "success": True,

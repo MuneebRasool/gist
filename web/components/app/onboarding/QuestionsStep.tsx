@@ -5,7 +5,6 @@ import { AgentService } from '@/services/agent.service';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { QuestionCard } from './QuestionCard';
-import { SummaryView } from './SummaryView';
 import { NavigationButtons } from './NavigationButtons';
 import { ProgressBar } from './ProgressBar';
 import { LoadingScreen } from './LoadingScreen';
@@ -13,7 +12,6 @@ import { LoadingScreen } from './LoadingScreen';
 export const QuestionsStep = () => {
 	const router = useRouter();
 	const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-	const [showSummary, setShowSummary] = useState(false);
 	const [isLoading, setIsLoading] = useState(true);
 
 	const {
@@ -66,10 +64,16 @@ export const QuestionsStep = () => {
 	};
 
 	const goToNextQuestion = () => {
+		const currentQuestion = questions[currentQuestionIndex];
+		if (!answers[currentQuestion?.question]) {
+			toast.error('Please answer the current question before proceeding');
+			return;
+		}
+
 		if (currentQuestionIndex < questions.length - 1) {
 			setCurrentQuestionIndex((prev) => prev + 1);
 		} else {
-			setShowSummary(true);
+			handleComplete();
 		}
 	};
 
@@ -110,14 +114,14 @@ export const QuestionsStep = () => {
 						<ProgressBar
 							currentQuestionIndex={currentQuestionIndex}
 							totalQuestions={questions.length}
-							showSummary={showSummary}
+							showSummary={false}
 						/>
 					</div>
 
 					<div className='p-4 sm:p-6'>
 						<div className='space-y-8'>
 							<AnimatePresence mode='wait'>
-								{!showSummary && questions.length > 0 && (
+								{questions.length > 0 && (
 									<QuestionCard
 										key={`question-${currentQuestionIndex}`}
 										question={questions[currentQuestionIndex]}
@@ -125,19 +129,17 @@ export const QuestionsStep = () => {
 										onSelectOption={handleOptionSelect}
 									/>
 								)}
-
-								{showSummary && <SummaryView questions={questions} answers={answers} />}
 							</AnimatePresence>
 
 							<NavigationButtons
 								currentQuestionIndex={currentQuestionIndex}
 								totalQuestions={questions.length}
-								showSummary={showSummary}
+								showSummary={false}
 								hasCurrentAnswer={!!answers[questions[currentQuestionIndex]?.question]}
 								onPrevious={goToPreviousQuestion}
 								onNext={goToNextQuestion}
 								onSubmit={handleComplete}
-								onEditAnswers={() => setShowSummary(false)}
+								onEditAnswers={() => {}}
 							/>
 						</div>
 					</div>

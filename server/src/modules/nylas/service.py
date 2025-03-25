@@ -20,6 +20,7 @@ class NylasService:
 
     def __init__(self):
         """Initialize Nylas service with configuration."""
+        
         if not all([NYLAS_CLIENT_ID, NYLAS_API_KEY, NYLAS_API_URI]):
             raise ValueError("Missing required Nylas configuration")
 
@@ -89,6 +90,7 @@ class NylasService:
             Exception: If fetching messages fails
         """
         try:
+            
             # Build query parameters
             params = {"limit": limit}
 
@@ -97,19 +99,27 @@ class NylasService:
 
             if query_params:
                 params.update(query_params)
+            try:
+                messages = self.client.messages.list(
+                    identifier=grant_id, query_params=params
+                )
+            except Exception as e:
+                return {"data": [], "next_cursor": None}
+            
+            if not messages or not hasattr(messages, 'data'):
+                return {"data": [], "next_cursor": None}
 
-            # Get messages
-            messages = self.client.messages.list(
-                identifier=grant_id, query_params=params
-            )
-
-            return {
+            response = {
                 "data": [message.to_dict() for message in messages.data],
                 "next_cursor": messages.next_cursor,
             }
+            return response
 
         except Exception as e:
-            raise Exception(f"{str(e)}")
+            print(f"[DEBUG] Error in get_messages: {str(e)}")
+            import traceback
+            print(f"[DEBUG] Traceback: {traceback.format_exc()}")
+            return {"data": [], "next_cursor": None}
 
     async def get_message(self, grant_id: str, message_id: str) -> Dict[str, Any]:
         """
@@ -130,8 +140,9 @@ class NylasService:
             return message.data.to_dict()
         except Exception as e:
             raise Exception(f"{str(e)}")
+        
 
-    async def fetch_last_two_weeks_emails(
+    async def fetch_last_two_weeks_emails_sent_by_user(
         self,
         grant_id: str,
         limit: int = 100,
@@ -148,30 +159,81 @@ class NylasService:
         Returns:
             List of email objects
         """
+        try:
+            two_weeks_ago = int(
+                (datetime.datetime.now() - datetime.timedelta(days=50)).timestamp()
+            )
 
-        user = await User.get_by_grant_id(grant_id)
-        # Calculate 2 weeks ago timestamp in seconds (UTC)
+            params = {
+                "received_after": two_weeks_ago,
+                "limit": limit,
+            }
+            
+            if query_params:
+                params.update(query_params)
+                
+            emails = await self.get_messages(
+                grant_id=grant_id,
+                limit=limit,
+                query_params=params
+            )
+            all_emails = emails.get("data", [])
+            sent_emails = [
+                email for email in all_emails 
+                if "SENT" in email.get("folders", [])
+            ]
+            return sent_emails
+            
+        except Exception as e:
+            print(f"[DEBUG] Error in fetch_last_two_weeks_emails_sent_by_user: {str(e)}")
+            import traceback
+            print(f"[DEBUG] Traceback: {traceback.format_exc()}")
+            return []
+
+    async def fetch_last_two_weeks_emails(
+        self,
+        days:int,
+        grant_id: str,
+        limit: int = 100,
+        query_params: Optional[Dict[str, Any]] = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        Fetch emails from the last two weeks.
+        
+        Args:
+            grant_id: The GrantID of the user
+            limit: Maximum number of emails to fetch
+            query_params: Additional query parameters
+            
+        Returns:
+            List of email objects
+        """
         two_weeks_ago = int(
-            (datetime.datetime.now() - datetime.timedelta(days=14)).timestamp()
+            (datetime.datetime.now() - datetime.timedelta(days=days)).timestamp()
         )
 
         # Prepare query parameters
         params = {
             "received_after": two_weeks_ago,
             "limit": limit,
-            "to":[user.nylas_email]
+
         }
         
         if query_params:
             params.update(query_params)
-
         # Fetch emails
         emails = await self.get_messages(
             grant_id=grant_id,
             limit=limit,
             query_params=params
         )
-        return emails.get("data", [])
+        
+        all_emails = emails.get("data", [])
+        inbox_emails = [
+            email for email in all_emails 
+            if "INBOX" in email.get("folders", [])
+        ]
+        return inbox_emails
 
     async def get_filtered_onboarding_messages(
         self,
@@ -209,6 +271,7 @@ class NylasService:
             
             # Fetch last two weeks of emails
             emails_raw = await self.fetch_last_two_weeks_emails(
+                days=14,
                 grant_id=grant_id,
                 limit=fetch_limit,
                 query_params=query_params

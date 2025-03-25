@@ -11,16 +11,19 @@ from src.agents.email_domain_inferencer import DomainInferenceAgent
 from src.agents.content_summarizer import ContentSummarizer
 from src.models.user import User
 from src.modules.agent.service import AgentService
+from src.modules.nylas.service import NylasService
 import traceback
 
 from .schemas import EmailData
 import asyncio
+import datetime
 
 from ...agents.task_cost_features_extractor import CostFeaturesExtractor
 from ...agents.task_utility_features_extractor import UtilityFeaturesExtractor
 from ...utils.get_text_from_html import get_text_from_html
 from src.models.graph.nodes import UserNode, EmailNode
 from src.models.user import EmailModel
+
 
 class OnboardingAgentService:
     def __init__(self):
@@ -32,6 +35,7 @@ class OnboardingAgentService:
         self.domain_inference_agent = DomainInferenceAgent()
         self.content_summarizer = ContentSummarizer()
         self.agent = AgentService()
+        self.nylas_service = NylasService()
 
     async def classify_spams(self, emails: List[dict], user_id : str) -> dict:
         """
@@ -52,13 +56,7 @@ class OnboardingAgentService:
             user = await User.get(id=user_id)
             user_context = None
             if user.domain_inf or user.personality:
-                if user.personality:
-                    if isinstance(user.personality, list):
-                        user_personality = user.personality[-1] if user.personality else None
-                        user_context = user_personality + '\n' + user.domain_inf
-                    else:
-                        user_personality = str(user.personality)
-                        user_context = user_personality + '\n' + user.domain_inf
+                user_context = user.personality + '\n' + user.domain_inf
 
             async def classify_email(email):
                 try:
@@ -111,6 +109,55 @@ class OnboardingAgentService:
             print(f"Traceback: {traceback.format_exc()}")
             return {"spam": [], "non_spam": emails}
 
+
+    async def fetch_last_ten_emails_sent_to_user(self, grant_id: str):
+        """
+        Fetch last week emails of the user
+        Args:
+            grant_id: The GrantID of the user
+        Returns:
+            List of email objects
+        """
+        try:
+            print(f"[DEBUG] Starting fetch_last_ten_emails_sent_to_user with grant_id: {grant_id}")
+            emails = await self.nylas_service.fetch_last_two_weeks_emails(
+                days=10,
+                grant_id=grant_id,
+                limit=200,
+            )
+            print(f"[DEBUG] Fetched {len(emails)} emails sent to user")
+            if not emails:
+                print("[DEBUG] No emails found, returning empty list")
+                return []
+            return emails
+        except Exception as e:
+            print(f"[DEBUG] Error in fetch_last_ten_emails_sent_to_user: {str(e)}")
+            return []
+    
+    async def fetch_last_ten_emails_sent(self, grant_id: str):
+        """
+        Fetch last week emails of the user
+        Args:
+            grant_id: The GrantID of the user
+        Returns:
+            List of email objects
+        """
+        try:
+            print(f"[DEBUG] Starting fetch_last_ten_emails_sent_by_user with grant_id: {grant_id}")
+            emails = await self.nylas_service.fetch_last_two_weeks_emails_sent_by_user(
+                grant_id=grant_id,
+                limit=200,
+            )
+            print(f"[DEBUG] Fetched {len(emails)} emails sent by user")
+            if not emails:
+                print("[DEBUG] No emails found, returning empty list")
+                return []
+            return emails
+        except Exception as e:
+            print(f"[DEBUG] Error in fetch_last_ten_emails_sent_by_user: {str(e)}")
+            return []
+
+
     async def summarize_user_personality(self, user_id: str, emails: List[dict]):
         """
         Process Batch of emails and gives user personality insights
@@ -128,7 +175,7 @@ class OnboardingAgentService:
         await user.save()
         return personality_task
 
-    async def start_onboarding(self, grant_id: str, user_id: str) -> None:
+    async def start_onboarding(self, grant_id: str, user_id: str, nylas_email : str) -> None:
         """
         Start onboarding process for a grant.
         Args:
@@ -138,7 +185,7 @@ class OnboardingAgentService:
             Exception: If starting onboarding fails
         """
         try:
-            emails_raw = await self.agent.fetch_last_ten_emails(grant_id)
+            emails_raw = await self.fetch_last_ten_emails_sent_to_user(grant_id)
             if not emails_raw:
                 raise Exception("No emails found for the last week")
 
@@ -345,7 +392,7 @@ class OnboardingAgentService:
         except Exception as e:
             return {"summary": f"Error processing onboarding data: {str(e)}"}
 
-    async def infer_user_domain(self, email: str, domain_inf : str, rated_emails: Optional[List[Any]] = None, ratings: Optional[Dict[str, int]] = None) -> Dict[str, Any]:
+    async def infer_user_domain(self, email: str, domain_inf : str,grant_id : str, nylas_email : str, rated_emails: Optional[List[Any]] = None, ratings: Optional[Dict[str, int]] = None) -> Dict[str, Any]:
         """
         Infer user's profession and context from their email domain and rated emails if available.
 
@@ -357,9 +404,47 @@ class OnboardingAgentService:
         Returns:
             Dict[str, Any]: Domain inference results including questions and summary.
         """
-        
         try:
-            result = await self.domain_inference_agent.process(email, rated_emails, ratings, domain_inf)
+            print(f"[DEBUG] Starting infer_user_domain with email: {email}, grant_id: {grant_id}, nylas_email: {nylas_email}")
+            
+            
+            
+            emails_raw = await self.fetch_last_ten_emails_sent(grant_id)
+            print(f"[DEBUG] Fetched {len(emails_raw) if emails_raw else 0} raw emails")
+            
+            if not emails_raw:
+                print("[DEBUG] No emails found, proceeding with default questions")
+                return self._default_response(error_msg="No recent emails found. Please answer the questions to help us understand your work better.")
+                
+            sent_emails = []
+            for email in emails_raw:
+                try:
+                    parsed_email_body = get_text_from_html(email.get("body", ""))
+                    sent_emails.append(
+                        EmailData(
+                            id=email.get("id"),
+                            body=parsed_email_body,
+                            subject=email.get("subject"),
+                            from_=email.get("from"),
+                        )
+                    )
+                except Exception as e:
+                    print(f"[DEBUG] Error processing email: {str(e)}")
+                    continue
+                    
+            if not sent_emails:
+                print("[DEBUG] No valid emails processed, proceeding with default questions")
+                return self._default_response(error_msg="Could not process any emails. Please answer the questions to help us understand your work better.")
+                
+            print(f"[DEBUG] Successfully processed {len(sent_emails)} emails")
+        except Exception as e:
+            print(f"[DEBUG] Error in email fetching/processing: {str(e)}")
+            return self._default_response(error_msg=str(e))
+
+        try:
+            print(f"[DEBUG] Starting domain inference processing with {len(sent_emails)} emails")
+            result = await self.domain_inference_agent.process(email, rated_emails, ratings, domain_inf, sent_emails)
+            print(f"[DEBUG] Domain inference result: {result}")
             
             result["questions"] = self._validate_questions(result.get("questions"))
             print(f"[DEBUG] Validated questions: {result['questions']}")
@@ -367,6 +452,7 @@ class OnboardingAgentService:
             return result
 
         except Exception as e:
+            print(f"[DEBUG] Error in domain inference processing: {str(e)}")
             return self._default_response(error_msg=str(e))
 
     def _validate_questions(self, questions: Any) -> List[Dict[str, Any]]:
@@ -453,4 +539,5 @@ class OnboardingAgentService:
 #   fetch his email -> do spam detection -> send 10 recent emails to user to mark in importance order
 #   generate few questions for user to answer based on his email domain and marked emails
 #   send questions to user, record his answer, generate personality based on that. (let generate 10 points about user based on all the info)
+#   generate tasks based on personality and email content
 #   generate tasks based on personality and email content

@@ -359,32 +359,6 @@ class AgentService:
 
         return True, emails_without_tasks
 
-    async def fetch_last_ten_emails(self, grant_id: str):
-        """
-        Fetch last week emails of the user
-        Args:
-            grant_id: The GrantID of the user
-        Returns:
-            List of email objects
-        """
-        nylas_service = NylasService()
-
-        user = await User.get_by_grant_id(grant_id)
-        # Calculate 1 week ago timestamp in seconds (UTC)
-        one_week_ago = int(
-            (datetime.datetime.now() - datetime.timedelta(days=10)).timestamp()
-        )
-
-        emails = await nylas_service.get_messages(
-            grant_id,
-            limit=100,
-            query_params={
-                "received_after": one_week_ago,
-                "to": [user.nylas_email]
-            },
-        )
-        return emails.get("data", [])
-
     async def handle_webhook_event(self, webhook_data: Dict[str, Any]) -> bool:
         """
         Handle webhook events from Nylas.

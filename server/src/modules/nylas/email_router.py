@@ -61,6 +61,8 @@ async def get_filtered_onboarding_message(
             )
 
         # Extract user's email domain
+        print("current user" )
+        print(current_user)
         print("getting emails")
         user_domain = current_user.nylas_email
         print(user_domain)

@@ -53,7 +53,7 @@ export const NavigationButtons = ({
 						disabled={!hasCurrentAnswer}
 						className={`h-12 w-full flex-1 items-center gap-2 rounded-xl text-base font-medium transition-all duration-300`}
 					>
-						{currentQuestionIndex === totalQuestions - 1 ? 'Review Answers' : 'Continue'}
+						{currentQuestionIndex === totalQuestions - 1 ? 'Next Step' : 'Continue'}
 						<ArrowRight size={18} />
 					</Button>
 				</motion.div>

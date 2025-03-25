@@ -14,13 +14,14 @@ class DomainInferenceAgent(BaseAgent):
         self.DOMAIN_INFERENCE_PROMPT = (
             "this professional email address belongs to user: {domain}.\n"
             "we have performed analysis on it and here is what we have got : {domain_inf}"
+            "below are the emails sent by user to others using this email. you may use this to get an idea of user's work, priorities and habbits : {sent_emails}"
             "Additionally, consider the following emails and their ratings which are given by user in terms of importance:\n"
             "{rated_emails_section}\n"
             "Based on this information, generate relevant questions."
         )
 
 
-    async def process(self,  email: str, rated_emails: Optional[List[Any]] = None, ratings: Optional[Dict[str, int]] = None, domain_inf = str) -> dict:
+    async def process(self,  email: str, rated_emails: Optional[List[Any]] = None, ratings: Optional[Dict[str, int]] = None, domain_inf = str, sent_emails: Optional[Dict[str, int]] = None) -> dict:
         """
         Process an email to infer domain and generate questions
         
@@ -57,7 +58,34 @@ class DomainInferenceAgent(BaseAgent):
                 rated_emails_section = "\n".join(rated_emails_list)
             else:
                 rated_emails_section = "No rated emails provided."
-            user_prompt = self.DOMAIN_INFERENCE_PROMPT.replace('{domain}', email).replace('{rated_emails_section}', rated_emails_section).replace('{domain_inf}', domain_inf)
+
+            # Format sent emails for the prompt
+            if sent_emails:
+                sent_emails_list = []
+                for email_obj in sent_emails:
+                    try:
+                        if hasattr(email_obj, 'subject') and hasattr(email_obj, 'body'):
+                            subject = email_obj.subject or "(No subject)"
+                            body = email_obj.body or ""
+                            sent_emails_list.append(f"Subject: {subject}\nBody: {body[:500]}...")  # Truncate body to 200 chars
+                        elif isinstance(email_obj, dict):
+                            subject = email_obj.get('subject', '(No subject)')
+                            body = email_obj.get('body', '')
+                            sent_emails_list.append(f"Subject: {subject}\nBody: {body[:500]}...")
+                    except Exception as e:
+                        print(f"Error formatting email: {str(e)}")
+                        continue
+                sent_emails_section = "\n\n".join(sent_emails_list) if sent_emails_list else "No valid sent emails available."
+            else:
+                sent_emails_section = "No sent emails available."
+
+
+            user_prompt = self.DOMAIN_INFERENCE_PROMPT.format(
+                domain=email,
+                rated_emails_section=rated_emails_section,
+                domain_inf=domain_inf,
+                sent_emails=sent_emails_section
+            )
 
             response = await self.execute(
                 system_prompt=self.SYSTEM_PROMPT,
@@ -84,4 +112,6 @@ class DomainInferenceAgent(BaseAgent):
             
         except Exception as e:
             print(f"Error in email domain inference: {str(e)}")
+            import traceback
+            print(f"Traceback: {traceback.format_exc()}")
             return {}
