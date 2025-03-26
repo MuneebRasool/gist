@@ -121,29 +121,7 @@ export const useTasksStore = create<TasksStore>((set, get) => ({
 			set({ isLoading: true });
 			const response = await TasksService.getUserTasks(userId);
 			const tasks = response.data ?? [];
-			set({
-				tasks: [
-					...tasks,
-					{
-						task_id: '1',
-						task: 'Test Task',
-						priority: 'high',
-						userId: userId,
-						createdAt: new Date().toISOString(),
-						updatedAt: new Date().toISOString(),
-						classification: 'Main Focus-View',
-					},
-					{
-						task_id: '2',
-						task: 'Test Task',
-						priority: 'high',
-						userId: userId,
-						createdAt: new Date(Date.now() - 86400000).toISOString(),
-						updatedAt: new Date().toISOString(),
-						classification: 'Main Focus-View',
-					},
-				],
-			});
+			set({ tasks });
 			setCachedTasks(userId, tasks);
 		} catch (error) {
 			console.error('Failed to fetch tasks:', error);
