@@ -13,7 +13,7 @@ export const LoadingScreen = ({ message, isSubmitting = false }: LoadingScreenPr
 					<div className='h-12 w-12 animate-spin rounded-full border-4 border-[#A5B7C8]/30 border-t-[#A5B7C8]' />
 					{isSubmitting && (
 						<div className='absolute inset-0 flex items-center justify-center'>
-							<div className='h-6 w-6 rounded-full bg-white' />
+							<div className='h-6 w-6 rounded-full bg-background' />
 						</div>
 					)}
 				</div>

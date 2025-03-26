@@ -10,7 +10,7 @@ const GoogleSignin = () => {
 	return (
 		<Button
 			variant='outline'
-			className='h-14 w-full items-center rounded-lg border-gray-200 bg-white text-lg font-medium hover:bg-gray-50'
+			className='h-14 w-full items-center rounded-lg border-gray-200 bg-background text-lg font-medium hover:bg-gray-50'
 			onClick={async () => {
 				setIsLoading(true);
 				await signIn('google', {

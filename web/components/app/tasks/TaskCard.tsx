@@ -1,7 +1,18 @@
 import { TaskResponse } from '@/types/tasks';
 import { Card, CardContent } from '@/components/ui/card';
 import React, { useState } from 'react';
-import { CalendarDays, Mail, Loader2, AlertCircle, Video, Phone, ShoppingBag, Bug, BarChart, GripVertical } from 'lucide-react';
+import {
+	CalendarDays,
+	Mail,
+	Loader2,
+	AlertCircle,
+	Video,
+	Phone,
+	ShoppingBag,
+	Bug,
+	BarChart,
+	GripVertical,
+} from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -70,7 +81,7 @@ const TaskCard = ({ task }: { task: TaskResponse }) => {
 
 	const getDeadlineColorClasses = (deadline: string | undefined) => {
 		if (!deadline) return 'bg-gray-500/5 text-gray-700';
-		
+
 		const deadlineLower = deadline.toLowerCase();
 		if (deadlineLower.includes('before noon') || deadlineLower.includes('urgent')) {
 			return 'bg-red-500/5 text-red-700';
@@ -85,78 +96,80 @@ const TaskCard = ({ task }: { task: TaskResponse }) => {
 
 	return (
 		<>
-			<Card className={`group relative overflow-hidden border-none bg-white/80 shadow-sm transition-all hover:bg-white/90 hover:shadow-md ${isCompleted ? 'opacity-50' : ''}`}>
-				<CardContent className="flex items-start gap-4 p-4">
+			<Card
+				className={`group relative overflow-hidden border-none bg-background/80 shadow-sm transition-all hover:bg-white/90 hover:shadow-md ${isCompleted ? 'opacity-50' : ''}`}
+			>
+				<CardContent className='flex items-start gap-4 p-4'>
 					<Checkbox
 						checked={isCompleted}
 						onCheckedChange={(checked) => setIsCompleted(checked as boolean)}
-						className="mt-1"
+						className='mt-1'
 					/>
-					
-					<div className="flex-1 space-y-2">
-						<div className="flex items-start justify-between gap-2">
-							<div className="flex items-center gap-2">
+
+					<div className='flex-1 space-y-2'>
+						<div className='flex items-start justify-between gap-2'>
+							<div className='flex items-center gap-2'>
 								<div className={`rounded-full p-1.5 ${getPriorityColorClasses(task.priority)}`}>
-									<TaskIcon className="h-4 w-4" />
+									<TaskIcon className='h-4 w-4' />
 								</div>
 								<h3 className={`text-lg font-semibold text-gray-800 ${isCompleted ? 'line-through' : ''}`}>
 									{task.task}
 								</h3>
 							</div>
-							<div className="flex items-center gap-2">
+							<div className='flex items-center gap-2'>
 								{task.priority && (
-									<Badge variant="outline" className={`rounded-full ${getPriorityColorClasses(task.priority)}`}>
+									<Badge variant='outline' className={`rounded-full ${getPriorityColorClasses(task.priority)}`}>
 										{task.priority}
 									</Badge>
 								)}
 								{task.deadline && (
-									<Badge variant="outline" className={`rounded-full ${getDeadlineColorClasses(task.deadline)}`}>
+									<Badge variant='outline' className={`rounded-full ${getDeadlineColorClasses(task.deadline)}`}>
 										{task.deadline}
 									</Badge>
 								)}
-								<div className="opacity-0 group-hover:opacity-70 transition-opacity cursor-grab">
-									<GripVertical className="h-5 w-5 text-gray-400" />
+								<div className='cursor-grab opacity-0 transition-opacity group-hover:opacity-70'>
+									<GripVertical className='h-5 w-5 text-gray-400' />
 								</div>
 							</div>
 						</div>
 
 						{/* Display scores if available */}
-						{(task.relevance_score !== undefined || task.utility_score !== undefined || task.cost_score !== undefined) && (
-							<div className="flex flex-wrap gap-3 text-xs text-gray-600">
+						{(task.relevance_score !== undefined ||
+							task.utility_score !== undefined ||
+							task.cost_score !== undefined) && (
+							<div className='flex flex-wrap gap-3 text-xs text-gray-600'>
 								{task.relevance_score !== undefined && (
-									<div className="flex items-center gap-1">
-										<BarChart className="h-3 w-3" />
+									<div className='flex items-center gap-1'>
+										<BarChart className='h-3 w-3' />
 										<span>Relevance: {task.relevance_score}</span>
 									</div>
 								)}
 								{task.utility_score !== undefined && (
-									<div className="flex items-center gap-1">
-										<BarChart className="h-3 w-3" />
+									<div className='flex items-center gap-1'>
+										<BarChart className='h-3 w-3' />
 										<span>Utility: {task.utility_score}</span>
 									</div>
 								)}
 								{task.cost_score !== undefined && (
-									<div className="flex items-center gap-1">
-										<BarChart className="h-3 w-3" />
+									<div className='flex items-center gap-1'>
+										<BarChart className='h-3 w-3' />
 										<span>Cost: {task.cost_score}</span>
 									</div>
 								)}
 							</div>
 						)}
 
-						<div className="flex items-center justify-between">
-							<p className="text-sm text-gray-600">
-								Created {format(new Date(task.createdAt), 'MMM d, yyyy')}
-							</p>
+						<div className='flex items-center justify-between'>
+							<p className='text-sm text-gray-600'>Created {format(new Date(task.createdAt), 'MMM d, yyyy')}</p>
 							{task.messageId && (
 								<Button
-									variant="ghost"
-									size="sm"
-									className="hover:bg-primary/10 hover:text-primary"
+									variant='ghost'
+									size='sm'
+									className='hover:bg-primary/10 hover:text-primary'
 									onClick={fetchEmail}
 								>
-									{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-									<span className="ml-2">View Email</span>
+									{loading ? <Loader2 className='h-4 w-4 animate-spin' /> : <Mail className='h-4 w-4' />}
+									<span className='ml-2'>View Email</span>
 								</Button>
 							)}
 						</div>
@@ -165,55 +178,53 @@ const TaskCard = ({ task }: { task: TaskResponse }) => {
 			</Card>
 
 			<Sheet open={open} onOpenChange={setOpen}>
-				<SheetContent className="min-w-full overflow-hidden sm:min-w-[600px]">
+				<SheetContent className='min-w-full overflow-hidden sm:min-w-[600px]'>
 					<SheetHeader>
-						<SheetTitle className="text-2xl font-bold text-gray-900">Email Details</SheetTitle>
+						<SheetTitle className='text-2xl font-bold text-gray-900'>Email Details</SheetTitle>
 					</SheetHeader>
-					<div className="mt-6 h-full">
+					<div className='mt-6 h-full'>
 						{error ? (
-							<div className="flex items-center gap-2 rounded-md bg-destructive/10 p-4 text-destructive">
-								<AlertCircle className="h-5 w-5" />
+							<div className='flex items-center gap-2 rounded-md bg-destructive/10 p-4 text-destructive'>
+								<AlertCircle className='h-5 w-5' />
 								{error}
 							</div>
 						) : email ? (
-							<ScrollArea className="h-[calc(100vh-120px)] pr-4">
-								<div className="space-y-6">
-									<div className="rounded-lg bg-muted/30 p-4">
-										<h3 className="text-xl font-bold tracking-tight text-gray-900">{email.subject}</h3>
-										<p className="mt-2 text-sm text-gray-600">{formatEmailDate(email.date)}</p>
+							<ScrollArea className='h-[calc(100vh-120px)] pr-4'>
+								<div className='space-y-6'>
+									<div className='rounded-lg bg-muted/30 p-4'>
+										<h3 className='text-xl font-bold tracking-tight text-gray-900'>{email.subject}</h3>
+										<p className='mt-2 text-sm text-gray-600'>{formatEmailDate(email.date)}</p>
 									</div>
 
-									<div className="space-y-3 rounded-lg bg-card p-4">
-										<div className="flex gap-3">
-											<span className="min-w-20 font-semibold text-gray-800">From:</span>
-											<span className="text-primary">{email.from[0]?.name || email.from[0]?.email}</span>
+									<div className='space-y-3 rounded-lg bg-card p-4'>
+										<div className='flex gap-3'>
+											<span className='min-w-20 font-semibold text-gray-800'>From:</span>
+											<span className='text-primary'>{email.from[0]?.name || email.from[0]?.email}</span>
 										</div>
-										<div className="flex gap-3">
-											<span className="min-w-20 font-semibold text-gray-800">To:</span>
-											<span className="text-gray-700">{email.to.map((to) => to.name || to.email).join(', ')}</span>
+										<div className='flex gap-3'>
+											<span className='min-w-20 font-semibold text-gray-800'>To:</span>
+											<span className='text-gray-700'>{email.to.map((to) => to.name || to.email).join(', ')}</span>
 										</div>
 										{email.cc.length > 0 && (
-											<div className="flex gap-3">
-												<span className="min-w-20 font-semibold text-gray-800">CC:</span>
-												<span className="text-gray-600">
-													{email.cc.map((cc) => cc.name || cc.email).join(', ')}
-												</span>
+											<div className='flex gap-3'>
+												<span className='min-w-20 font-semibold text-gray-800'>CC:</span>
+												<span className='text-gray-600'>{email.cc.map((cc) => cc.name || cc.email).join(', ')}</span>
 											</div>
 										)}
 									</div>
 
-									<Separator className="my-6" />
+									<Separator className='my-6' />
 
-									<div className="prose prose-sm dark:prose-invert max-w-none text-gray-800">
+									<div className='prose prose-sm dark:prose-invert max-w-none text-gray-800'>
 										<div dangerouslySetInnerHTML={{ __html: email.body }} />
 									</div>
 								</div>
 							</ScrollArea>
 						) : (
-							<div className="flex h-full items-center justify-center">
-								<div className="text-center">
-									<Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
-									<p className="mt-2 text-sm text-gray-600">Loading email...</p>
+							<div className='flex h-full items-center justify-center'>
+								<div className='text-center'>
+									<Loader2 className='mx-auto h-8 w-8 animate-spin text-primary' />
+									<p className='mt-2 text-sm text-gray-600'>Loading email...</p>
 								</div>
 							</div>
 						)}

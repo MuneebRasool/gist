@@ -6,7 +6,7 @@ export default function SignInForm() {
 	const [email, setEmail] = useState('');
 
 	return (
-		<div className='w-full max-w-[600px] space-y-6 rounded-3xl bg-white/70 px-14 py-10 backdrop-blur-sm'>
+		<div className='w-full max-w-[600px] space-y-6 rounded-3xl bg-background/70 px-14 py-10 backdrop-blur-sm'>
 			<GoogleSignin />
 
 			<p className='mt-4 text-center text-xs text-gray-500'>

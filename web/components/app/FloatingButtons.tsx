@@ -13,9 +13,9 @@ const FloatingButtons: React.FC = () => {
 		<div className='flex w-full gap-4 px-2'>
 			<div className='flex-1'>
 				<div className='group relative'>
-					<div className='absolute bottom-full h-0 w-full overflow-hidden border-gray-400/60 transition-all duration-300 group-hover:h-[450px] group-hover:border-b'>
-						<div className='h-[450px] w-full rounded-t-2xl bg-background/40 backdrop-blur-md'>
-							<div className='flex items-center justify-end pt-1'>
+					<div className='absolute bottom-full h-0 w-full overflow-hidden border-gray-400/70 transition-all duration-300 group-hover:h-[450px] group-hover:border-b'>
+						<div className='h-[450px] w-full rounded-t-2xl bg-background/70 backdrop-blur-md'>
+							<div className='flex items-center justify-end px-3 pt-1'>
 								<Link href='/app/dashboard/library'>
 									<Button variant='link' size='sm'>
 										View all
@@ -35,19 +35,18 @@ const FloatingButtons: React.FC = () => {
 						</div>
 					</div>
 					<Button
-						className='relative flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-background/40 text-lg font-medium backdrop-blur-md transition-colors duration-200 hover:bg-background/50 group-hover:rounded-t-none'
+						className='font-urbanist relative flex h-[70px] w-full items-center justify-center gap-2 rounded-2xl bg-background/70 text-4xl font-light text-muted-foreground backdrop-blur-md transition-colors duration-200 hover:bg-background/80 group-hover:rounded-t-none'
 						variant='ghost'
 					>
-						<Library className='h-5 w-5' />
 						Library
 					</Button>
 				</div>
 			</div>
 			<div className='flex-1'>
 				<div className='group relative'>
-					<div className='absolute bottom-full h-0 w-full overflow-hidden border-gray-400/60 transition-all duration-300 group-hover:h-[450px] group-hover:border-b'>
+					<div className='absolute bottom-full h-0 w-full overflow-hidden border-gray-400/70 transition-all duration-300 group-hover:h-[450px] group-hover:border-b'>
 						<div className='h-[450px] w-full rounded-t-2xl bg-background/40 backdrop-blur-md'>
-							<div className='flex items-center justify-end pt-1'>
+							<div className='flex items-center justify-end px-3 pt-1'>
 								<Link href='/app/dashboard/drawer'>
 									<Button variant='link' size='sm'>
 										View all
@@ -67,10 +66,9 @@ const FloatingButtons: React.FC = () => {
 						</div>
 					</div>
 					<Button
-						className='relative flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-background/40 text-lg font-medium backdrop-blur-md transition-colors duration-200 hover:bg-background/50 group-hover:rounded-t-none'
+						className='font-urbanist relative flex h-[70px] w-full items-center justify-center gap-2 rounded-2xl bg-background/70 text-4xl font-light text-muted-foreground backdrop-blur-md transition-colors duration-200 hover:bg-background/80 group-hover:rounded-t-none'
 						variant='ghost'
 					>
-						<Inbox className='h-5 w-5' />
 						Drawer
 					</Button>
 				</div>

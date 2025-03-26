@@ -23,16 +23,6 @@ export default function DashboardPage() {
 		updateTaskOrder(taskIds);
 	};
 
-	const handleLibraryClick = () => {
-		// TODO: Implement library functionality
-		console.log('Library clicked');
-	};
-
-	const handleDrawerClick = () => {
-		// TODO: Implement drawer functionality
-		console.log('Drawer clicked');
-	};
-
 	if (status === 'loading') {
 		return <Loading text='Loading...' />;
 	}
@@ -42,8 +32,8 @@ export default function DashboardPage() {
 	}
 
 	return (
-		<div className='mx-auto flex h-[calc(100dvh-68px)] w-full flex-col space-y-3 overflow-hidden p-3'>
-			<h1 className='text-3xl font-semibold'>Your Focus Today</h1>
+		<div className='mx-auto flex h-[calc(100dvh-68px)] w-full flex-col space-y-6 overflow-hidden p-3 sm:p-5'>
+			<h1 className='text-5xl font-light text-muted-foreground'>Your Focus Today</h1>
 			<div className='flex flex-1 flex-col justify-between gap-4 overflow-hidden'>
 				<SortableTaskList
 					tasks={tasks}

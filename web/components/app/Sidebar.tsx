@@ -12,16 +12,16 @@ import {
 	LogOut,
 	Rows2,
 	Book,
+	FolderOpen,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
-import { signOut } from 'next-auth/react';
 
 const navItems = [
 	{ icon: Home, label: 'Home', href: '/app/dashboard' },
-	{ icon: Bell, label: 'Notifications', href: '/app/dashboard/notifications' },
+	{ icon: FolderOpen, label: 'Logs', href: '/app/dashboard/logs' },
 ];
 
 interface SidebarProps {
@@ -72,7 +72,7 @@ export default function Sidebar({ children }: SidebarProps) {
 							<button
 								onClick={() => setIsCollapsed(!isCollapsed)}
 								className={cn(
-									'flex h-12 w-12 items-center justify-center gap-3 rounded-xl text-muted-foreground hover:bg-white/30'
+									'flex h-12 w-12 items-center justify-center gap-3 rounded-xl text-muted-foreground hover:bg-background/30'
 								)}
 							>
 								{isCollapsed ? <ChevronRight size={24} /> : <ChevronLeft size={24} />}
@@ -83,8 +83,8 @@ export default function Sidebar({ children }: SidebarProps) {
 								key={item.href}
 								href={item.href}
 								className={cn(
-									'group relative flex h-12 items-center gap-3 rounded-xl px-3 transition-all duration-200 hover:bg-white/30',
-									pathname === item.href ? 'bg-white/30' : 'text-muted-foreground',
+									'group relative flex h-12 items-center gap-3 rounded-xl px-3 transition-all duration-200 hover:bg-background/30',
+									pathname === item.href ? 'bg-background/30' : 'text-muted-foreground',
 									isCollapsed ? 'w-12 justify-center' : 'w-48 justify-start'
 								)}
 							>
@@ -98,7 +98,7 @@ export default function Sidebar({ children }: SidebarProps) {
 						<Link href='/app/dashboard/settings'>
 							<button
 								className={cn(
-									'flex h-12 items-center gap-3 rounded-xl text-gray-600 transition-all duration-200 hover:bg-white/30',
+									'flex h-12 items-center gap-3 rounded-xl text-gray-600 transition-all duration-200 hover:bg-background/30',
 									isCollapsed ? 'w-12 justify-center' : 'w-48 justify-start px-3'
 								)}
 							>

@@ -40,7 +40,7 @@ export function ReviewPersonalityStep() {
 		update({ onboarding: true });
 		setCurrentStep('completed');
 		localStorage.removeItem('onboarding-storage');
-		
+
 		router.push('/app/dashboard');
 	}, [update, setCurrentStep, router]);
 
@@ -51,7 +51,7 @@ export function ReviewPersonalityStep() {
 			}
 			return;
 		}
-		
+
 		try {
 			setLoadingMessage('Fetching personality data...');
 			const onboardingData = {
@@ -77,35 +77,38 @@ export function ReviewPersonalityStep() {
 		}
 	}, [answers, currentStep, domain, emailRatings, questions, ratedEmails, setSummary, summary]);
 
-	const handleStatusUpdate = useCallback((data: OnboardingStatusEvent) => {
-		if (!isComponentMounted.current) return;
+	const handleStatusUpdate = useCallback(
+		(data: OnboardingStatusEvent) => {
+			if (!isComponentMounted.current) return;
 
-		console.log('Received status update:', data);
-		setConnectionError(null);
+			console.log('Received status update:', data);
+			setConnectionError(null);
 
-		switch (data.status) {
-			case 'completed':
-				if (eventSourceRef.current) {
-					eventSourceRef.current.close();
-					eventSourceRef.current = null;
-				}
-				redirectToDashboard();
-				setIsProcessing(false);
-				break;
-			case 'processing':
-				setIsProcessing(true);
-				setLoadingMessage('Extracting Tasks...');
-				break;
-			case 'error':
-				setConnectionError(data.message || 'Connection error occurred');
-				toast.error(data.message || 'Connection error occurred');
-				if (isComponentMounted.current) {
-					setIsLoading(false);
+			switch (data.status) {
+				case 'completed':
+					if (eventSourceRef.current) {
+						eventSourceRef.current.close();
+						eventSourceRef.current = null;
+					}
+					redirectToDashboard();
 					setIsProcessing(false);
-				}
-				break;
-		}
-	}, [redirectToDashboard]);
+					break;
+				case 'processing':
+					setIsProcessing(true);
+					setLoadingMessage('Extracting Tasks...');
+					break;
+				case 'error':
+					setConnectionError(data.message || 'Connection error occurred');
+					toast.error(data.message || 'Connection error occurred');
+					if (isComponentMounted.current) {
+						setIsLoading(false);
+						setIsProcessing(false);
+					}
+					break;
+			}
+		},
+		[redirectToDashboard]
+	);
 
 	const startStatusStream = useCallback(async () => {
 		if (!isComponentMounted.current) return;
@@ -117,38 +120,35 @@ export function ReviewPersonalityStep() {
 		}
 
 		try {
-			const eventSource = await OnboardingService.createStatusStream(
-				handleStatusUpdate,
-				(error) => {
-					console.error('SSE Error:', error);
-					if (isComponentMounted.current) {
-						// When an SSE error occurs, first check if onboarding is already complete
-						// before showing the connection error
-						OnboardingService.checkOnboardingStatus()
-							.then((result) => {
-								if (result.data?.success) {
-									if (result.data.onboarding && !result.data.task_gen) {
-										// Onboarding is actually complete, just redirect
-										redirectToDashboard();
-										return;
-									}
+			const eventSource = await OnboardingService.createStatusStream(handleStatusUpdate, (error) => {
+				console.error('SSE Error:', error);
+				if (isComponentMounted.current) {
+					// When an SSE error occurs, first check if onboarding is already complete
+					// before showing the connection error
+					OnboardingService.checkOnboardingStatus()
+						.then((result) => {
+							if (result.data?.success) {
+								if (result.data.onboarding && !result.data.task_gen) {
+									// Onboarding is actually complete, just redirect
+									redirectToDashboard();
+									return;
 								}
-								// If we get here, onboarding is not complete, so show the error
-								setConnectionError('Connection error. Please try refreshing the page.');
-								toast.error('Connection error. Please try refreshing the page.');
-								setIsLoading(false);
-								setIsProcessing(false);
-							})
-							.catch(() => {
-								// If status check also fails, then show the connection error
-								setConnectionError('Connection error. Please try refreshing the page.');
-								toast.error('Connection error. Please try refreshing the page.');
-								setIsLoading(false);
-								setIsProcessing(false);
-							});
-					}
+							}
+							// If we get here, onboarding is not complete, so show the error
+							setConnectionError('Connection error. Please try refreshing the page.');
+							toast.error('Connection error. Please try refreshing the page.');
+							setIsLoading(false);
+							setIsProcessing(false);
+						})
+						.catch(() => {
+							// If status check also fails, then show the connection error
+							setConnectionError('Connection error. Please try refreshing the page.');
+							toast.error('Connection error. Please try refreshing the page.');
+							setIsLoading(false);
+							setIsProcessing(false);
+						});
 				}
-			);
+			});
 
 			eventSourceRef.current = eventSource;
 			return eventSource;
@@ -166,7 +166,7 @@ export function ReviewPersonalityStep() {
 				} catch {
 					// Ignore error from status check and continue with connection error
 				}
-				
+
 				setConnectionError('Failed to connect to server. Please try refreshing the page.');
 				toast.error('Failed to connect to server. Please try refreshing the page.');
 				setIsLoading(false);
@@ -182,7 +182,7 @@ export function ReviewPersonalityStep() {
 		try {
 			isCheckingRef.current = true;
 			setLoadingMessage('Checking onboarding status...');
-			
+
 			const result = await OnboardingService.checkOnboardingStatus();
 
 			if (result.data?.success && isComponentMounted.current) {
@@ -191,19 +191,19 @@ export function ReviewPersonalityStep() {
 					redirectToDashboard();
 					return;
 				}
-				
+
 				// If we're in task_generation step or tasks are being generated, show the loading screen
 				if (currentStep === 'task_generation' || result.data.in_progress) {
 					setIsProcessing(true);
 					setLoadingMessage('Extracting Tasks...');
-					
+
 					// Only start a new SSE stream if one doesn't already exist
 					if (!eventSourceRef.current) {
 						await startStatusStream();
 					}
 					return;
 				}
-				
+
 				// Otherwise, fetch personality data if needed
 				await fetchPersonalityData();
 			}
@@ -234,10 +234,10 @@ export function ReviewPersonalityStep() {
 
 			// Check if onboarding is already in progress before starting it again
 			const statusCheck = await OnboardingService.checkOnboardingStatus();
-			
+
 			// Set the current step to task_generation
 			setCurrentStep('task_generation');
-			
+
 			// Only start onboarding if it's not already in progress
 			if (!statusCheck.data?.in_progress) {
 				const res = await OnboardingService.startOnboarding();
@@ -245,7 +245,7 @@ export function ReviewPersonalityStep() {
 					throw new Error('Failed to start onboarding');
 				}
 			}
-			
+
 			// In either case, start the status stream to monitor progress
 			if (isComponentMounted.current) {
 				setIsProcessing(true);
@@ -266,7 +266,7 @@ export function ReviewPersonalityStep() {
 	// Initialize component - check onboarding status on mount
 	useEffect(() => {
 		isComponentMounted.current = true;
-		
+
 		// Initial load - always check onboarding status first
 		checkOnboardingStatus();
 
@@ -286,7 +286,7 @@ export function ReviewPersonalityStep() {
 	if (connectionError) {
 		return (
 			<div className='flex h-full flex-col items-center justify-center'>
-				<div className='flex max-w-3xl w-full flex-col items-center justify-center gap-6 rounded-xl bg-white/80 p-4 backdrop-blur-sm sm:p-8'>
+				<div className='flex w-full max-w-3xl flex-col items-center justify-center gap-6 rounded-xl bg-background/80 p-4 backdrop-blur-sm sm:p-8'>
 					<h2 className='text-center text-2xl font-bold text-red-500'>Connection Error</h2>
 					<p className='text-center text-muted-foreground'>{connectionError}</p>
 					<Button className='w-full max-w-md' onClick={() => window.location.reload()}>
@@ -299,14 +299,14 @@ export function ReviewPersonalityStep() {
 
 	return (
 		<div className='flex h-full flex-col items-center justify-center'>
-			<div className='flex max-w-3xl w-full flex-col items-center justify-center gap-6 rounded-xl bg-white/80 p-4 backdrop-blur-sm sm:p-8'>
+			<div className='flex w-full max-w-3xl flex-col items-center justify-center gap-6 rounded-xl bg-background/80 p-4 backdrop-blur-sm sm:p-8'>
 				<h2 className='text-center text-2xl font-bold'>Review Your Personality Summary</h2>
 				<p className='text-center text-muted-foreground'>Please review and edit your personality summary if needed</p>
 
 				<Textarea
 					value={newSummary}
 					onChange={(e) => setNewSummary(e.target.value)}
-					className='min-h-[400px] w-full text-base p-4'
+					className='min-h-[400px] w-full p-4 text-base'
 					placeholder='Your personality summary will appear here...'
 				/>
 

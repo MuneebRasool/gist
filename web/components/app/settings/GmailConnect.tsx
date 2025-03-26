@@ -32,7 +32,7 @@ const GmailConnect = () => {
 	return (
 		<Card className='w-full border-none bg-transparent shadow-none'>
 			<CardHeader className='px-2 py-4'>
-				<CardTitle className='font-montserrat text-xl font-semibold'>Gmail Integration</CardTitle>
+				<CardTitle className='font-urbanist text-xl font-semibold'>Gmail Integration</CardTitle>
 				<CardDescription>Connect Your Gmail</CardDescription>
 			</CardHeader>
 			<CardContent className='px-2'>

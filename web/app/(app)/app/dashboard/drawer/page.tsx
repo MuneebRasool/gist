@@ -18,7 +18,7 @@ export default function DrawerPage() {
 		<div className='flex max-h-[calc(100dvh-68px)] flex-col space-y-4 overflow-hidden pb-3'>
 			<h1 className='text-3xl font-semibold tracking-tight'>Task Drawer</h1>
 
-			<div className='flex flex-1 flex-col gap-4 rounded-3xl bg-white/80 p-4 backdrop-blur-md'>
+			<div className='flex flex-1 flex-col gap-4 rounded-3xl bg-background/80 p-4 backdrop-blur-md'>
 				{tasks.map((task) => (
 					<TaskEmail key={task.messageId} email={task} />
 				))}

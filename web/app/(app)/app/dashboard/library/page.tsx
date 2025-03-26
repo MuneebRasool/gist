@@ -15,12 +15,12 @@ export default function LibraryPage() {
 		<div className='flex max-h-[calc(100dvh-68px)] flex-col space-y-4 overflow-hidden pb-3'>
 			<h1 className='text-3xl font-semibold tracking-tight'>Task Library</h1>
 
-			<div className='flex flex-1 flex-col gap-4 rounded-3xl bg-white/80 p-4 backdrop-blur-md'>
+			<div className='flex flex-1 flex-col gap-4 rounded-3xl bg-background/80 p-4 backdrop-blur-md'>
 				{tasks.map((task) => (
 					<TaskEmail key={task.messageId} email={task} />
 				))}
 				{tasks.length === 0 && (
-					<div className='flex flex-1 flex-col items-center gap-6 overflow-y-auto rounded-3xl bg-white/30 py-12 backdrop-blur-md'>
+					<div className='flex flex-1 flex-col items-center gap-6 overflow-y-auto rounded-3xl bg-background/30 py-12 backdrop-blur-md'>
 						<div className='rounded-full bg-primary/20 p-3'>
 							<Mic className='h-6 w-6 text-primary' />
 						</div>

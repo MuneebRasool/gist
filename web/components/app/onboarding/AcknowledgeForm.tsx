@@ -32,7 +32,7 @@ export default function AcknowledgeForm() {
 
 	return (
 		<motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className='w-full max-w-xl px-4'>
-			<div className='rounded-3xl bg-white/70 p-8 shadow-lg backdrop-blur-sm'>
+			<div className='rounded-3xl bg-background/70 p-8 shadow-lg backdrop-blur-sm'>
 				<div className='mb-6 flex items-center gap-3'>
 					<h2 className='text-xl font-semibold text-gray-700'>Hi {userName},</h2>
 				</div>
@@ -44,14 +44,14 @@ export default function AcknowledgeForm() {
 				</p>
 
 				<div className='space-y-4'>
-					<div className='rounded-xl border bg-white p-4'>
+					<div className='rounded-xl border bg-background p-4'>
 						<div className='flex items-center gap-3'>
 							<Mail className='h-6 w-6 text-muted-foreground' />
 							<p className='text-sm text-muted-foreground'>Grant Gist access to your email.</p>
 						</div>
 					</div>
 
-					<div className='rounded-xl border bg-white p-4'>
+					<div className='rounded-xl border bg-background p-4'>
 						<div className='flex items-center gap-3'>
 							<Calendar className='h-6 w-6 text-muted-foreground' />
 							<p className='text-sm text-muted-foreground'>Allow Gist to access your calendar.</p>
@@ -61,11 +61,11 @@ export default function AcknowledgeForm() {
 					<Button
 						onClick={handleAcknowledge}
 						disabled={isLoading}
-						className='mt-4 h-12 w-full bg-black text-base font-medium text-white hover:bg-black/90'
+						className='mt-4 h-12 w-full bg-foreground text-base font-medium text-background hover:bg-foreground/90'
 					>
 						{isLoading ? (
 							<div className='flex items-center gap-2'>
-								<div className='h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent' />
+								<div className='h-4 w-4 animate-spin rounded-full border-2 border-border border-t-transparent' />
 								Connecting...
 							</div>
 						) : (

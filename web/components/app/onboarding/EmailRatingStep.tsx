@@ -115,7 +115,7 @@ export const EmailRatingStep = () => {
 
 			<AnimatePresence mode='wait'>
 				{emails.length > 0 && (
-					<div key={emails[currentEmailIndex].id} className='rounded-2xl bg-white/80'>
+					<div key={emails[currentEmailIndex].id} className='rounded-2xl bg-background/80'>
 						<EmailCard
 							email={emails[currentEmailIndex]}
 							currentRating={emailRatings[emails[currentEmailIndex].id]}

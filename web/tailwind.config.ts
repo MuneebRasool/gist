@@ -85,8 +85,8 @@ const config: Config = {
 				},
 			},
 			fontFamily: {
-				montserrat: ['Montserrat', 'sans-serif'],
 				commissioner: ['Commissioner', 'sans-serif'],
+				urbanist: ['Urbanist', 'sans-serif'],
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',

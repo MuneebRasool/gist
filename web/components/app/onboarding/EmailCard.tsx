@@ -61,7 +61,7 @@ export default function EmailCard({ email, currentRating = 5, onRate, onNext, is
 			initial='initial'
 			animate='animate'
 			exit='exit'
-			className='w-full max-w-3xl rounded-2xl bg-white/80'
+			className='w-full max-w-3xl rounded-2xl bg-background/80'
 		>
 			<div className='space-y-6 border-b p-6'>
 				<div className='flex'>
@@ -120,7 +120,7 @@ export default function EmailCard({ email, currentRating = 5, onRate, onNext, is
 						whileTap={{ scale: 0.95 }}
 						onClick={handleNextClick}
 						disabled={isExiting}
-						className='flex items-center gap-2 rounded-lg bg-black px-5 py-2.5 text-sm font-medium text-white transition-all hover:bg-black/90 disabled:opacity-70'
+						className='flex items-center gap-2 rounded-lg bg-foreground px-5 py-2.5 text-sm font-medium text-background transition-all hover:bg-foreground/90 disabled:opacity-70'
 					>
 						{isLastEmail ? 'Complete' : 'Next Email'}
 						<ChevronRight className='h-4 w-4' />
