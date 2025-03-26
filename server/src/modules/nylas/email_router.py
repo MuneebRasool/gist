@@ -84,7 +84,7 @@ async def get_filtered_onboarding_message(
         if starred is not None:
             params["starred"] = starred
         if in_folder:
-            params["in_folder"] = in_folder
+            params["in"] = in_folder
         if received_after:
             params["received_after"] = received_after
         if received_before:

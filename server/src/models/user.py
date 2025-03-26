@@ -43,7 +43,9 @@ class User(models.Model):
     def get_nylas_grant_id(self) -> str | None:
         """Decrypt and return Nylas grant ID."""
         return encryption.decrypt(self.nylas_grant_id) if self.nylas_grant_id else None
-
+    async def get_all_users_by_grant_id(self, grant_id: str):
+        users = await User.filter(nylas_grant_id__not_isnull=True).all()
+        return [user for user in users if user.get_nylas_grant_id() == grant_id]
     def verify_password(self, password: str) -> bool:
         """Verify a password against its hash."""
         return bcrypt.checkpw(password.encode("utf-8"), self.password_hash.encode("utf-8")) if self.password_hash else False

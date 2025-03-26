@@ -167,6 +167,7 @@ class NylasService:
             params = {
                 "received_after": two_weeks_ago,
                 "limit": limit,
+                "in": "SENT"
             }
             
             if query_params:
@@ -271,11 +272,12 @@ class NylasService:
             
             # Fetch last two weeks of emails
             emails_raw = await self.fetch_last_two_weeks_emails(
-                days=14,
+                days=20,
                 grant_id=grant_id,
                 limit=fetch_limit,
                 query_params=query_params
             )
+            print(f"Fetched {len(emails_raw)} emails from the last two weeks")
 
             if not emails_raw:
                 raise Exception("No emails found for the last two weeks")
@@ -283,6 +285,7 @@ class NylasService:
             # Convert the list of dictionaries to EmailData objects
             emails = []
             for email in emails_raw:
+                print(f"Processing email: {email.get('subject')}")
                 try:
                     parsed_email_body = get_text_from_html(email.get("body", ""))
                     # Extract date from email if available

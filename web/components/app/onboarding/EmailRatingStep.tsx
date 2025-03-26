@@ -31,7 +31,7 @@ export const EmailRatingStep = () => {
 		}
 		try {
 			setIsLoading(true);
-			const response = await EmailService.getOnboardingEmails({ limit: 5 });
+			const response = await EmailService.getOnboardingEmails({ limit: 5, in_folder: 'INBOX' });
 
 			if (response.error) {
 				toast.error('Failed to load emails. Please try again.');
