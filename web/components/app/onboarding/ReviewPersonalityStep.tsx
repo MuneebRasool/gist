@@ -115,40 +115,43 @@ export function ReviewPersonalityStep() {
 
 		// Close existing connection if any
 		if (eventSourceRef.current) {
-			eventSourceRef.current.close();
+			OnboardingService.closeStatusStream(eventSourceRef.current);
 			eventSourceRef.current = null;
 		}
 
 		try {
-			const eventSource = await OnboardingService.createStatusStream(handleStatusUpdate, (error) => {
-				console.error('SSE Error:', error);
-				if (isComponentMounted.current) {
-					// When an SSE error occurs, first check if onboarding is already complete
-					// before showing the connection error
-					OnboardingService.checkOnboardingStatus()
-						.then((result) => {
-							if (result.data?.success) {
-								if (result.data.onboarding && !result.data.task_gen) {
-									// Onboarding is actually complete, just redirect
-									redirectToDashboard();
-									return;
+			const eventSource = await OnboardingService.createStatusStream(
+				handleStatusUpdate,
+				(error) => {
+					console.error('SSE Error:', error);
+					if (isComponentMounted.current) {
+						// When an SSE error occurs, first check if onboarding is already complete
+						// before showing the connection error
+						OnboardingService.checkOnboardingStatus()
+							.then((result) => {
+								if (result.data?.success) {
+									if (result.data.onboarding && !result.data.task_gen) {
+										// Onboarding is actually complete, just redirect
+										redirectToDashboard();
+										return;
+									}
 								}
-							}
-							// If we get here, onboarding is not complete, so show the error
-							setConnectionError('Connection error. Please try refreshing the page.');
-							toast.error('Connection error. Please try refreshing the page.');
-							setIsLoading(false);
-							setIsProcessing(false);
-						})
-						.catch(() => {
-							// If status check also fails, then show the connection error
-							setConnectionError('Connection error. Please try refreshing the page.');
-							toast.error('Connection error. Please try refreshing the page.');
-							setIsLoading(false);
-							setIsProcessing(false);
-						});
+								// If we get here, onboarding is not complete, so show the error
+								setConnectionError('Connection error. Please try refreshing the page.');
+								toast.error('Connection error. Please try refreshing the page.');
+								setIsLoading(false);
+								setIsProcessing(false);
+							})
+							.catch(() => {
+								// If status check also fails, then show the connection error
+								setConnectionError('Connection error. Please try refreshing the page.');
+								toast.error('Connection error. Please try refreshing the page.');
+								setIsLoading(false);
+								setIsProcessing(false);
+							});
+					}
 				}
-			});
+			);
 
 			eventSourceRef.current = eventSource;
 			return eventSource;

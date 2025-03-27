@@ -232,4 +232,16 @@ export class OnboardingService {
 
 		return eventSource;
 	}
+
+	/**
+	 * Safely close an SSE connection
+	 * This method should be called when redirecting or when the component unmounts
+	 * @param eventSource The EventSource connection to close
+	 */
+	static closeStatusStream(eventSource: any): void {
+		if (eventSource) {
+			console.log('Safely closing SSE connection');
+			eventSource.close();
+		}
+	}
 }
