@@ -3,8 +3,8 @@ import GmailConnect from '@/components/app/settings/GmailConnect';
 import UserInfo from '@/components/app/settings/UserInfo';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { handleLogout } from '@/lib/auth-utils';
 import { LogOut, Settings2 } from 'lucide-react';
-import { signOut } from 'next-auth/react';
 import React from 'react';
 
 const Settings = () => {
@@ -19,7 +19,7 @@ const Settings = () => {
 					<p className='text-muted-foreground'>Manage all your Settings</p>
 				</div>
 				<div>
-					<Button size='sm' onClick={() => signOut()}>
+					<Button size='sm' onClick={handleLogout}>
 						<LogOut className='h-4 w-4' />
 						Logout
 					</Button>
