@@ -92,13 +92,39 @@ class EmailExtractorAgent(BaseAgent):
         domain_context = await self.domain_inference_agent.infer_domain(user_email)
         print(f"Inferred domain context: {domain_context}")
         
-        # Score each email individually
-        scoring_tasks = []
-        for email in emails:
-            scoring_tasks.append(self.email_scorer_agent.score_email(email, domain_context))
+        # Process emails in smaller batches to avoid overwhelming the API
+        BATCH_SIZE = 10
+        scored_emails = []
+        
+        for i in range(0, len(emails), BATCH_SIZE):
+            batch = emails[i:i + BATCH_SIZE]
+            batch_tasks = []
             
-        # Execute scoring tasks in parallel
-        scored_emails = await asyncio.gather(*scoring_tasks)
+            for email in batch:
+                # Add delay between requests
+                await asyncio.sleep(0.5)
+                batch_tasks.append(self.email_scorer_agent.score_email(email, domain_context))
+            
+            try:
+                # Process each batch with a timeout
+                batch_results = await asyncio.wait_for(
+                    asyncio.gather(*batch_tasks, return_exceptions=True),
+                    timeout=30.0
+                )
+                
+                # Filter out successful results
+                for result in batch_results:
+                    if isinstance(result, dict) and "score" in result:
+                        scored_emails.append(result)
+                    else:
+                        print(f"Failed to score email: {result}")
+                        
+            except asyncio.TimeoutError:
+                print(f"Timeout processing batch {i//BATCH_SIZE + 1}")
+                continue
+            except Exception as e:
+                print(f"Error processing batch {i//BATCH_SIZE + 1}: {str(e)}")
+                continue
         
         # Sort by score (highest first)
         scored_emails.sort(key=lambda x: x.get("score", 0), reverse=True)
