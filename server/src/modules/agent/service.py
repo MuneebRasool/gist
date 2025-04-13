@@ -7,7 +7,7 @@ from src.agents.spam_classifier import SpamClassifier
 from src.agents.task_extractor import TaskExtractor
 from src.agents.personality_summarizer import PersonalitySummarizer
 from src.agents.content_classifier import ContentClassifier
-from src.agents.email_domain_inferencer import DomainInferenceAgent
+from src.agents.questions_generator import DomainInferenceAgent
 from src.agents.content_summarizer import ContentSummarizer
 from src.models.user import User, EmailModel
 from src.modules.tasks.service import TaskService
