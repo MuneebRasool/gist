@@ -1,31 +1,74 @@
+"""
+Schema definitions for agent-related data models.
+
+This module contains Pydantic models for validating and structuring data related to
+email processing, content classification, and user onboarding.
+"""
+
 from pydantic import BaseModel, Field, root_validator
 from typing import List, Optional, Dict
 
 class EmailData(BaseModel):
+    """
+    Data model for email information.
+    
+    Represents the core data needed for email processing and classification.
+    """
     id: str
     body: str
     subject: Optional[str]
     from_: Optional[List[dict]]
+
 class ProcessEmailsRequest(BaseModel):
+    """
+    Request model for batch email processing.
+    
+    Contains a list of emails to be processed by agent services.
+    """
     emails: List[EmailData]
 
 class SpamClassificationResponse(BaseModel):
+    """
+    Response model for spam classification results.
+    
+    Separates emails into spam and non-spam categories.
+    """
     spam: List[EmailData]
     non_spam: List[EmailData]
 
 class ContentClassificationRequest(BaseModel):
+    """
+    Request model for content classification.
+    
+    Contains text content to be classified by agent services.
+    """
     content: str
     
 class ContentClassificationResponse(BaseModel):
+    """
+    Response model for content classification results.
+    
+    Provides classification type and status information.
+    """
     success: bool
     message: str
     type: str
 
 class QuestionWithOptions(BaseModel):
+    """
+    Model for questions with multiple choice options.
+    
+    Used in onboarding flow to present questions to users.
+    """
     question: str
     options: List[str]
 
 class EmailParticipant(BaseModel):
+    """
+    Model for email participants (sender/recipient).
+    
+    Contains name and email address information.
+    """
     name: Optional[str] = ""
     email: Optional[str] = ""
     
@@ -33,6 +76,11 @@ class EmailParticipant(BaseModel):
         extra = "allow"
 
 class RatedEmail(BaseModel):
+    """
+    Model for emails with user-assigned ratings.
+    
+    Used during the onboarding process to collect user preferences.
+    """
     id: str
     subject: Optional[str] = ""
     from_: Optional[List[EmailParticipant]] = Field(default=[], alias="from")
@@ -48,7 +96,18 @@ class RatedEmail(BaseModel):
         
     @root_validator(pre=True)
     def validate_and_log_structure(cls, values):
-        """Log the incoming values to debug validation issues and fix issues"""
+        """
+        Validates and normalizes the email structure.
+        
+        Pre-processes the incoming email data to ensure consistent structure and format.
+        Handles missing fields, invalid data types, and formats the 'from' field correctly.
+        
+        Args:
+            values: The raw email data dictionary
+            
+        Returns:
+            dict: Normalized email data dictionary
+        """
         print("\n---------------------------------------")
         print(f"🔍 VALIDATING EMAIL: {values.get('id', 'Unknown ID')}")
         
@@ -124,6 +183,12 @@ class RatedEmail(BaseModel):
         return values
 
 class OnboardingSubmitRequest(BaseModel):
+    """
+    Request model for submitting onboarding data.
+    
+    Contains user responses to onboarding questions and email ratings.
+    Used to generate personalized user profiles.
+    """
     questions: List[QuestionWithOptions]
     answers: Dict[str, str]
     domain: Optional[str] = None
@@ -142,7 +207,18 @@ class OnboardingSubmitRequest(BaseModel):
         
     @root_validator(pre=True)
     def validate_and_log_structure(cls, values):
-        """Log the incoming values to debug validation issues and fix common problems"""
+        """
+        Validates and normalizes the onboarding request structure.
+        
+        Pre-processes the incoming onboarding data to ensure consistent structure.
+        Handles invalid ratings, question formats, and email structure issues.
+        
+        Args:
+            values: The raw onboarding request data dictionary
+            
+        Returns:
+            dict: Normalized onboarding request data dictionary
+        """
         print("\n---------------------------------------")
         print("🔍 VALIDATING ONBOARDING REQUEST")
         
@@ -199,11 +275,22 @@ class OnboardingSubmitRequest(BaseModel):
         return values
 
 class PersonalitySummaryResponse(BaseModel):
+    """
+    Response model for personality summary results.
+    
+    Contains the generated user personality profile based on onboarding data.
+    """
     success: bool
     message: str
     personalitySummary: Optional[str] = None
 
 class DomainInferenceRequest(BaseModel):
+    """
+    Request model for domain inference.
+    
+    Contains user email and optional rated emails to help infer
+    the user's professional domain.
+    """
     email: str
     ratedEmails: Optional[List[RatedEmail]] = None
     ratings: Optional[Dict[str, int]] = None
@@ -216,7 +303,18 @@ class DomainInferenceRequest(BaseModel):
         
     @root_validator(pre=True)
     def validate_and_log_structure(cls, values):
-        """Log the incoming values to debug validation issues and fix common problems"""
+        """
+        Validates and normalizes the domain inference request structure.
+        
+        Pre-processes the incoming domain inference data to ensure consistent structure.
+        Logs request details and handles invalid data types.
+        
+        Args:
+            values: The raw domain inference request data dictionary
+            
+        Returns:
+            dict: Normalized domain inference request data dictionary
+        """
         print("\n---------------------------------------")
         print("🔍 VALIDATING DOMAIN INFERENCE REQUEST")
         
@@ -234,6 +332,12 @@ class DomainInferenceRequest(BaseModel):
         return values
 
 class DomainInferenceResponse(BaseModel):
+    """
+    Response model for domain inference results.
+    
+    Contains tailored onboarding questions based on the inferred
+    professional domain of the user.
+    """
     success: bool
     message: str
     questions: List[QuestionWithOptions]

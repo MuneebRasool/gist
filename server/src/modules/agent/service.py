@@ -1,5 +1,9 @@
 """
 Service for handling agent-related operations.
+
+This module implements the core functionality for processing emails, classifying content,
+extracting tasks, and managing email-related agent operations. It provides services for
+spam detection, task extraction and scoring, and content processing.
 """
 
 from typing import List, Dict, Any, Tuple
@@ -28,7 +32,20 @@ from ...utils.get_task_scores import calculate_task_scores, batch_calculate_task
 #
 
 class AgentService:
+    """
+    Service for handling agent-related operations.
+    
+    This service manages email processing, classification, task extraction,
+    and content summarization. It coordinates various AI agents to analyze
+    email content, extract actionable tasks, and organize information.
+    """
+
     def __init__(self):
+        """
+        Initialize the AgentService with various specialized agent components.
+        
+        Sets up all the required AI agents for different aspects of email processing.
+        """
         self.spam_classifier = SpamClassifier()
         self.task_extractor = TaskExtractor()
         self.personality_summarizer = PersonalitySummarizer()
@@ -40,7 +57,10 @@ class AgentService:
 
     async def classify_spams(self, emails: List[dict], user_id: str) -> dict:
         """
-        Process batch of emails whether these are spam or not spam
+        Process batch of emails to classify them as spam or non-spam.
+
+        Uses the spam classifier agent along with user-specific context (domain and
+        personality) to make personalized spam detection decisions.
 
         Args:
             emails: List of email objects containing message_id, subject, body, etc.
@@ -48,7 +68,8 @@ class AgentService:
             user_id: The ID of the user for personalized spam detection
 
         Returns:
-            dict: Results of processing including spam and non-spam emails
+            dict: Results of processing with keys 'spam' and 'non_spam' containing 
+                 categorized email objects
         """
         try:
             if emails and isinstance(emails[0], dict):
@@ -117,6 +138,19 @@ class AgentService:
             return {"spam": [], "non_spam": emails}
 
     async def extract_tasks(self, email_body: str, user_personality: str = None):
+        """
+        Extract tasks from email content.
+        
+        Uses the task extractor agent to identify actionable items in the email body,
+        considering the user's personality for personalized task extraction.
+        
+        Args:
+            email_body: The content of the email
+            user_personality: Optional user personality context for better task extraction
+            
+        Returns:
+            dict: JSON structure containing extracted tasks
+        """
         email_body = get_text_from_html(email_body)
         # Extract tasks from email
         tasks_json = await self.task_extractor.process(email_body, user_personality)
@@ -132,7 +166,10 @@ class AgentService:
             email_node=None
     ):
         """
-        Extract tasks from email and save them to both PostgreSQL and Neo4j
+        Extract tasks from email and save them to both PostgreSQL and Neo4j.
+        
+        This method processes an individual email to extract actionable tasks,
+        calculates task scores, and saves the tasks to the database.
         
         Args:
             user_id: The ID of the user
@@ -142,7 +179,7 @@ class AgentService:
             email_node: Optional existing EmailNode object. If not provided, will try to find or create one.
             
         Returns:
-            bool: True if tasks were successfully extracted and saved
+            bool: True if tasks were successfully extracted and saved, False otherwise
         """
         if hasattr(email, 'body') and hasattr(email, 'id'):
             email_body = email.body
@@ -219,7 +256,10 @@ class AgentService:
             user_personality: str = None
     ) -> Tuple[bool, List]:
         """
-        Extract tasks from multiple emails and save them in batch
+        Extract tasks from multiple emails and save them in batch.
+        
+        Optimized method to process multiple emails in parallel, extract tasks,
+        calculate scores, and save tasks to the database efficiently.
         
         Args:
             user_id: The ID of the user
@@ -362,12 +402,15 @@ class AgentService:
     async def handle_webhook_event(self, webhook_data: Dict[str, Any]) -> bool:
         """
         Handle webhook events from Nylas.
+        
+        Processes webhook notifications from Nylas when new email messages are received.
+        Performs spam detection, task extraction, content classification, and email storage.
 
         Args:
-            webhook_data: The webhook data from Nylas
+            webhook_data: The webhook data from Nylas containing event and message information
 
         Returns:
-            bool: Result of processing the webhook, True if successful, False otherwise.
+            bool: True if the webhook was processed successfully, False otherwise
         """
         try:
             # Check if this is a message.created event
@@ -508,13 +551,18 @@ class AgentService:
 
     async def classify_content(self, content: str) -> dict:
         """
-        Classify content by type and usefulness
+        Classify email content by type and usefulness.
+        
+        Determines how the content should be categorized (Library, Drawer, etc.)
+        for appropriate display and prioritization in the UI.
 
         Args:
-            content: Text content to classify
+            content: Text content to classify, typically includes user context
+                   and email content
 
         Returns:
-            dict: Classification results with a type (Library, Main Focus-View, Drawer)
+            dict: Classification results with a type field (Library, Drawer)
+                 indicating where the content should be displayed
         """
         try:
             # Remove any newlines or control characters that might cause JSON parsing issues

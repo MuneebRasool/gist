@@ -1,3 +1,13 @@
+"""
+Router for agent-related API endpoints.
+
+This module provides API endpoints for handling agent operations including:
+- Webhook processing for Nylas events
+- Domain inference for user onboarding
+- Onboarding data submission and processing
+- Onboarding status monitoring
+"""
+
 from fastapi import APIRouter, Request, Response, BackgroundTasks, Depends, HTTPException
 # from fastapi.exceptions import RequestValidationError
 # from pydantic import ValidationError
@@ -23,6 +33,17 @@ onboarding_agent = OnboardingAgentService()
 
 @router.get("/webhook")
 async def webhook_challenge(request: Request):
+    """
+    Handle Nylas webhook verification challenge.
+    
+    This endpoint responds to Nylas webhook verification by returning the challenge parameter.
+    
+    Args:
+        request: The incoming HTTP request
+        
+    Returns:
+        Response: HTTP response containing the challenge string or 200 status code
+    """
     # Handle initial webhook verification challenge
     challenge = request.query_params.get("challenge")
     if challenge:
@@ -30,14 +51,20 @@ async def webhook_challenge(request: Request):
     return Response(status_code=200)
 
 @router.post("/webhook")
-async def nylas_webhook(request: Request,background_tasks: BackgroundTasks):
+async def nylas_webhook(request: Request, background_tasks: BackgroundTasks):
     """
-    Webhook endpoint for Nylas to call when a user receives an email message.
+    Process Nylas webhook events.
     
-    This endpoint:
-    1. Receives webhook events from Nylas
-    2. Processes new email messages
-    3. Extracts tasks from non-spam emails
+    This endpoint handles webhook notifications from Nylas when a user receives an email.
+    It processes the events in the background to handle new email messages, extract tasks,
+    and classify content.
+    
+    Args:
+        request: The incoming HTTP request containing webhook data
+        background_tasks: FastAPI background task handler
+        
+    Returns:
+        dict: Processing status message
     """
     try:
         webhook_data = await request.json()
@@ -57,7 +84,20 @@ async def nylas_webhook(request: Request,background_tasks: BackgroundTasks):
 @router.post("/infer-domain", response_model=DomainInferenceResponse)
 async def infer_domain(request: DomainInferenceRequest, current_user: User = Depends(get_current_user)):
     """
-    Infer the user's professional domain based on their email and rated emails if provided
+    Infer the user's professional domain.
+    
+    This endpoint analyzes the user's email domain and rated emails to determine
+    their professional context and generate tailored onboarding questions.
+    
+    Args:
+        request: DomainInferenceRequest containing user email and email ratings
+        current_user: Authenticated user object
+        
+    Returns:
+        DomainInferenceResponse: Contains tailored questions and domain summary
+        
+    Raises:
+        HTTPException: If domain inference fails or input validation fails
     """
     try:
         if not request.email:
@@ -139,7 +179,20 @@ async def submit_onboarding(
     current_user: Annotated[User, Depends(get_current_user)]
 ):
     """
-    Process onboarding information to generate a personality summary
+    Process onboarding form submission.
+    
+    This endpoint processes the user's onboarding form responses and email ratings
+    to generate a personalized user personality summary.
+    
+    Args:
+        request: OnboardingSubmitRequest containing user responses and ratings
+        current_user: Authenticated user object
+        
+    Returns:
+        PersonalitySummaryResponse: Contains generated personality summary
+        
+    Raises:
+        HTTPException: If onboarding data processing fails
     """
     try:
         if not request:
@@ -157,7 +210,7 @@ async def submit_onboarding(
             current_user.personality = []
         
         if isinstance(current_user.personality, list):  
-            current_user.personality.append( result.get("summary", ""))
+            current_user.personality.append(result.get("summary", ""))
         else:
             current_user.personality = [result.get("summary", "")]
             
@@ -181,7 +234,20 @@ async def Start_onboarding(
     background_tasks: BackgroundTasks
 ):
     """
-    Process onboarding information to generate a personality summary
+    Start the user onboarding process.
+    
+    This endpoint initiates the background process to analyze user emails,
+    extract tasks, and build a personalized profile for the user.
+    
+    Args:
+        current_user: Authenticated user object
+        background_tasks: FastAPI background task handler
+        
+    Returns:
+        dict: Status information about the onboarding process
+        
+    Raises:
+        HTTPException: If starting the onboarding process fails
     """
     try:
         # Get the decrypted Nylas grant ID
@@ -212,7 +278,19 @@ async def check_onboarding_status(
     current_user: Annotated[User, Depends(get_current_user)]
 ):
     """
-    Check if the user has completed onboarding
+    Check the status of user onboarding.
+    
+    This endpoint provides information about whether the user has completed
+    the onboarding process and if task generation is in progress.
+    
+    Args:
+        current_user: Authenticated user object
+        
+    Returns:
+        dict: Onboarding status information including completion state
+        
+    Raises:
+        HTTPException: If checking onboarding status fails
     """
     try:
         # Check if user has submitted personality but onboarding is not yet complete
@@ -234,7 +312,20 @@ async def check_onboarding_status(
 @router.get("/onboarding-status")
 async def onboarding_status_stream(request: Request):
     """
-    Stream onboarding status updates as Server-Sent Events
+    Stream onboarding status updates in real-time.
+    
+    This endpoint uses Server-Sent Events (SSE) to provide real-time updates
+    about the onboarding process to the client. It continuously checks
+    the user's onboarding status and sends updates.
+    
+    Args:
+        request: The incoming HTTP request with authentication token
+        
+    Returns:
+        EventSourceResponse: SSE stream for real-time status updates
+        
+    Raises:
+        HTTPException: If authentication fails or streaming fails
     """
     try:
         # Get token from query parameters

@@ -1,5 +1,9 @@
 """
-Service for handling agent-related operations.
+Service for handling agent-related onboarding operations.
+
+This module implements the functionality for user onboarding, including email processing,
+spam detection, personality analysis, and domain inference. It manages the collection and
+analysis of user information to create personalized user profiles.
 """
 
 import json
@@ -26,7 +30,21 @@ from src.models.user import EmailModel
 
 
 class OnboardingAgentService:
+    """
+    Service for handling user onboarding processes.
+    
+    This service manages the user onboarding workflow, including email analysis,
+    spam detection, personality inference, domain detection, and task extraction.
+    It coordinates various AI agents to build a personalized user profile and
+    initial dataset of tasks and content.
+    """
+    
     def __init__(self):
+        """
+        Initialize the OnboardingAgentService with various specialized agent components.
+        
+        Sets up all the required AI agents for different aspects of the onboarding process.
+        """
         self.spam_classifier = SpamClassifier()
         self.personality_summarizer = PersonalitySummarizer()
         self.utility_features_extractor = UtilityFeaturesExtractor()
@@ -39,7 +57,10 @@ class OnboardingAgentService:
 
     async def classify_spams(self, emails: List[dict], user_id : str) -> dict:
         """
-        Process batch of emails whether these are spam or not spam
+        Process batch of emails to classify them as spam or non-spam.
+
+        Uses the spam classifier agent along with user-specific context for
+        personalized spam detection during the onboarding process.
 
         Args:
             emails: List of email objects containing message_id, subject, body, etc.
@@ -47,7 +68,8 @@ class OnboardingAgentService:
             user_id: The ID of the user for personalized spam detection
 
         Returns:
-            dict: Results of processing including spam and non-spam emails
+            dict: Results of processing with keys 'spam' and 'non_spam' containing 
+                 categorized email objects
         """
         try:
             if emails and isinstance(emails[0], dict):
@@ -115,11 +137,16 @@ class OnboardingAgentService:
 
     async def fetch_last_ten_emails_sent_to_user(self, grant_id: str):
         """
-        Fetch last week emails of the user
+        Fetch recent emails received by the user for onboarding analysis.
+        
+        Retrieves up to 200 emails received in the last 10 days to use for
+        onboarding processing and analysis.
+        
         Args:
-            grant_id: The GrantID of the user
+            grant_id: The Nylas Grant ID of the user
+            
         Returns:
-            List of email objects
+            List: Recent email objects received by the user
         """
         try:
             print(f"[DEBUG] Starting fetch_last_ten_emails_sent_to_user with grant_id: {grant_id}")
@@ -139,11 +166,16 @@ class OnboardingAgentService:
     
     async def fetch_last_ten_emails_sent(self, grant_id: str):
         """
-        Fetch last week emails of the user
+        Fetch recent emails sent by the user for onboarding analysis.
+        
+        Retrieves up to 200 emails sent by the user to analyze writing style,
+        priorities, and work patterns for domain inference.
+        
         Args:
-            grant_id: The GrantID of the user
+            grant_id: The Nylas Grant ID of the user
+            
         Returns:
-            List of email objects
+            List: Recent email objects sent by the user
         """
         try:
             print(f"[DEBUG] Starting fetch_last_ten_emails_sent_by_user with grant_id: {grant_id}")
@@ -163,11 +195,17 @@ class OnboardingAgentService:
 
     async def summarize_user_personality(self, user_id: str, emails: List[dict]):
         """
-        Process Batch of emails and gives user personality insights
+        Process a batch of emails to generate user personality insights.
+        
+        Analyzes email content to infer the user's personality traits, communication
+        style, and preferences. Saves the results to the user profile.
+        
         Args:
+            user_id: The ID of the user
             emails: List of email objects containing id, subject, body, etc.
+            
         Returns:
-            dict: Results of processing
+            str: Generated personality summary
         """
         email_bodies = [email.body for email in emails]
         personality_task = await self.personality_summarizer.process(email_bodies)
@@ -180,12 +218,22 @@ class OnboardingAgentService:
 
     async def start_onboarding(self, grant_id: str, user_id: str, nylas_email : str) -> None:
         """
-        Start onboarding process for a grant.
+        Start the complete onboarding process for a user.
+        
+        This method orchestrates the full onboarding workflow:
+        1. Fetches the user's recent emails
+        2. Classifies them as spam/non-spam
+        3. Extracts tasks from non-spam emails
+        4. Processes remaining emails for classification and summarization
+        5. Saves structured data to both PostgreSQL and Neo4j databases
+        
         Args:
-            grant_id: The grant ID to start onboarding for
-            user_id: The user ID to process emails for
+            grant_id: The Nylas Grant ID to process emails for
+            user_id: The user ID to associate data with
+            nylas_email: The user's email address
+            
         Raises:
-            Exception: If starting onboarding fails
+            Exception: If the onboarding process fails at any stage
         """
         try:
             emails_raw = await self.fetch_last_ten_emails_sent_to_user(grant_id)
@@ -329,10 +377,15 @@ class OnboardingAgentService:
 
     async def summarize_onboarding_data(self, onboarding_data) -> dict:
         """
-        Generate a personality summary based on onboarding form data
+        Generate a personality summary based on onboarding form data.
+        
+        Processes the user's onboarding form responses and email ratings to create
+        a comprehensive personality profile. This profile is used to personalize
+        task extraction and content classification.
 
         Args:
-            onboarding_data: OnboardingSubmitRequest object containing onboarding form data
+            onboarding_data: OnboardingSubmitRequest object containing onboarding form data,
+                            including questions, answers, and email ratings
 
         Returns:
             dict: Summary results with a personality analysis
@@ -395,17 +448,24 @@ class OnboardingAgentService:
         except Exception as e:
             return {"summary": f"Error processing onboarding data: {str(e)}"}
 
-    async def infer_user_domain(self, email: str, domain_inf : str,grant_id : str, nylas_email : str, rated_emails: Optional[List[Any]] = None, ratings: Optional[Dict[str, int]] = None) -> Dict[str, Any]:
+    async def infer_user_domain(self, email: str, domain_inf : str, grant_id : str, nylas_email : str, rated_emails: Optional[List[Any]] = None, ratings: Optional[Dict[str, int]] = None) -> Dict[str, Any]:
         """
-        Infer user's profession and context from their email domain and rated emails if available.
+        Infer user's profession and context from various data sources.
+        
+        Uses the user's email domain, recent sent emails, and rated emails to determine
+        their professional context. Generates tailored onboarding questions based on
+        the inferred domain.
 
         Args:
-            email (str): User's email address.
-            rated_emails (Optional[List[Any]]): List of emails rated by the user during onboarding.
-            ratings (Optional[Dict[str, int]]): Dictionary mapping email IDs to user ratings.
+            email (str): User's email address
+            domain_inf (str): Previously inferred domain information, if any
+            grant_id (str): The Nylas Grant ID for accessing emails
+            nylas_email (str): The user's Nylas email address
+            rated_emails (Optional[List[Any]]): List of emails rated by the user during onboarding
+            ratings (Optional[Dict[str, int]]): Dictionary mapping email IDs to user ratings
 
         Returns:
-            Dict[str, Any]: Domain inference results including questions and summary.
+            Dict[str, Any]: Domain inference results including tailored questions and domain summary
         """
         try:
             print(f"[DEBUG] Starting infer_user_domain with email: {email}, grant_id: {grant_id}, nylas_email: {nylas_email}")
@@ -459,8 +519,19 @@ class OnboardingAgentService:
             return self._default_response(error_msg=str(e))
 
     def _validate_questions(self, questions: Any) -> List[Dict[str, Any]]:
-        """Validate and format the questions list."""
+        """
+        Validate and format the questions list from domain inference.
         
+        Ensures that questions are properly formatted with required fields.
+        Falls back to default questions if invalid or empty.
+        
+        Args:
+            questions: Questions data from domain inference, expected to be a list of
+                      dictionaries with 'question' and 'options' fields
+                      
+        Returns:
+            List[Dict[str, Any]]: Validated list of question dictionaries
+        """
         if not isinstance(questions, list):
             return self._default_questions()
             
@@ -486,7 +557,18 @@ class OnboardingAgentService:
         return valid_questions
 
     def _default_response(self, error_msg: str = None) -> Dict[str, Any]:
-        """Return a default response in case of failure."""
+        """
+        Return a default response when domain inference fails.
+        
+        Provides default questions and an error summary when the domain
+        inference process cannot be completed.
+        
+        Args:
+            error_msg: Optional error message explaining the failure
+            
+        Returns:
+            Dict[str, Any]: Default response with questions and summary
+        """
         print(f"[DEBUG] Generating default response with error: {error_msg}")
         
         response = {
@@ -501,7 +583,15 @@ class OnboardingAgentService:
         return response
 
     def _default_questions(self) -> List[Dict[str, Any]]:
-        """Return a set of general questions."""
+        """
+        Generate default onboarding questions.
+        
+        Provides a set of general questions to use when domain-specific
+        questions cannot be generated.
+        
+        Returns:
+            List[Dict[str, Any]]: List of default questions with options
+        """
         print("[DEBUG] Generating default questions")
         
         questions = [

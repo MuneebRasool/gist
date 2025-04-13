@@ -243,7 +243,7 @@ class NylasService:
         email_extractor_agent,
         user_domain: str,
         user_id:str,
-        fetch_limit: int = 200,  # Fetch more emails to find the most relevant ones
+        fetch_limit: int = 150,  # Fetch more emails to find the most relevant ones
         return_limit: int = 5,
         offset: Optional[str] = None,
         query_params: Optional[Dict[str, Any]] = None,
@@ -270,7 +270,6 @@ class NylasService:
         try:
             print(f"Starting get_filtered_onboarding_messages for grant_id: {grant_id}")
             
-            # Fetch last two weeks of emails
             emails_raw = await self.fetch_last_two_weeks_emails(
                 days=20,
                 grant_id=grant_id,
@@ -282,25 +281,20 @@ class NylasService:
             if not emails_raw:
                 raise Exception("No emails found for the last two weeks")
 
-            # Convert the list of dictionaries to EmailData objects
             emails = []
             for email in emails_raw:
                 print(f"Processing email: {email.get('subject')}")
                 try:
                     parsed_email_body = get_text_from_html(email.get("body", ""))
-                    # Extract date from email if available
                     date = email.get("date") or email.get("received_at")
-                    
-                    # Get from_ field, which can be a list or dict
                     from_field = email.get("from")
-                    # Leave from_field as is (it can be a list or dict now)
                     
                     emails.append(
                         EmailData(
                             id=email.get("id"),
                             body=parsed_email_body,
                             subject=email.get("subject", ""),
-                            from_=from_field,  # Pass the original format (list or dict)
+                            from_=from_field,
                             date=date,
                             to=email.get("to", []),
                             cc=email.get("cc", []),
@@ -314,22 +308,8 @@ class NylasService:
                     continue
             
             print(f"Fetched {len(emails)} emails from the last two weeks")
-            
-            # Filter out spam emails
-            # print("Calling classify_spams...")
-            # try:
-            #     classification_result = await agent_service.classify_spams(emails, user_id)
-            #     print("classify_spams completed successfully")
-            #     non_spam_messages = classification_result.get("non_spam", [])
-            #     print(f"Found {len(non_spam_messages)} non-spam messages")
-            # except Exception as e:
-            #     print(f"Error in classify_spams: {str(e)}")
-            #     non_spam_messages = emails
-            #
-            # Process and score the non-spam emails
             selected_emails_data = []
             try:
-                # Score and select the most relevant emails
                 print("Scoring and selecting most relevant emails...")
                 selected_emails = await email_extractor_agent.process_email_batches(
                     emails=emails,
@@ -394,7 +374,3 @@ class NylasService:
             print(f"Error in get_filtered_onboarding_messages: {str(e)}")
             print(f"Traceback: {traceback.format_exc()}")
             raise Exception(f"Failed to get filtered onboarding messages: {str(e)}")
-        
-
-
-# /oboarding   -> get onboarding messages -> filter spams -> out of 100 messages, filter out the top 5 messages which are relevant to user's domain -> return them to user. 
