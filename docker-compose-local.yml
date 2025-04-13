@@ -1,0 +1,81 @@
+services:
+  web:
+    container_name: gist-web-2
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    env_file:
+      - web/.env.local
+    environment:
+      - NODE_ENV=development
+      - HOSTNAME=0.0.0.0
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - API_URL=http://api:8000
+    restart: on-failure:5
+    networks:
+      - app_network
+    depends_on:
+      - api
+
+  api:
+    container_name: gist-api-2
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - server/.env
+    environment:
+      - PORT=8000
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/mydb
+      - NEO4J_URL=neo4j://neo4j:neo4j123@neo4j:7687
+    restart: unless-stopped
+    networks:
+      - app_network
+    depends_on:
+      - postgres
+      - neo4j
+    volumes:
+      - ./server:/app
+
+  postgres:
+    container_name: gist-postgres-2
+    image: postgres:16
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=mydb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./server/migrations/init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+    networks:
+      - app_network
+
+  neo4j:
+    container_name: gist-neo4j-2
+    image: neo4j:5.24
+    environment:
+      - NEO4J_AUTH=neo4j/neo4j123
+      - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4j_data:/data
+    restart: unless-stopped
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  neo4j_data:
