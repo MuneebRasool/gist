@@ -95,8 +95,7 @@ class UserModel(models.Model):
         """Serialize an SGDRegressor model to bytes."""
         buffer = BytesIO()
         joblib.dump(model, buffer)
-        # print("buffer.getvalue()")
-        # print(buffer.getvalue())
+
         return buffer.getvalue()
 
     @staticmethod
@@ -108,8 +107,6 @@ class UserModel(models.Model):
             model.fit(np.array([[0.5]]), np.array([0.5]))  # Fit with minimal data
             return model
         buffer = BytesIO(model_bytes)
-        # print("buffer.getvalue()  deserialization")
-        # print(buffer.getvalue())
         return joblib.load(buffer)
 
     # Instance Methods

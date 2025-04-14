@@ -9,15 +9,7 @@ A production-ready FastAPI template with best practices, proper error handling, 
 - 🔒 Built-in user authentication module
 - 🎯 Modular project structure
 - ⚡ Comprehensive error handling
-- 📝 Automatic API documentation
-- ✨ Code formatting and linting setup
-- 🧪 Testing setup with pytest
-
-## Project Structure
-
-```
-src/
-├── config/             # Configuration settings
+- 📝 Automatic API documentatio─ config/             # Configuration settings
 │   ├── __init__.py
 │   └── settings.py     # Environment and app settings
 ├── exceptions/         # Global exception handling

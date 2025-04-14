@@ -7,7 +7,6 @@ from pathlib import Path
 
 np.random.seed(42)
 
-# Utility feature mappings matching TaskScoringModel
 utility_mappings = {
     "priority": [1.0, 0.5, 0.1],  # high, medium, low
     "intrinsic_interest": [1.0, 0.5, 0.1],  # high, moderate, low
@@ -22,7 +21,6 @@ utility_mappings = {
     "urgency": [1.0, 0.5, 0.1]  # high, medium, low
 }
 
-# Cost feature mappings matching TaskScoringModel
 cost_mappings = {
     "task_complexity": [1.0, 0.8, 0.6, 0.4, 0.2],  # 5, 4, 3, 2, 1 (reversed for cost)
     "emotional_stress_factor": [1.0, 0.5, 0.1],  # high, medium, low
@@ -85,34 +83,20 @@ combined_df['utility_score'] = utility_df.sum(axis=1) * utility_weight
 cost_weight = 1.0 / len(cost_mappings)
 combined_df['cost_score'] = cost_df.sum(axis=1) * cost_weight
 
-# Add some noise to make the data more realistic
 combined_df['utility_score'] += np.random.normal(0, 0.05, size=n_samples)
 combined_df['cost_score'] += np.random.normal(0, 0.05, size=n_samples)
 
-# Ensure scores are between 0 and 1
 combined_df['utility_score'] = combined_df['utility_score'].clip(0, 1)
 combined_df['cost_score'] = combined_df['cost_score'].clip(0, 1)
 
-# Save the original data to CSV for reference
 combined_df.to_csv("dummy_task_data.csv", index=False)
 
-print("Generated training data:")
-print(combined_df.head())
-print(f"Utility features shape: {utility_df.shape}")
-print(f"Cost features shape: {cost_df.shape}")
 
-# Prepare training data with the correct number of features
-# We need exactly 12 utility features and 6 cost features as expected by the model
-
-# Prepare X_utility with exactly 12 features
-# Use the 11 features from utility_mappings plus one extra dummy feature
 utility_columns = list(utility_df.columns)
 X_utility = np.zeros((n_samples, 12))
 X_utility[:, :11] = utility_df.values  # First 11 columns from utility_df
 X_utility[:, 11] = 0.5  # Add a dummy feature (simulating priority or deadline)
 
-# Prepare X_cost with exactly 6 features
-# Use the 5 features from cost_mappings plus one extra dummy feature
 cost_columns = list(cost_df.columns)
 X_cost = np.zeros((n_samples, 6))
 X_cost[:, :5] = cost_df.values  # First 5 columns from cost_df

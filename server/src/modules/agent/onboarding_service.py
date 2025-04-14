@@ -72,8 +72,6 @@ class OnboardingAgentService:
                  categorized email objects
         """
         try:
-            if emails and isinstance(emails[0], dict):
-                print(f"First email keys: {list(emails[0].keys())}")
 
             user = await User.get(id=user_id)
             user_context = None
@@ -149,13 +147,11 @@ class OnboardingAgentService:
             List: Recent email objects received by the user
         """
         try:
-            print(f"[DEBUG] Starting fetch_last_ten_emails_sent_to_user with grant_id: {grant_id}")
             emails = await self.nylas_service.fetch_last_two_weeks_emails(
                 days=10,
                 grant_id=grant_id,
                 limit=200,
             )
-            print(f"[DEBUG] Fetched {len(emails)} emails sent to user")
             if not emails:
                 print("[DEBUG] No emails found, returning empty list")
                 return []
@@ -178,12 +174,10 @@ class OnboardingAgentService:
             List: Recent email objects sent by the user
         """
         try:
-            print(f"[DEBUG] Starting fetch_last_ten_emails_sent_by_user with grant_id: {grant_id}")
             emails = await self.nylas_service.fetch_last_two_weeks_emails_sent_by_user(
                 grant_id=grant_id,
                 limit=200,
             )
-            print(f"[DEBUG] Fetched {len(emails)} emails sent by user")
             if not emails:
                 print("[DEBUG] No emails found, returning empty list")
                 return []
@@ -260,7 +254,6 @@ class OnboardingAgentService:
             non_spam_emails = classified_emails.get("non_spam", [])
             
             if not non_spam_emails:
-                print("No non-spam emails found for processing")
                 return
                 
 
@@ -272,8 +265,6 @@ class OnboardingAgentService:
                 else:
                     user_personality = str(user.personality)
                 
-            # Process non-spam emails in batch to extract tasks
-            print(f"Processing {len(non_spam_emails)} non-spam emails in batch")
 
             success, emails_without_tasks = await self.agent.batch_extract_and_save_tasks(
                 user_id,
@@ -283,7 +274,6 @@ class OnboardingAgentService:
             
             # Only process emails that didn't contribute to tasks
             if emails_without_tasks:
-                print(f"Processing {len(emails_without_tasks)} emails that didn't contribute to tasks")
                 email_data_list = []
                 
                 # Process emails in parallel
@@ -368,7 +358,6 @@ class OnboardingAgentService:
             user = await User.get(id=user_id)
             user.task_gen = False
             await user.save()
-            print(f"User {user_id} onboarding completed successfully")
 
         except Exception as e:
             print(f"Error in start_onboarding: {str(e)}")

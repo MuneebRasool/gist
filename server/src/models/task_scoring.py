@@ -177,7 +177,6 @@ class TaskScoringModel:
             if user_model:
                 utility_model = await user_model.get_utility_model()
                 cost_model = await user_model.get_cost_model()
-                print(f"Loaded models for user {user_id}")
                 return utility_model, cost_model
             else:
                 print(f"No models found for user {user_id}, using default models")
@@ -199,11 +198,9 @@ class TaskScoringModel:
         try:
             # Get or create user model
             user_model = await UserModel.get_or_create(user_id)
-            print(f"Retrieved or created model for user {user_id}")
                 
             # Set the models on the instance
             await user_model.set_models(utility_model, cost_model)
-            print(f"Saved models for user {user_id}")
             return True
         except Exception as e:
             print(f"Error saving models for user {user_id}: {str(e)}")
@@ -220,7 +217,6 @@ class TaskScoringModel:
             bool: True if models were created successfully, False otherwise
         """
         try:
-            print(f"Creating initial models for user {user_id}")
             
             # Define path to pre-trained models
             model_dir = Path(__file__).parent.parent / "utils" / "models"
@@ -229,11 +225,9 @@ class TaskScoringModel:
             
             # Try to load pre-trained models
             if utility_model_path.exists() and cost_model_path.exists():
-                print(f"Loading pre-trained models from {model_dir}")
                 try:
                     utility_model = joblib.load(utility_model_path)
                     cost_model = joblib.load(cost_model_path)
-                    print("Successfully loaded pre-trained models")
                 except Exception as e:
                     print(f"Error loading pre-trained models: {str(e)}")
                     # Fall back to creating default models
@@ -244,12 +238,8 @@ class TaskScoringModel:
                 print("Using default model initialization")
                 utility_model, cost_model = self._create_default_models()
             
-            # Create a new UserModel instance and save the models
-            print(f"Creating UserModel instance for user {user_id}")
             user_model = await UserModel.get_or_create(user_id)
             
-            # Set the models on the instance
-            print("Setting models on UserModel instance")
             await user_model.set_models(utility_model, cost_model)
             
             print(f"Successfully created initial models for user {user_id}")
@@ -282,7 +272,6 @@ class TaskScoringModel:
             learning_rate='adaptive'
         )
         
-        # Initialize with simple data to avoid cold-start issues
         n_utility_features = 12  # 11 from utility_mappings + priority + deadline
         n_cost_features = 6      # 5 from cost_mappings + priority + deadline
         X_utility = np.full((1, n_utility_features), 0.5)  # Match expected utility features

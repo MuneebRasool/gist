@@ -60,22 +60,15 @@ async def get_filtered_onboarding_message(
                 detail="Nylas grant ID not found. Please connect your email account first."
             )
 
-        # Extract user's email domain
-        print("current user" )
-        print(current_user)
-        print("getting emails")
         user_domain = current_user.nylas_email
-        print(user_domain)
         inf = await domain_inf.infer_domain(user_domain)
         inf = inf["context_guess"] + " " + inf["reasoning"]
 
-        print("getting emails")
 
         if current_user.domain_inf is None:
             current_user.domain_inf = inf
         await current_user.save()
 
-        print("all fine")
         
         # Build query parameters
         params = {}

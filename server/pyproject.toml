@@ -16,6 +16,7 @@ dependencies = [
     "nylas>=6.7.0",
     "openai>=1.64.0",
     "pydantic-settings>=2.7.1",
+    "pytest>=8.3.5",
     "python-dotenv>=1.0.1",
     "python-jose[cryptography]>=3.4.0",
     "scikit-learn>=1.6.1",

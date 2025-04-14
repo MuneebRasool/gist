@@ -91,7 +91,6 @@ async def batch_calculate_task_scores(
         features = scoring_model.extract_features(task_data)
         all_features.append(features)
     
-    print(f"Making batch predictions for {num_tasks} tasks")
     utility_scores = await scoring_model.batch_predict_utility(all_features, user_id)
     cost_scores = await scoring_model.batch_predict_cost(all_features, user_id)
     

@@ -415,15 +415,11 @@ class AgentService:
         try:
             # Check if this is a message.created event
             if webhook_data.get("type") == "message.created":
-                # print("Processing message.created event")
 
-                # Extract message data from the webhook
                 message_data = webhook_data.get("data", {}).get("object", {})
-                # print("Got Message data")
                 if not message_data:
                     raise Exception("Message data not found in webhook data")
 
-                # Extract relevant fields from the message
                 message_id = message_data.get("id")
                 body = message_data.get("body", "")
                 parsed_body = get_text_from_html(body)
@@ -431,7 +427,6 @@ class AgentService:
                 from_data = message_data.get("from", [{}])
                 grant_id = message_data.get("grant_id")
 
-                # Check if the email has already been processed
                 email_node = EmailNode.nodes.get_or_none(messageId=message_id)
                 if email_node:
                     return True
@@ -445,7 +440,6 @@ class AgentService:
                 if len(users) == 0:
                     raise Exception("User not found for the provided grant_id")
 
-                # Create EmailData object
                 email = EmailData(
                     id=message_id, body=parsed_body, subject=subject, from_=from_data
                 )
@@ -458,13 +452,9 @@ class AgentService:
                         print(f"Email {message_id} classified as spam for user {user.id}, skipping processing")
                         continue
 
-                    print(f"Email {message_id} classified as not spam, processing for user {user.id}")
-                    # Fetch user personality once for all operations
                     user_personality = None
                     if user.personality and isinstance(user.personality, list):
-                        # Take all but the last personality trait
                         user_personality = user.personality[:-1]
-                        # Join multiple personality traits with newlines
                         user_personality = "\n".join(user_personality)
 
                     # Create email object with the original parsed body
@@ -476,24 +466,18 @@ class AgentService:
                         from_=from_data
                     )
 
-                    # Process the email for tasks using batch method
-                    # This is a single email but we use the batch method for consistency
-                    print(f"Extracting tasks from email {message_id}")
                     success, emails_without_tasks = await self.batch_extract_and_save_tasks(
                         user.id,
                         [email_for_tasks],
                         user_personality
                     )
 
-                    # If no tasks were extracted or extraction failed, process as a regular email
                     if not success or emails_without_tasks:
                         print(f"No tasks extracted from email {message_id}, processing as regular email")
 
-                        # Classify and summarize the email in parallel
 
                         personality_context = f"User personality: {user_personality}\n\nEmail content: {parsed_body}"
 
-                        # Run content classification and summarization in parallel
                         classification_coroutine = self.classify_content(personality_context)
                         summary_coroutine = self.content_summarizer.process_content(parsed_body)
 
@@ -505,7 +489,6 @@ class AgentService:
                         email_classification = content_classification.get("type", "drawer").lower()
                         email_summary = summary_result.get("summary", "No summary available")
 
-                        print(f"Email classified as: {email_classification} for user {user.id}")
 
                         # Update the email node
                         try:
@@ -525,7 +508,6 @@ class AgentService:
                         except Exception as e:
                             print(f"Error updating Neo4j email node: {str(e)}")
 
-                        # Save email with summary to PostgreSQL
                         try:
                             await EmailModel.create_email(
                                 user_id=user.id,
@@ -573,14 +555,12 @@ class AgentService:
             if not isinstance(result, dict):
                 print(f"Invalid content classification result (not a dict): {result}")
                 return {"type": "Drawer"}  # Default to Drawer
-            # Ensure type is a string and is one of the valid values
             if "type" not in result or not isinstance(result["type"], str):
                 print(
                     f"Missing or invalid 'destination' field in content classification result: {result}"
                 )
                 result["type"] = "Drawer"  # Default to Drawer
 
-            # Validate that type is one of the expected values
             valid_types = ["Library", "Drawer"]
             if result["type"] not in valid_types:
                 print(

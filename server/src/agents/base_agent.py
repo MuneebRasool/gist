@@ -54,7 +54,6 @@ class BaseAgent:
             message = response.choices[0].message
             
             if hasattr(message, 'tool_calls') and message.tool_calls:
-                print(f"Tool calls detected: {len(message.tool_calls)}")
                 tool_results = []
                 
                 for tool_call in message.tool_calls:
@@ -71,7 +70,6 @@ class BaseAgent:
                             "content": json.dumps(tool_result)
                         })
                     except Exception as e:
-                        print(f"Error executing tool {function_name}: {str(e)}")
                         tool_results.append({
                             "tool_call_id": tool_call.id,
                             "role": "tool",
@@ -103,7 +101,6 @@ class BaseAgent:
                 try:
                     return json.loads(result)
                 except json.JSONDecodeError as e:
-                    print(f"Failed to parse JSON response: {str(e)}")
                     return {"error": "Failed to parse API response"}
             
             return result

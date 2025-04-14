@@ -139,7 +139,6 @@ class TaskService:
                 print(f"Error creating task {i}: {str(e)}")
                 # Continue with next task instead of failing the entire batch
         
-        print(f"Created {len(created_tasks)} tasks out of {len(task_data_list)} requested")
         return created_tasks
     
     @staticmethod

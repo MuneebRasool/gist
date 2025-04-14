@@ -24,11 +24,6 @@ class PersonalitySummarizer(BaseAgent):
         Returns:
             str: Personality summary
         """
-        print("\n---------------------------------------")
-        print("🟣 PERSONALITY SUMMARIZER: Starting process_onboarding")
-        print(f"🟣 Input data length: {len(onboarding_data)} characters")
-        print(onboarding_data)
-        print("---------------------------------------\n")
         
         try:
             # Validate the input is proper JSON

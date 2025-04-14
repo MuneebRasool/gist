@@ -108,23 +108,18 @@ class RatedEmail(BaseModel):
         Returns:
             dict: Normalized email data dictionary
         """
-        print("\n---------------------------------------")
-        print(f"🔍 VALIDATING EMAIL: {values.get('id', 'Unknown ID')}")
         
         # Fix missing subject
         if 'subject' not in values or values['subject'] is None:
             values['subject'] = ''
-            print("🔍 Added missing subject")
         
         # Fix missing or empty snippet
         if 'snippet' not in values or values['snippet'] is None:
             values['snippet'] = ''
-            print("🔍 Added missing snippet")
         
         # Fix missing or invalid date
         if 'date' not in values or values['date'] is None:
             values['date'] = 0
-            print("🔍 Added missing date")
         else:
             try:
                 # Try to convert string timestamps
@@ -135,12 +130,9 @@ class RatedEmail(BaseModel):
                     values['date'] = int(values['date'])
             except ValueError:
                 values['date'] = 0
-                print("🔍 Reset invalid date")
         
         # Check and fix the 'from' field structure
         from_field = values.get('from', [])
-        print(f"🔍 From field type: {type(from_field)}")
-        print(f"🔍 From field value: {from_field}")
         
         # Handle different 'from' field structures
         if isinstance(from_field, list):
@@ -179,7 +171,6 @@ class RatedEmail(BaseModel):
             print(f"❌ Unexpected 'from' field type: {type(from_field)}")
             values['from'] = [{'name': '', 'email': ''}]
         
-        print("---------------------------------------\n")
         return values
 
 class OnboardingSubmitRequest(BaseModel):
@@ -219,14 +210,6 @@ class OnboardingSubmitRequest(BaseModel):
         Returns:
             dict: Normalized onboarding request data dictionary
         """
-        print("\n---------------------------------------")
-        print("🔍 VALIDATING ONBOARDING REQUEST")
-        
-        # Log basic counts of elements
-        print(f"🔍 Questions: {len(values.get('questions', []))}")
-        print(f"🔍 Answers: {len(values.get('answers', {}))}")
-        print(f"🔍 Email Ratings: {len(values.get('emailRatings', {}))}")
-        print(f"🔍 Rated Emails: {len(values.get('ratedEmails', []))}")
         
         # Fix any emailRatings issues - ensure all values are integers
         if 'emailRatings' in values:
@@ -269,9 +252,7 @@ class OnboardingSubmitRequest(BaseModel):
         # Log a sample of the first email for debugging
         if 'ratedEmails' in values and values['ratedEmails']:
             first_email = values['ratedEmails'][0]
-            print(f"🔍 First email sample: {first_email}")
         
-        print("---------------------------------------\n")
         return values
 
 class PersonalitySummaryResponse(BaseModel):
@@ -315,20 +296,13 @@ class DomainInferenceRequest(BaseModel):
         Returns:
             dict: Normalized domain inference request data dictionary
         """
-        print("\n---------------------------------------")
-        print("🔍 VALIDATING DOMAIN INFERENCE REQUEST")
         
-        # Log basic information
-        print(f"🔍 Email: {values.get('email', 'Not provided')}")
-        print(f"🔍 Rated Emails: {len(values.get('ratedEmails', []))}")
-        print(f"🔍 Ratings: {len(values.get('ratings', {}))}")
         
         # Ensure ratings is a dictionary
         if 'ratings' in values and not isinstance(values['ratings'], dict):
             print(f"❌ Invalid ratings type: {type(values['ratings'])}")
             values['ratings'] = {}
         
-        print("---------------------------------------\n")
         return values
 
 class DomainInferenceResponse(BaseModel):

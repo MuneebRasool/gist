@@ -69,7 +69,6 @@ async def nylas_webhook(request: Request, background_tasks: BackgroundTasks):
     try:
         webhook_data = await request.json()
         agent_service = AgentService()
-        print("Webhook data received")
         background_tasks.add_task(agent_service.handle_webhook_event, webhook_data)
         
         return "Webhook processed successfully"
@@ -110,12 +109,10 @@ async def infer_domain(request: DomainInferenceRequest, current_user: User = Dep
         
         # Log if rated emails are provided
         if request.ratedEmails:
-            print(f"Received {len(request.ratedEmails)} rated emails for domain inference")
             
             # Log a sample of the first email for debugging
             if len(request.ratedEmails) > 0:
                 first_email = request.ratedEmails[0]
-                print(f"First rated email sample: {first_email}")
         else:
             print("No rated emails provided for domain inference")
         
@@ -129,15 +126,7 @@ async def infer_domain(request: DomainInferenceRequest, current_user: User = Dep
             if len(ratings) > 0:
                 sample_ratings = list(ratings.items())[:3]
                 print(f"Sample ratings: {sample_ratings}")
-        else:
-            print("No ratings provided for domain inference")
-        print("current user")
-        print(current_user)
-        print(current_user.nylas_email)
-        print(current_user.nylas_grant_id)
         grant_id = current_user.get_nylas_grant_id()
-        print("actual grant id : ")
-        print(grant_id)
         result = await onboarding_agent.infer_user_domain(request.email, current_user.domain_inf, grant_id, current_user.nylas_email,rated_emails, ratings)
 
         if not result:
@@ -355,8 +344,6 @@ async def onboarding_status_stream(request: Request):
             print(f"Authentication error: {str(e)}")
             raise HTTPException(status_code=403, detail="Invalid authentication token")
 
-        print("Starting onboarding status stream")
-        print(f"User ID: {current_user.id}")
         
         async def event_generator():
             # Initial connection event
@@ -376,8 +363,6 @@ async def onboarding_status_stream(request: Request):
                     print("Client disconnected")
                     break
 
-                print("Checking onboarding status")
-                print(f"User ID: {current_user.id}")
                 
                 # Refresh user data to get latest onboarding status
                 user = await User.get(id=current_user.id)

@@ -141,7 +141,6 @@ class UserService:
                 detail="Verification code has expired",
             )
 
-        # Update user verification status
         user.verified = True
         user.verification_code = None
         user.verification_code_expires_at = None
@@ -195,8 +194,6 @@ class UserService:
         user = await UserService.get_user_by_email(email)
         
         if not user:
-            print("Creating new user with Google data")
-            # Create new user with Google data
             user = await User.create(
                 name=user_data.get("name", ""),
                 email=email,
@@ -206,13 +203,10 @@ class UserService:
                 onboarding=False,  # Set onboarding to false for new users
             )
             
-            # Initialize task scoring models for the new user
-            print("Initializing scoring models")
+
             await scoring_model.create_initial_models(str(user.id))
-            print("Scoring models initialized")
             
         elif not user.verified:
-            # If user exists but not verified, mark as verified since it's Google auth
             user.verified = True
             await user.save()
 
@@ -221,6 +215,5 @@ class UserService:
             data={"sub": str(user.id)},
             expires_delta=timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS),
         )
-        print(f"Access token created for user: {user.id}")
 
         return Token(access_token=access_token, user=UserResponse.model_validate(user))

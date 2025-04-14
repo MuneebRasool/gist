@@ -93,7 +93,6 @@ class DomainInferenceAgent(BaseAgent):
                 response_format="json"
             )
 
-            print(f"Domain inference response: {response}")
             
             # Ensure the response has the expected structure
             default_response = {
