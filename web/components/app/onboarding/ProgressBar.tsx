@@ -11,7 +11,6 @@ export const ProgressBar = ({
   totalQuestions, 
   showSummary 
 }: ProgressBarProps) => {
-  // Calculate progress percentage
   const progressPercentage = totalQuestions > 0 
     ? showSummary 
       ? 100 

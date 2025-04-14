@@ -17,7 +17,7 @@
 		"db:reset": "prisma migrate reset",
 		"test": "jest",
 		"test:watch": "jest --watch",
-		"prepare": "husky"
+		"prepare": "husky install"
 	},
 	"dependencies": {
 		"@dnd-kit/core": "^6.3.1",

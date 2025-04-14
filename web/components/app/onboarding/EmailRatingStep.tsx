@@ -57,7 +57,7 @@ export const EmailRatingStep = () => {
 		} finally {
 			setIsLoading(false);
 		}
-	}, [currentStep, setEmailRatings, setTopEmails]);
+	}, [currentStep, setEmailRatings, setTopEmails, emails.length]);
 
 	// Fetch emails
 	useEffect(() => {

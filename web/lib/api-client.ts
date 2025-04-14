@@ -57,7 +57,7 @@ export class ApiClient {
 
 						// Log each validation error in detail
 						console.error('❌ VALIDATION ERRORS DETAILS:');
-						err.response.data.detail.forEach((error: any, index: number) => {
+						err.response.data.detail.forEach((error: {loc?: string[], msg?: string, type?: string}, index: number) => {
 							console.error(`Error ${index + 1}:`, {
 								field: error.loc?.join('.'),
 								message: error.msg,

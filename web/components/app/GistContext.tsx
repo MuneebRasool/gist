@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { X, Mic, StopCircle } from 'lucide-react';
 
 // Define types for the Web Speech API
@@ -24,10 +24,19 @@ interface SpeechRecognitionAlternative {
 	confidence: number;
 }
 
+interface SpeechRecognition {
+	continuous: boolean;
+	interimResults: boolean;
+	start: () => void;
+	stop: () => void;
+	onresult: (event: SpeechRecognitionEvent) => void;
+	onend: () => void;
+}
+
 declare global {
 	interface Window {
-		webkitSpeechRecognition: any;
-		SpeechRecognition: any;
+		webkitSpeechRecognition: new () => SpeechRecognition;
+		SpeechRecognition: new () => SpeechRecognition;
 	}
 }
 
@@ -35,23 +44,9 @@ export const GistContext = () => {
 	const [isOpen, setIsOpen] = useState(false);
 	const [isListening, setIsListening] = useState(false);
 	const [transcript, setTranscript] = useState('');
-	const [recognition, setRecognition] = useState<any>(null);
+	const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
 
-	useEffect(() => {
-		const handleKeyDown = (e: KeyboardEvent) => {
-			// Check for Cmd + K (Mac) or Ctrl + K (Windows)
-			if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-				e.preventDefault();
-				setIsOpen(true);
-				startListening();
-			}
-		};
-
-		window.addEventListener('keydown', handleKeyDown);
-		return () => window.removeEventListener('keydown', handleKeyDown);
-	}, []);
-
-	const startListening = () => {
+	const startListening = useCallback(() => {
 		setIsListening(true);
 
 		// Check if browser supports speech recognition
@@ -85,7 +80,21 @@ export const GistContext = () => {
 		} else {
 			console.error('Speech recognition not supported');
 		}
-	};
+	}, [isListening, transcript]);
+
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			// Check for Cmd + K (Mac) or Ctrl + K (Windows)
+			if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+				e.preventDefault();
+				setIsOpen(true);
+				startListening();
+			}
+		};
+
+		window.addEventListener('keydown', handleKeyDown);
+		return () => window.removeEventListener('keydown', handleKeyDown);
+	}, [startListening]);
 
 	const handleQuery = (query: string) => {
 		console.log('Query handled:', query);

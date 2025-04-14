@@ -53,7 +53,7 @@ export const QuestionsStep = () => {
 		} finally {
 			setIsLoading(false);
 		}
-	}, [currentStep, emailRatings, ratedEmails, router, setQuestions, userEmail]);
+	}, [currentStep, emailRatings, ratedEmails, router, setQuestions, userEmail, questions.length]);
 
 	useEffect(() => {
 		fetchDomainInference();
