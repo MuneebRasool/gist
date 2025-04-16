@@ -1,5 +1,13 @@
 import { ApiClient } from '@/lib/api-client';
-import { ProcessEmailsRequest, SpamClassificationResponse, ExtractTaskBatchResponse, ContentClassificationResponse, ContentClassificationRequest, DomainInferenceRequest, DomainInferenceResponse } from '@/types/agent';
+import {
+	ProcessEmailsRequest,
+	SpamClassificationResponse,
+	ExtractTaskBatchResponse,
+	ContentClassificationResponse,
+	ContentClassificationRequest,
+	DomainInferenceRequest,
+	DomainInferenceResponse,
+} from '@/types/agent';
 import { SimplifiedEmail } from './agent/onboarding.service';
 
 /**

@@ -7,75 +7,16 @@ from datetime import timedelta, datetime, UTC
 import secrets
 from fastapi import HTTPException, status
 from src.models.user import User
-from src.modules.email.service import email_service
 from .schemas import UserCreate, UserUpdate, Token, UserResponse
 from .jwt import create_access_token
 from .constants import (
-    ACCESS_TOKEN_EXPIRE_DAYS,
-    INVALID_CREDENTIALS_ERROR,
-    INACTIVE_USER_ERROR,
-    UNVERIFIED_USER_ERROR,
-    REQUIRE_GOOGLE_AUTH_ERROR
+    ACCESS_TOKEN_EXPIRE_DAYS
 )
 from src.models.task_scoring import scoring_model
 
 
 class UserService:
     """Service class for user operations"""
-
-    @staticmethod
-    async def authenticate_user(email: str, password: str) -> Token:
-        """
-        Authenticate user and return JWT token
-
-        Args:
-            email: User's email
-            password: User's password
-
-        Returns:
-            Token: JWT access token
-
-        Raises:
-            HTTPException: If authentication fails
-        """
-        user = await UserService.get_user_by_email(email)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=INVALID_CREDENTIALS_ERROR,
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        if not user.password_hash:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=REQUIRE_GOOGLE_AUTH_ERROR,
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        if not user or not user.verify_password(password):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=INVALID_CREDENTIALS_ERROR,
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-
-        if not user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=INACTIVE_USER_ERROR,
-            )
-        if not user.verified:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=UNVERIFIED_USER_ERROR,
-            )
-
-        # Create access token
-        access_token = create_access_token(
-            data={"sub": str(user.id)},
-            expires_delta=timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS),
-        )
-
-        return Token(access_token=access_token, user=UserResponse.model_validate(user))
 
     @staticmethod
     def generate_verification_code() -> Tuple[str, datetime]:

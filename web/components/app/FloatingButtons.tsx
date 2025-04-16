@@ -35,7 +35,7 @@ const FloatingButtons: React.FC = () => {
 						</div>
 					</div>
 					<Button
-						className='font-urbanist relative flex h-[70px] w-full items-center justify-center gap-2 rounded-2xl bg-background/70 text-4xl font-light text-muted-foreground backdrop-blur-md transition-colors duration-200 hover:bg-background/80 group-hover:rounded-t-none'
+						className='relative flex h-[70px] w-full items-center justify-center gap-2 rounded-2xl bg-background/70 font-urbanist text-4xl font-light text-muted-foreground backdrop-blur-md transition-colors duration-200 hover:bg-background/80 group-hover:rounded-t-none'
 						variant='ghost'
 					>
 						Library
@@ -66,7 +66,7 @@ const FloatingButtons: React.FC = () => {
 						</div>
 					</div>
 					<Button
-						className='font-urbanist relative flex h-[70px] w-full items-center justify-center gap-2 rounded-2xl bg-background/70 text-4xl font-light text-muted-foreground backdrop-blur-md transition-colors duration-200 hover:bg-background/80 group-hover:rounded-t-none'
+						className='relative flex h-[70px] w-full items-center justify-center gap-2 rounded-2xl bg-background/70 font-urbanist text-4xl font-light text-muted-foreground backdrop-blur-md transition-colors duration-200 hover:bg-background/80 group-hover:rounded-t-none'
 						variant='ghost'
 					>
 						Drawer

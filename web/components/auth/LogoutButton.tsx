@@ -6,14 +6,9 @@ import { handleLogout } from '@/lib/auth-utils';
 
 export function LogoutButton() {
 	return (
-		<Button
-			variant="ghost"
-			size="sm"
-			className="text-muted-foreground hover:text-foreground"
-			onClick={handleLogout}
-		>
-			<LogOut className="mr-2 h-4 w-4" />
+		<Button variant='ghost' size='sm' className='text-muted-foreground hover:text-foreground' onClick={handleLogout}>
+			<LogOut className='mr-2 h-4 w-4' />
 			Logout
 		</Button>
 	);
-} 
+}

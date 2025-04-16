@@ -31,6 +31,9 @@ class NylasService:
         self.client_id = NYLAS_CLIENT_ID
         self.callback_uri = NYLAS_CALLBACK_URI
 
+        print(f"Nylas client ID: {self.client_id}")
+        print(f"Nylas callback URI: {self.callback_uri}")
+
     def get_auth_url(self) -> str:
         """Generate authentication URL for Nylas OAuth."""
         return self.client.auth.url_for_oauth2(

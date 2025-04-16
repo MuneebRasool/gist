@@ -31,12 +31,6 @@ NEO4J_USERNAME: str = config.get("NEO4J_USERNAME", "neo4j")
 NEO4J_PASSWORD: str = config.get("NEO4J_PASSWORD", "password")
 NEO4J_HOST: str = config.get("NEO4J_HOST", "neo4j+s://localhost:7687")
 
-# SMTP Configuration
-SMTP_USERNAME: Optional[str] = config.get("SMTP_USERNAME")
-SMTP_PASSWORD: Optional[str] = config.get("SMTP_PASSWORD")
-SMTP_FROM: Optional[str] = config.get("SMTP_FROM")
-SMTP_SERVER: Optional[str] = config.get("SMTP_SERVER")
-SMTP_PORT: int = int(config.get("SMTP_PORT", "587"))
 
 POSTGRES_USER: str = config.get("POSTGRES_USER", "postgres")
 POSTGRES_PASSWORD: str = config.get("POSTGRES_PASSWORD", "postgres")
