@@ -25,16 +25,18 @@ from ...agents.task_cost_features_extractor import CostFeaturesExtractor
 from ...agents.task_utility_features_extractor import UtilityFeaturesExtractor
 from ...utils.get_text_from_html import get_text_from_html
 from ...utils.get_task_scores import calculate_task_scores, batch_calculate_task_scores
+
 # from ...models.task_scoring import scoring_model
 
-# tasks -> 
+# tasks ->
 #
 #
+
 
 class AgentService:
     """
     Service for handling agent-related operations.
-    
+
     This service manages email processing, classification, task extraction,
     and content summarization. It coordinates various AI agents to analyze
     email content, extract actionable tasks, and organize information.
@@ -43,7 +45,7 @@ class AgentService:
     def __init__(self):
         """
         Initialize the AgentService with various specialized agent components.
-        
+
         Sets up all the required AI agents for different aspects of email processing.
         """
         self.spam_classifier = SpamClassifier()
@@ -68,7 +70,7 @@ class AgentService:
             user_id: The ID of the user for personalized spam detection
 
         Returns:
-            dict: Results of processing with keys 'spam' and 'non_spam' containing 
+            dict: Results of processing with keys 'spam' and 'non_spam' containing
                  categorized email objects
         """
         try:
@@ -80,7 +82,7 @@ class AgentService:
             if user.domain_inf:
                 domain_inf = user.domain_inf
 
-            user_personality = ''
+            user_personality = ""
             if user.personality is not None:
                 user_personality = user.personality[-1]
 
@@ -90,18 +92,24 @@ class AgentService:
                 try:
                     email_body = ""
                     try:
-                        if hasattr(email, 'body'):
+                        if hasattr(email, "body"):
                             email_body = email.body
                         elif isinstance(email, dict):
-                            if 'body' in email:
-                                email_body = email['body']
-                            elif 'body_data' in email and isinstance(email['body_data'], dict):
-                                if 'text' in email['body_data']:
-                                    email_body = email['body_data']['text']
-                                elif 'html' in email['body_data']:
-                                    email_body = get_text_from_html(email['body_data']['html'])
+                            if "body" in email:
+                                email_body = email["body"]
+                            elif "body_data" in email and isinstance(
+                                email["body_data"], dict
+                            ):
+                                if "text" in email["body_data"]:
+                                    email_body = email["body_data"]["text"]
+                                elif "html" in email["body_data"]:
+                                    email_body = get_text_from_html(
+                                        email["body_data"]["html"]
+                                    )
                         else:
-                            email_body = getattr(email, "body", "") or getattr(email, "snippet", "")
+                            email_body = getattr(email, "body", "") or getattr(
+                                email, "snippet", ""
+                            )
 
                         if not email_body:
                             email_body = "No content available"
@@ -116,9 +124,7 @@ class AgentService:
 
             process_limit = min(20, len(emails))
 
-            tasks = [
-                classify_email(email) for email in emails[:process_limit]
-            ]
+            tasks = [classify_email(email) for email in emails[:process_limit]]
             results = await asyncio.gather(*tasks)
 
             spam_emails = []
@@ -133,6 +139,7 @@ class AgentService:
 
         except Exception as e:
             import traceback
+
             print(f"Error in classify_spams: {str(e)}")
             print(f"Traceback: {traceback.format_exc()}")
             return {"spam": [], "non_spam": emails}
@@ -140,14 +147,14 @@ class AgentService:
     async def extract_tasks(self, email_body: str, user_personality: str = None):
         """
         Extract tasks from email content.
-        
+
         Uses the task extractor agent to identify actionable items in the email body,
         considering the user's personality for personalized task extraction.
-        
+
         Args:
             email_body: The content of the email
             user_personality: Optional user personality context for better task extraction
-            
+
         Returns:
             dict: JSON structure containing extracted tasks
         """
@@ -159,34 +166,30 @@ class AgentService:
         return tasks_json
 
     async def extract_and_save_tasks(
-            self,
-            user_id: str,
-            email,
-            user_personality: str = None,
-            email_node=None
+        self, user_id: str, email, user_personality: str = None, email_node=None
     ):
         """
         Extract tasks from email and save them to both PostgreSQL and Neo4j.
-        
+
         This method processes an individual email to extract actionable tasks,
         calculates task scores, and saves the tasks to the database.
-        
+
         Args:
             user_id: The ID of the user
             email: Email object containing id, subject, body, etc.
                   Can be either a dictionary or EmailData object
             user_personality: Optional user persona information
             email_node: Optional existing EmailNode object. If not provided, will try to find or create one.
-            
+
         Returns:
             bool: True if tasks were successfully extracted and saved, False otherwise
         """
-        if hasattr(email, 'body') and hasattr(email, 'id'):
+        if hasattr(email, "body") and hasattr(email, "id"):
             email_body = email.body
             email_id = email.id
         elif isinstance(email, dict):
-            email_body = email.get('body', '')
-            email_id = email.get('id', '')
+            email_body = email.get("body", "")
+            email_id = email.get("id", "")
         else:
             print(f"Warning: Unsupported email type: {type(email)}")
             return False
@@ -229,7 +232,7 @@ class AgentService:
                 cost_features=cost_features,
                 priority=item.get("priority", "medium"),
                 deadline=item.get("due_date"),
-                user_id=user_id  # Pass user_id to use personalized models
+                user_id=user_id,  # Pass user_id to use personalized models
             )
 
             await TaskService.create_task(
@@ -245,30 +248,27 @@ class AgentService:
                 ),
                 user_id=user_id,
                 utility_features=utility_features,
-                cost_features=cost_features
+                cost_features=cost_features,
             )
         return True
 
     async def batch_extract_and_save_tasks(
-            self,
-            user_id: str,
-            emails: List,
-            user_personality: str = None
+        self, user_id: str, emails: List, user_personality: str = None
     ) -> Tuple[bool, List]:
         """
         Extract tasks from multiple emails and save them in batch.
-        
+
         Optimized method to process multiple emails in parallel, extract tasks,
         calculate scores, and save tasks to the database efficiently.
-        
+
         Args:
             user_id: The ID of the user
             emails: List of email objects containing id, subject, body, etc.
                    Can be either dictionaries or EmailData objects
             user_personality: Optional user persona information
-            
+
         Returns:
-            Tuple containing: 
+            Tuple containing:
             - bool: True if tasks were successfully extracted from any email
             - List: Emails that didn't yield any tasks
         """
@@ -281,12 +281,12 @@ class AgentService:
 
         for email in emails:
             # Extract email body and ID
-            if hasattr(email, 'body') and hasattr(email, 'id'):
+            if hasattr(email, "body") and hasattr(email, "id"):
                 email_body = email.body
                 email_id = email.id
             elif isinstance(email, dict):
-                email_body = email.get('body', '')
-                email_id = email.get('id', '')
+                email_body = email.get("body", "")
+                email_id = email.get("id", "")
             else:
                 print(f"Warning: Unsupported email type: {type(email)}")
                 emails_without_tasks.append(email)
@@ -312,7 +312,7 @@ class AgentService:
                     # Include the email context with each task
                     task_with_context = {
                         "task": task,
-                        "context": email_context + f"\ntask: {task}"
+                        "context": email_context + f"\ntask: {task}",
                     }
                     all_extracted_tasks.append(task_with_context)
                     task_to_email_map[len(all_extracted_tasks) - 1] = email_id
@@ -335,8 +335,7 @@ class AgentService:
         # Gather all results
         print(f"Extracting features for {len(all_extracted_tasks)} tasks in parallel")
         utility_results, cost_results = await asyncio.gather(
-            asyncio.gather(*utility_coroutines),
-            asyncio.gather(*cost_coroutines)
+            asyncio.gather(*utility_coroutines), asyncio.gather(*cost_coroutines)
         )
 
         # Prepare inputs for batch score calculation
@@ -346,18 +345,15 @@ class AgentService:
         ]
 
         deadlines = [
-            task_info["task"].get("due_date")
-            for task_info in all_extracted_tasks
+            task_info["task"].get("due_date") for task_info in all_extracted_tasks
         ]
 
         utility_features_list = [
-            result.get("utility_features", {})
-            for result in utility_results
+            result.get("utility_features", {}) for result in utility_results
         ]
 
         cost_features_list = [
-            result.get("cost_features", {})
-            for result in cost_results
+            result.get("cost_features", {}) for result in cost_results
         ]
 
         # Calculate scores in batch
@@ -367,7 +363,7 @@ class AgentService:
             cost_features=cost_features_list,
             priorities=priorities,
             deadlines=deadlines,
-            user_id=user_id
+            user_id=user_id,
         )
 
         # Create task objects for batch creation
@@ -384,7 +380,7 @@ class AgentService:
                 relevance_score=relevance_score,
                 utility_score=utility_score,
                 cost_score=cost_score,
-                classification=""
+                classification="",
             )
             task_create_objects.append(task_data)
 
@@ -394,7 +390,7 @@ class AgentService:
             task_data_list=task_create_objects,
             user_id=user_id,
             utility_features_list=utility_features_list,
-            cost_features_list=cost_features_list
+            cost_features_list=cost_features_list,
         )
 
         return True, emails_without_tasks
@@ -402,7 +398,7 @@ class AgentService:
     async def handle_webhook_event(self, webhook_data: Dict[str, Any]) -> bool:
         """
         Handle webhook events from Nylas.
-        
+
         Processes webhook notifications from Nylas when new email messages are received.
         Performs spam detection, task extraction, content classification, and email storage.
 
@@ -449,7 +445,9 @@ class AgentService:
                     classification_result = await self.classify_spams([email], user.id)
                     non_spam_emails = classification_result.get("non_spam", [])
                     if len(non_spam_emails) == 0:
-                        print(f"Email {message_id} classified as spam for user {user.id}, skipping processing")
+                        print(
+                            f"Email {message_id} classified as spam for user {user.id}, skipping processing"
+                        )
                         continue
 
                     user_personality = None
@@ -463,32 +461,39 @@ class AgentService:
                         id=message_id,
                         body=parsed_body,
                         subject=subject,
-                        from_=from_data
+                        from_=from_data,
                     )
 
-                    success, emails_without_tasks = await self.batch_extract_and_save_tasks(
-                        user.id,
-                        [email_for_tasks],
-                        user_personality
+                    success, emails_without_tasks = (
+                        await self.batch_extract_and_save_tasks(
+                            user.id, [email_for_tasks], user_personality
+                        )
                     )
 
                     if not success or emails_without_tasks:
-                        print(f"No tasks extracted from email {message_id}, processing as regular email")
-
+                        print(
+                            f"No tasks extracted from email {message_id}, processing as regular email"
+                        )
 
                         personality_context = f"User personality: {user_personality}\n\nEmail content: {parsed_body}"
 
-                        classification_coroutine = self.classify_content(personality_context)
-                        summary_coroutine = self.content_summarizer.process_content(parsed_body)
-
-                        content_classification, summary_result = await asyncio.gather(
-                            classification_coroutine,
-                            summary_coroutine
+                        classification_coroutine = self.classify_content(
+                            personality_context
+                        )
+                        summary_coroutine = self.content_summarizer.process_content(
+                            parsed_body
                         )
 
-                        email_classification = content_classification.get("type", "drawer").lower()
-                        email_summary = summary_result.get("summary", "No summary available")
+                        content_classification, summary_result = await asyncio.gather(
+                            classification_coroutine, summary_coroutine
+                        )
 
+                        email_classification = content_classification.get(
+                            "type", "drawer"
+                        ).lower()
+                        email_summary = summary_result.get(
+                            "summary", "No summary available"
+                        )
 
                         # Update the email node
                         try:
@@ -516,15 +521,18 @@ class AgentService:
                                     "body": email_summary,  # Store summary in the body field
                                     "subject": subject,
                                     "from": from_data,
-                                    "classification": email_classification
-                                }
+                                    "classification": email_classification,
+                                },
                             )
                             print(
-                                f"Email {message_id} saved to PostgreSQL with summary and classification: {email_classification}")
+                                f"Email {message_id} saved to PostgreSQL with summary and classification: {email_classification}"
+                            )
                         except Exception as e:
                             print(f"Error saving email to PostgreSQL: {str(e)}")
                     else:
-                        print(f"Tasks extracted from email {message_id}, skipping email save")
+                        print(
+                            f"Tasks extracted from email {message_id}, skipping email save"
+                        )
 
                 return True
         except Exception as e:
@@ -534,7 +542,7 @@ class AgentService:
     async def classify_content(self, content: str) -> dict:
         """
         Classify email content by type and usefulness.
-        
+
         Determines how the content should be categorized (Library, Drawer, etc.)
         for appropriate display and prioritization in the UI.
 

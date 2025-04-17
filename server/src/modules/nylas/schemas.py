@@ -2,13 +2,17 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 from datetime import datetime
 
+
 class VerificationCode(BaseModel):
     """Schema for verification code"""
+
     code: str
+
 
 class EmailParticipant(BaseModel):
     name: Optional[str] = None
     email: str
+
 
 class EmailMessage(BaseModel):
     id: str
@@ -23,7 +27,6 @@ class EmailMessage(BaseModel):
     body: Optional[str] = None
     unread: bool = False
     starred: bool = False
-
 
 
 class EmailData(BaseModel):

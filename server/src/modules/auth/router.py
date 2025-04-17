@@ -19,7 +19,7 @@ from .exceptions import EmailAlreadyExistsException, UserNotFoundException
 from src.models.user import User
 
 # Create main router for auth module
-router = APIRouter(tags=["auth"],prefix="/auth")
+router = APIRouter(tags=["auth"], prefix="/auth")
 
 
 @router.post(
@@ -52,7 +52,6 @@ async def google_auth(auth_data: GoogleAuthRequest):
 async def login(login_data: LoginRequest):
     """Login user and return JWT token"""
     return await UserService.authenticate_user(login_data.email, login_data.password)
-
 
 
 # User management routes

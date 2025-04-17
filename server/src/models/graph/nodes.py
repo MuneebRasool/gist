@@ -7,17 +7,20 @@ from neomodel import (
     One,
     ZeroOrMore,
     OneOrMore,
-    FloatProperty
+    FloatProperty,
 )
 from datetime import datetime, UTC
+
 
 class UserNode(StructuredNode):
     """
     User node that represents a user in the graph database.
     Only stores userid as reference since actual user data is in PostgreSQL.
     """
+
     userid = StringProperty(unique_index=True, required=True)
-    emails = RelationshipTo('EmailNode', 'HAS_EMAIL', cardinality=ZeroOrMore)
+    emails = RelationshipTo("EmailNode", "HAS_EMAIL", cardinality=ZeroOrMore)
+
 
 class EmailNode(StructuredNode):
     """
@@ -29,15 +32,15 @@ class EmailNode(StructuredNode):
     snippet = StringProperty(default=None)
     subject = StringProperty(default=None)
     classification = StringProperty(default=None)
-    tasks = RelationshipTo('TaskNode', 'CONTAINS_TASK', cardinality=ZeroOrMore)
-    user = RelationshipFrom('UserNode', 'HAS_EMAIL', cardinality=OneOrMore)
+    tasks = RelationshipTo("TaskNode", "CONTAINS_TASK", cardinality=ZeroOrMore)
+    user = RelationshipFrom("UserNode", "HAS_EMAIL", cardinality=OneOrMore)
 
 
 class TaskNode(StructuredNode):
     """
     Task node that represents a task extracted from emails.
     """
-    
+
     task_id = StringProperty(unique_index=True, required=True)
     task = StringProperty(required=True)
     deadline = StringProperty(default=None)
@@ -48,8 +51,7 @@ class TaskNode(StructuredNode):
     classification = StringProperty(default=None)
     createdAt = DateTimeProperty(default=lambda: datetime.now(UTC))
     updatedAt = DateTimeProperty(default=lambda: datetime.now(UTC))
-    
-    # Relationships
-    email = RelationshipFrom('EmailNode', 'CONTAINS_TASK', cardinality=One)
-    depends_on = RelationshipTo('TaskNode', 'DEPENDS_ON', cardinality=ZeroOrMore)
 
+    # Relationships
+    email = RelationshipFrom("EmailNode", "CONTAINS_TASK", cardinality=One)
+    depends_on = RelationshipTo("TaskNode", "DEPENDS_ON", cardinality=ZeroOrMore)

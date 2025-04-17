@@ -9,9 +9,7 @@ from fastapi import HTTPException, status
 from src.models.user import User
 from .schemas import UserCreate, UserUpdate, Token, UserResponse
 from .jwt import create_access_token
-from .constants import (
-    ACCESS_TOKEN_EXPIRE_DAYS
-)
+from .constants import ACCESS_TOKEN_EXPIRE_DAYS
 from src.models.task_scoring import scoring_model
 
 
@@ -120,6 +118,7 @@ class UserService:
             return False
         await user.delete()
         return True
+
     @staticmethod
     async def handle_google_auth(user_data: Dict) -> Token:
         """Handle Google authentication"""
@@ -130,10 +129,9 @@ class UserService:
                 detail="Email not provided in Google data",
             )
 
-
         # Check if user exists
         user = await UserService.get_user_by_email(email)
-        
+
         if not user:
             user = await User.create(
                 name=user_data.get("name", ""),
@@ -143,10 +141,9 @@ class UserService:
                 verified=True,  # Google accounts are pre-verified
                 onboarding=False,  # Set onboarding to false for new users
             )
-            
 
             await scoring_model.create_initial_models(str(user.id))
-            
+
         elif not user.verified:
             user.verified = True
             await user.save()

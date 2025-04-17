@@ -1,61 +1,25 @@
 def get_utility_score(utility_features):
     """
     Maps categorical utility features to numerical values and calculates total utility score
-    
+
     Args:
         utility_features (dict): Dictionary containing utility feature categories
-        
+
     Returns:
         dict: Original features with numerical mappings and total score
     """
     mappings = {
-        "priority": {
-            "high": 0.8,
-            "medium": 0.5,
-            "low": 0.2
-        },
-        "intrinsic_interest": {
-            "high": 0.5,
-            "moderate": 0.3,
-            "low": 0.1
-        },
-        "user_personalization": {
-            "important": 0.2,
-            "standard": 0.0
-        },
-        "task_type_relevance": {
-            "high": 0.3,
-            "medium": 0.2,
-            "low": 0.1
-        },
-        "emotional_salience": {
-            "strong": 0.25,
-            "weak": 0.05
-        },
-        "user_feedback": {
-            "emphasized": 0.25,
-            "standard": 0.0
-        },
-        "domain_relevance": {
-            "high": 0.2,
-            "low": 0.0
-        },
-        "novel_task": {
-            "high": 0.15,
-            "low": 0.0
-        },
-        "reward_pathways": {
-            "yes": 0.2,
-            "no": 0.0
-        },
-        "social_collaborative_signals": {
-            "yes": 0.1,
-            "no": 0.0
-        },
-        "time_of_day_alignment": {
-            "appropriate": 0.1,
-            "inappropriate": 0.0
-        }
+        "priority": {"high": 0.8, "medium": 0.5, "low": 0.2},
+        "intrinsic_interest": {"high": 0.5, "moderate": 0.3, "low": 0.1},
+        "user_personalization": {"important": 0.2, "standard": 0.0},
+        "task_type_relevance": {"high": 0.3, "medium": 0.2, "low": 0.1},
+        "emotional_salience": {"strong": 0.25, "weak": 0.05},
+        "user_feedback": {"emphasized": 0.25, "standard": 0.0},
+        "domain_relevance": {"high": 0.2, "low": 0.0},
+        "novel_task": {"high": 0.15, "low": 0.0},
+        "reward_pathways": {"yes": 0.2, "no": 0.0},
+        "social_collaborative_signals": {"yes": 0.1, "no": 0.0},
+        "time_of_day_alignment": {"appropriate": 0.1, "inappropriate": 0.0},
     }
 
     numerical_values = {}
@@ -79,30 +43,18 @@ def get_utility_score(utility_features):
 def get_cost_score(cost_features):
     """
     Maps categorical cost features to numerical values and calculates total cost score
-    
+
     Args:
         cost_features (dict): Dictionary containing cost feature categories
-        
+
     Returns:
         dict: Original features with numerical mappings and total score
     """
     # Define numerical mappings for each feature
     mappings = {
-        "task_complexity": {
-            "high": 0.6,
-            "medium": 0.3,
-            "low": 0.1
-        },
-        "spam_probability": {
-            "high": 0.8,
-            "medium": 0.4,
-            "low": 0.1
-        },
-        "emotional_stress_factor": {
-            "high": 0.5,
-            "medium": 0.3,
-            "low": 0.1
-        }
+        "task_complexity": {"high": 0.6, "medium": 0.3, "low": 0.1},
+        "spam_probability": {"high": 0.8, "medium": 0.4, "low": 0.1},
+        "emotional_stress_factor": {"high": 0.5, "medium": 0.3, "low": 0.1},
     }
 
     numerical_values = {}
@@ -117,7 +69,10 @@ def get_cost_score(cost_features):
             numerical_values[feature] = mappings["spam_probability"][value]
             total_score += numerical_values[feature]
 
-        elif feature == "emotional_stress_factor" and value in mappings["emotional_stress_factor"]:
+        elif (
+            feature == "emotional_stress_factor"
+            and value in mappings["emotional_stress_factor"]
+        ):
             numerical_values[feature] = mappings["emotional_stress_factor"][value]
             total_score += numerical_values[feature]
 
@@ -150,10 +105,10 @@ def get_cost_score(cost_features):
 def convert_time_to_cost(time_estimate):
     """
     Converts time estimate strings to a cost value
-    
+
     Args:
         time_estimate (str): String describing time required
-        
+
     Returns:
         float: Cost value based on time estimate
     """
@@ -198,8 +153,12 @@ def convert_time_to_cost(time_estimate):
 def get_relevance_score(utility_features, cost_features, alpha=0.5, beta=0.5):
     utility_score = get_utility_score(utility_features)
     cost_score = get_cost_score(cost_features)
-    relevance_score = alpha * utility_score['total_utility_score'] - beta * cost_score['total_cost_score']
+    relevance_score = (
+        alpha * utility_score["total_utility_score"]
+        - beta * cost_score["total_cost_score"]
+    )
     return relevance_score, utility_score, cost_score
+
 
 # Example usage:
 #  sample_features = {

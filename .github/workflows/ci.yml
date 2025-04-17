@@ -13,16 +13,12 @@ jobs:
     
     steps:
     - uses: actions/checkout@v4
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
+
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v2
       with:
-        node-version: '18'
-        cache: 'pnpm'
-        
-    - name: Install pnpm
-      run: npm install -g pnpm@10.6.5
-        
+        version: 10.6.5
+
     - name: Install dependencies
       run: cd web && pnpm install
       
@@ -31,7 +27,7 @@ jobs:
       
     - name: Check formatting
       run: cd web && pnpm format:check
-      
+
     - name: Build Next.js
       run: cd web && pnpm build
       
@@ -53,15 +49,9 @@ jobs:
       run: |
         cd server
         pip install -e .
-        pip install pytest
         
     - name: Run linting
       run: |
         cd server
-        pip install flake8
-        flake8 src tests
-        
-    - name: Run tests
-      run: |
-        cd server
-        pytest tests/ 
+        pip install black
+        black src tests

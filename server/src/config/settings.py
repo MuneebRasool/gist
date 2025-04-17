@@ -4,10 +4,10 @@ Load environment variables and define app-wide settings.
 """
 
 from typing import List, Optional
-from dotenv import load_dotenv,dotenv_values
+from dotenv import load_dotenv, dotenv_values
 
-load_dotenv('.env')
-config = dotenv_values('.env')
+load_dotenv(".env")
+config = dotenv_values(".env")
 
 # Application Constants
 APP_NAME = "Gist"
@@ -21,8 +21,7 @@ SECRET_KEY: str = config.get("SECRET_KEY", "your-super-secret-key-change-it")
 
 # Database Configuration
 DATABASE_URL: str = config.get(
-    "DATABASE_URL", 
-    "postgresql://postgres:postgres@localhost:5432/db_name"
+    "DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/db_name"
 )
 
 # Neo4j Configuration
@@ -45,7 +44,7 @@ NYLAS_API_URI: Optional[str] = config.get("NYLAS_API_URI")
 NYLAS_CALLBACK_URI: Optional[str] = config.get("NYLAS_CALLBACK_URI")
 
 LLM_BASE_URL: Optional[str] = config.get("LLM_BASE_URL", "https://api.openai.com/v1")
-LLM_API_KEY: Optional[str] = config.get('LLM_API_KEY')
+LLM_API_KEY: Optional[str] = config.get("LLM_API_KEY")
 
 
 # Tortoise ORM Config
@@ -59,7 +58,7 @@ TORTOISE_ORM = {
                 "password": POSTGRES_PASSWORD,
                 "port": POSTGRES_PORT,
                 "user": POSTGRES_USER,
-            }
+            },
         }
     },
     "apps": {
@@ -69,4 +68,3 @@ TORTOISE_ORM = {
         },
     },
 }
-
