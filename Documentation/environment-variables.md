@@ -49,7 +49,7 @@ To obtain Google OAuth credentials:
   - Format: `postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}`
 
 To set up PostgreSQL:
-1. Install PostgreSQL locally or use a cloud provider (e.g., AWS RDS)
+1. Install PostgreSQL locally or use a cloud provider (e.g., AWS RDS), supabase, neon.
 2. Create a new database and user
 3. Note down the credentials and connection details
 
