@@ -22,7 +22,6 @@ export default function DashBoardLayout({
 	const { fetchTasks } = useDrawerTasksStore();
 	const { fetchTasks: fetchLibraryTasks } = useLibraryTasksStore();
 
-	// Check onboarding status from session and redirect if needed
 	useEffect(() => {
 		checkConnection();
 	}, [checkConnection, session?.user.id]);
@@ -35,9 +34,7 @@ export default function DashBoardLayout({
 	}, [session?.user?.id, fetchTasks, fetchLibraryTasks]);
 	useEffect(() => {
 		if (session?.user && session.user.onboarding === false) {
-			// Set email in store for onboarding
 			setUserEmail(session.user.email);
-			// Redirect to onboarding with email
 			const encodedEmail = encodeURIComponent(session.user.email);
 			router.push(`/app/onboarding?email=${encodedEmail}`);
 		}

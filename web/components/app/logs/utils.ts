@@ -10,7 +10,6 @@ export const groupTasksByDate = (tasks: TaskResponse[]): GroupedTasks => {
 		const date = new Date(task.createdAt);
 		const dateKey = format(date, 'yyyy-MM-dd');
 
-		// Create a display key based on the date
 		const displayKey = isToday(date) ? 'Today' : isYesterday(date) ? 'Yesterday' : format(date, 'MMMM d, yyyy');
 
 		if (!acc[displayKey]) {

@@ -6,7 +6,6 @@ import { getServerSession } from 'next-auth';
 import { getSession } from 'next-auth/react';
 import { authOptions } from '@/lib/auth';
 
-
 // Extend EventSourceInit to include headers
 interface ExtendedEventSourceInit extends EventSourceInit {
 	headers?: Record<string, string>;
@@ -125,7 +124,9 @@ export class OnboardingService {
 	 * @returns Onboarding status
 	 */
 	static async checkOnboardingStatus() {
-		return ApiClient.get<{ onboarding: boolean; task_gen : boolean; in_progress: boolean; success: boolean }>('/api/agent/onboarding-check');
+		return ApiClient.get<{ onboarding: boolean; task_gen: boolean; in_progress: boolean; success: boolean }>(
+			'/api/agent/onboarding-check'
+		);
 	}
 
 	/**
@@ -140,24 +141,24 @@ export class OnboardingService {
 	): Promise<EventSource> {
 		let retryCount = 0;
 		const baseUrl = envConfig.API_URL;
-		
+
 		// Get session using the same method as ApiClient
 		const session = await getSession();
 		if (!session?.user?.token) {
 			throw new Error('No authentication token available');
 		}
-		
+
 		// Use the token as a URL parameter
 		const url = new URL(`${baseUrl}/api/agent/onboarding-status`);
 		url.searchParams.append('token', session.user.token);
-		
+
 		// Create EventSource with proper headers
 		// Note: Headers may not work in all browsers with EventSource
 		// but we include them anyway as a fallback
 		const eventSource = new EventSource(url.toString(), {
 			headers: {
-				Authorization: `Bearer ${session.user.token}`
-			}
+				Authorization: `Bearer ${session.user.token}`,
+			},
 		} as ExtendedEventSourceInit);
 
 		let connectionTimeout: NodeJS.Timeout;
@@ -186,7 +187,7 @@ export class OnboardingService {
 				resetTimeout();
 				const data = JSON.parse(event.data) as OnboardingStatusEvent;
 				onStatusUpdate(data);
-				
+
 				if (data.status === 'completed') {
 					if (connectionTimeout) clearTimeout(connectionTimeout);
 					eventSource.close();

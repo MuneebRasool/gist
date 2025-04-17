@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  frontend:
+    name: Frontend (Next.js)
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v2
+      with:
+        version: 10.6.5
+
+    - name: Install dependencies
+      run: cd web && pnpm install
+      
+    - name: Run linting
+      run: cd web && pnpm lint
+      
+    - name: Check formatting
+      run: cd web && pnpm format:check
+
+    - name: Build Next.js
+      run: cd web && pnpm build
+      
+
+  backend:
+    name: Backend (Python)
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        cd server
+        pip install -e .
+        
+    - name: Run linting
+      run: |
+        cd server
+        pip install black
+        black src tests

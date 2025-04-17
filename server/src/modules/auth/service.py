@@ -7,75 +7,14 @@ from datetime import timedelta, datetime, UTC
 import secrets
 from fastapi import HTTPException, status
 from src.models.user import User
-from src.modules.email.service import email_service
 from .schemas import UserCreate, UserUpdate, Token, UserResponse
 from .jwt import create_access_token
-from .constants import (
-    ACCESS_TOKEN_EXPIRE_DAYS,
-    INVALID_CREDENTIALS_ERROR,
-    INACTIVE_USER_ERROR,
-    UNVERIFIED_USER_ERROR,
-    REQUIRE_GOOGLE_AUTH_ERROR
-)
+from .constants import ACCESS_TOKEN_EXPIRE_DAYS
 from src.models.task_scoring import scoring_model
 
 
 class UserService:
     """Service class for user operations"""
-
-    @staticmethod
-    async def authenticate_user(email: str, password: str) -> Token:
-        """
-        Authenticate user and return JWT token
-
-        Args:
-            email: User's email
-            password: User's password
-
-        Returns:
-            Token: JWT access token
-
-        Raises:
-            HTTPException: If authentication fails
-        """
-        user = await UserService.get_user_by_email(email)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=INVALID_CREDENTIALS_ERROR,
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        if not user.password_hash:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=REQUIRE_GOOGLE_AUTH_ERROR,
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        if not user or not user.verify_password(password):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=INVALID_CREDENTIALS_ERROR,
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-
-        if not user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=INACTIVE_USER_ERROR,
-            )
-        if not user.verified:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=UNVERIFIED_USER_ERROR,
-            )
-
-        # Create access token
-        access_token = create_access_token(
-            data={"sub": str(user.id)},
-            expires_delta=timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS),
-        )
-
-        return Token(access_token=access_token, user=UserResponse.model_validate(user))
 
     @staticmethod
     def generate_verification_code() -> Tuple[str, datetime]:
@@ -141,7 +80,6 @@ class UserService:
                 detail="Verification code has expired",
             )
 
-        # Update user verification status
         user.verified = True
         user.verification_code = None
         user.verification_code_expires_at = None
@@ -180,6 +118,7 @@ class UserService:
             return False
         await user.delete()
         return True
+
     @staticmethod
     async def handle_google_auth(user_data: Dict) -> Token:
         """Handle Google authentication"""
@@ -190,13 +129,10 @@ class UserService:
                 detail="Email not provided in Google data",
             )
 
-
         # Check if user exists
         user = await UserService.get_user_by_email(email)
-        
+
         if not user:
-            print("Creating new user with Google data")
-            # Create new user with Google data
             user = await User.create(
                 name=user_data.get("name", ""),
                 email=email,
@@ -205,14 +141,10 @@ class UserService:
                 verified=True,  # Google accounts are pre-verified
                 onboarding=False,  # Set onboarding to false for new users
             )
-            
-            # Initialize task scoring models for the new user
-            print("Initializing scoring models")
+
             await scoring_model.create_initial_models(str(user.id))
-            print("Scoring models initialized")
-            
+
         elif not user.verified:
-            # If user exists but not verified, mark as verified since it's Google auth
             user.verified = True
             await user.save()
 
@@ -221,6 +153,5 @@ class UserService:
             data={"sub": str(user.id)},
             expires_delta=timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS),
         )
-        print(f"Access token created for user: {user.id}")
 
         return Token(access_token=access_token, user=UserResponse.model_validate(user))

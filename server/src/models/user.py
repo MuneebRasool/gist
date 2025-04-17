@@ -43,12 +43,18 @@ class User(models.Model):
     def get_nylas_grant_id(self) -> str | None:
         """Decrypt and return Nylas grant ID."""
         return encryption.decrypt(self.nylas_grant_id) if self.nylas_grant_id else None
+
     async def get_all_users_by_grant_id(self, grant_id: str):
         users = await User.filter(nylas_grant_id__not_isnull=True).all()
         return [user for user in users if user.get_nylas_grant_id() == grant_id]
+
     def verify_password(self, password: str) -> bool:
         """Verify a password against its hash."""
-        return bcrypt.checkpw(password.encode("utf-8"), self.password_hash.encode("utf-8")) if self.password_hash else False
+        return (
+            bcrypt.checkpw(password.encode("utf-8"), self.password_hash.encode("utf-8"))
+            if self.password_hash
+            else False
+        )
 
     @staticmethod
     def hash_password(password: str) -> str:
@@ -59,7 +65,9 @@ class User(models.Model):
     async def get_by_grant_id(grant_id: str):
         """Get user by Nylas grant ID."""
         users = await User.filter(nylas_grant_id__not_isnull=True).all()
-        return next((user for user in users if user.get_nylas_grant_id() == grant_id), None)
+        return next(
+            (user for user in users if user.get_nylas_grant_id() == grant_id), None
+        )
 
     class Meta:
         table = "users"
@@ -76,9 +84,16 @@ class UserModel(models.Model):
     UserModel model that represents the user_models table in the database.
     Stores serialized SGDRegressor models for utility and cost predictions.
     """
-    user = fields.OneToOneField("models.User", related_name="user_model", on_delete=fields.CASCADE)
-    utility_model = fields.BinaryField(null=True, description="Serialized utility SGDRegressor model")
-    cost_model = fields.BinaryField(null=True, description="Serialized cost SGDRegressor model")
+
+    user = fields.OneToOneField(
+        "models.User", related_name="user_model", on_delete=fields.CASCADE
+    )
+    utility_model = fields.BinaryField(
+        null=True, description="Serialized utility SGDRegressor model"
+    )
+    cost_model = fields.BinaryField(
+        null=True, description="Serialized cost SGDRegressor model"
+    )
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
 
@@ -95,8 +110,7 @@ class UserModel(models.Model):
         """Serialize an SGDRegressor model to bytes."""
         buffer = BytesIO()
         joblib.dump(model, buffer)
-        # print("buffer.getvalue()")
-        # print(buffer.getvalue())
+
         return buffer.getvalue()
 
     @staticmethod
@@ -108,8 +122,6 @@ class UserModel(models.Model):
             model.fit(np.array([[0.5]]), np.array([0.5]))  # Fit with minimal data
             return model
         buffer = BytesIO(model_bytes)
-        # print("buffer.getvalue()  deserialization")
-        # print(buffer.getvalue())
         return joblib.load(buffer)
 
     # Instance Methods
@@ -121,11 +133,13 @@ class UserModel(models.Model):
         """Retrieve and deserialize the cost model."""
         return self._deserialize_model(self.cost_model)
 
-    async def set_models(self, utility_model: SGDRegressor, cost_model: SGDRegressor) -> None:
+    async def set_models(
+        self, utility_model: SGDRegressor, cost_model: SGDRegressor
+    ) -> None:
         """Serialize and set the utility and cost models."""
-        if not hasattr(utility_model, 'coef_'):
+        if not hasattr(utility_model, "coef_"):
             utility_model.fit(np.array([[0.5]]), np.array([0.5]))
-        if not hasattr(cost_model, 'coef_'):
+        if not hasattr(cost_model, "coef_"):
             cost_model.fit(np.array([[0.5]]), np.array([0.5]))
 
         self.utility_model = self._serialize_model(utility_model)
@@ -141,13 +155,17 @@ class UserModel(models.Model):
             return existing_model
         new_model = await cls.create(user=user)
         return new_model
-    
+
+
 class EmailModel(models.Model):
     """
     EmailModel to store email data in PostgreSQL database.
     """
+
     id = fields.UUIDField(pk=True, default=uuid.uuid4)
-    user = fields.ForeignKeyField("models.User", related_name="emails", on_delete=fields.CASCADE)
+    user = fields.ForeignKeyField(
+        "models.User", related_name="emails", on_delete=fields.CASCADE
+    )
     message_id = fields.CharField(max_length=255, unique=True)
     body = fields.TextField(description="Email body content")
     subject = fields.CharField(max_length=255, null=True)
@@ -161,44 +179,44 @@ class EmailModel(models.Model):
 
     def __str__(self):
         return f"Email {self.message_id} ({self.subject})"
-    
+
     @classmethod
     async def get_by_message_id(cls, message_id: str) -> Optional["EmailModel"]:
         """
         Get email by message ID
-        
+
         Args:
             message_id: The ID of the email message
-            
+
         Returns:
             Optional[EmailModel]: The email record if found, None otherwise
         """
         return await cls.filter(message_id=message_id).first()
-        
+
     @classmethod
     async def create_email(cls, user_id: str, email_data: dict) -> "EmailModel":
         """
         Create a new email record
-        
+
         Args:
             user_id: The ID of the user
             email_data: Dictionary containing email data
-            
+
         Returns:
             EmailModel: The created email record
         """
         try:
             user = await User.get(id=user_id)
-            
+
             # Extract values with defaults for optional fields
             message_id = email_data.get("id", "")
             body = email_data.get("body", "")
             subject = email_data.get("subject", None)
-            
+
             # Handle from_ which could be a list of dicts or a string
             from_data = email_data.get("from", [])
             from_str = ""
-            
+
             if isinstance(from_data, list) and len(from_data) > 0:
                 if isinstance(from_data[0], dict):
                     # Extract name and email if available
@@ -209,7 +227,7 @@ class EmailModel(models.Model):
                     from_str = str(from_data[0])
             elif isinstance(from_data, str):
                 from_str = from_data
-                
+
             # Create the email record
             email = await cls.create(
                 id=uuid.uuid4(),
@@ -219,41 +237,43 @@ class EmailModel(models.Model):
                 subject=subject,
                 from_=from_str,
             )
-            
+
             return email
         except Exception as e:
             print(f"Error creating email record: {str(e)}")
             raise
-            
+
     @classmethod
-    async def batch_create_emails(cls, user_id: str, email_data_list: List[dict]) -> List["EmailModel"]:
+    async def batch_create_emails(
+        cls, user_id: str, email_data_list: List[dict]
+    ) -> List["EmailModel"]:
         """
         Create multiple email records in a single batch operation
-        
+
         Args:
             user_id: The ID of the user
             email_data_list: List of dictionaries containing email data
-            
+
         Returns:
             List[EmailModel]: The created email records
         """
         try:
             if not email_data_list:
                 return []
-                
+
             user = await User.get(id=user_id)
-            
+
             # Prepare all email models
             email_models = []
             for email_data in email_data_list:
                 # Skip if no message_id (required field)
                 if not email_data.get("id"):
                     continue
-                    
+
                 # Handle from_ which could be a list of dicts or a string
                 from_data = email_data.get("from", [])
                 from_str = ""
-                
+
                 if isinstance(from_data, list) and len(from_data) > 0:
                     if isinstance(from_data[0], dict):
                         # Extract name and email if available
@@ -264,7 +284,7 @@ class EmailModel(models.Model):
                         from_str = str(from_data[0])
                 elif isinstance(from_data, str):
                     from_str = from_data
-                
+
                 # Create email model instance (not saved yet)
                 email_models.append(
                     cls(
@@ -276,7 +296,7 @@ class EmailModel(models.Model):
                         from_=from_str,
                     )
                 )
-            
+
             # Save all emails in a batch operation
             if email_models:
                 try:
@@ -291,11 +311,13 @@ class EmailModel(models.Model):
                             await model.save()
                             created_emails.append(model)
                         except Exception as individual_e:
-                            print(f"Error saving individual email {model.message_id}: {str(individual_e)}")
+                            print(
+                                f"Error saving individual email {model.message_id}: {str(individual_e)}"
+                            )
                     return created_emails
-            
+
             return []
-            
+
         except Exception as e:
             print(f"Error batch creating email records: {str(e)}")
             return []
@@ -304,10 +326,10 @@ class EmailModel(models.Model):
     async def get_user_emails(cls, user_id: str) -> List["EmailModel"]:
         """
         Get all emails for a specific user
-        
+
         Args:
             user_id: The ID of the user
-            
+
         Returns:
             List[EmailModel]: List of email records for the user
         """
@@ -323,69 +345,74 @@ class EmailModel(models.Model):
 class Features(models.Model):
     """
     Features model that represents the features table in the database.
-    Stores extracted utility and cost features for each task. 
+    Stores extracted utility and cost features for each task.
     """
+
     id = fields.UUIDField(pk=True)
-    user = fields.ForeignKeyField("models.User", related_name="features", on_delete=fields.CASCADE)
+    user = fields.ForeignKeyField(
+        "models.User", related_name="features", on_delete=fields.CASCADE
+    )
     task_id = fields.CharField(max_length=255)
     features = fields.JSONField()
     cost = fields.JSONField()
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
-    
+
     class Meta:
         table = "features"
 
     def __str__(self):
         return f"Features for Task {self.task_id} ({self.user.email})"
-        
+
     @classmethod
-    async def create_features(cls, user_id: str, task_id: str, utility_features: dict, cost_features: dict) -> "Features":
+    async def create_features(
+        cls, user_id: str, task_id: str, utility_features: dict, cost_features: dict
+    ) -> "Features":
         """
         Create a new features record for a task
-        
+
         Args:
             user_id: The ID of the user
             task_id: The ID of the task
             utility_features: Dictionary of utility features
             cost_features: Dictionary of cost features
-            
+
         Returns:
             Features: The created features record
         """
         user = await User.get(id=user_id)
-        
+
         features = await cls.create(
             id=uuid.uuid4(),
             user=user,
             task_id=task_id,
             features=utility_features,
-            cost=cost_features
+            cost=cost_features,
         )
-        
+
         return features
-    
+
     @classmethod
     async def get_by_task_id(cls, task_id: str) -> Optional["Features"]:
         """
         Get features by task ID
-        
+
         Args:
             task_id: The ID of the task
-            
+
         Returns:
             Optional[Features]: The features record if found, None otherwise
         """
         return await cls.filter(task_id=task_id).first()
-    
+
     @classmethod
     async def get_by_user_id(cls, user_id: str) -> List["Features"]:
         """
         Get all features for a user
-        
+
         Args:
             user_id: The ID of the user
-            
+
         Returns:
             List[Features]: List of features records for the user
         """

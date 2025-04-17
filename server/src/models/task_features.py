@@ -1,7 +1,7 @@
 # from tortoise import fields, models
 #  from uuid import UUID
- 
- 
+
+
 #  class TaskUtilityFeatures(models.Model):
 #      """
 #      Model to store utility features for tasks
@@ -22,11 +22,11 @@
 #      time_of_day_alignment = fields.CharField(max_length=50, null=True)  # appropriate|inappropriate
 #      created_at = fields.DatetimeField(auto_now_add=True)
 #      updated_at = fields.DatetimeField(auto_now=True)
- 
+
 #      class Meta:
 #          table = "task_utility_features"
- 
- 
+
+
 #  class TaskCostFeatures(models.Model):
 #      """
 #      Model to store cost features for tasks
@@ -41,6 +41,6 @@
 #      key_friction_factors = fields.TextField(null=True)  # Brief explanation of main factors
 #      created_at = fields.DatetimeField(auto_now_add=True)
 #      updated_at = fields.DatetimeField(auto_now=True)
- 
+
 #      class Meta:
 #          table = "task_cost_features"

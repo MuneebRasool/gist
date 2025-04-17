@@ -14,7 +14,6 @@ export default function OnboardingPage() {
 	const { currentStep, setUserEmail } = useOnboardingStore();
 	const [isLoading, setIsLoading] = useState(true);
 
-	// Handle URL params
 	useEffect(() => {
 		const emailFromParams = searchParams.get('email');
 		if (emailFromParams) {
@@ -27,7 +26,6 @@ export default function OnboardingPage() {
 		return <LoadingScreen message='Loading...' />;
 	}
 
-	// Render appropriate step based on current step in store
 	if (currentStep === 'email-rating') {
 		return <EmailRatingStep />;
 	}

@@ -1,4 +1,11 @@
-from fastapi import APIRouter, Request, Response, BackgroundTasks, Depends, HTTPException
+from fastapi import (
+    APIRouter,
+    Request,
+    Response,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+)
 from src.modules.agent.service import AgentService
 from src.models.user import User
 from src.dependencies import get_current_user
@@ -17,11 +24,11 @@ async def re_order_feedback(
 ):
     """
     Re-order feedback endpoint
-    
+
     This endpoint processes user feedback when a task is reordered (moved up or down).
     It updates the task's relevance score based on the direction and magnitude of movement,
     as well as the tasks above and below it in the new order.
-    
+
     - task_id: ID of the task being reordered
     - direction: "up" or "down" indicating the direction of movement
     - positions: Number of positions the task was moved
@@ -31,5 +38,5 @@ async def re_order_feedback(
     """
     # Process the reordering feedback
     response = await feedback_service.reorder_task(request_data, user.id)
-    
+
     return response

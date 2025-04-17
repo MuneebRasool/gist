@@ -28,18 +28,15 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         error_message = {
             "loc": error["loc"],
             "msg": error["msg"],
-            "type": error["type"]
+            "type": error["type"],
         }
         detail.append(error_message)
-    
+
     # Log the error for debugging purposes
     if detail:
         print(f"Validation error: {detail[0]}")
-    
-    return JSONResponse(
-        status_code=422,
-        content={"detail": detail}
-    )
+
+    return JSONResponse(status_code=422, content={"detail": detail})
 
 
 async def generic_exception_handler(request: Request, exc: Exception) -> JSONResponse:
