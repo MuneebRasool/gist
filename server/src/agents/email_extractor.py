@@ -110,7 +110,7 @@ class EmailExtractorAgent(BaseAgent):
             try:
                 # Process each batch with a timeout
                 batch_results = await asyncio.wait_for(
-                    asyncio.gather(*batch_tasks, return_exceptions=True), timeout=30.0
+                    asyncio.gather(*batch_tasks, return_exceptions=True), timeout=60.0
                 )
 
                 # Filter out successful results

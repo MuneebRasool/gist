@@ -4,19 +4,21 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { OnboardingService, OnboardingStatusEvent } from '@/services/agent/onboarding.service';
 import { useOnboardingStore } from '@/store/onboarding.store';
-import { useCallback, useEffect, useState, useRef } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { LoadingScreen } from './LoadingScreen';
 import { UserService } from '@/services/user.service';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 
-export function ReviewPersonalityStep() {
+interface ReviewPersonalityStepProps {
+	personalitySummary: string;
+}
+
+export function ReviewPersonalityStep({ personalitySummary }: ReviewPersonalityStepProps) {
 	const {
-		summary,
 		setSummary,
 		currentStep,
-		resetState,
 		setCurrentStep,
 		questions,
 		answers,
@@ -25,14 +27,13 @@ export function ReviewPersonalityStep() {
 		ratedEmails,
 	} = useOnboardingStore();
 	const { update } = useSession();
-	const [isLoading, setIsLoading] = useState(true);
-	const [newSummary, setNewSummary] = useState(summary);
+	const [isLoading, setIsLoading] = useState(false); // Start with not loading since we get summary from props
+	const [newSummary, setNewSummary] = useState(personalitySummary);
 	const [isSubmitting, setIsSubmitting] = useState(false);
-	const [loadingMessage, setLoadingMessage] = useState('Checking onboarding status...');
+	const [loadingMessage, setLoadingMessage] = useState('');
 	const [isProcessing, setIsProcessing] = useState(false);
 	const [connectionError, setConnectionError] = useState<string | null>(null);
 	const eventSourceRef = useRef<EventSource | null>(null);
-	const isCheckingRef = useRef<boolean>(false);
 	const isComponentMounted = useRef<boolean>(true);
 	const router = useRouter();
 
@@ -43,39 +44,6 @@ export function ReviewPersonalityStep() {
 
 		router.push('/app/dashboard');
 	}, [update, setCurrentStep, router]);
-
-	const fetchPersonalityData = useCallback(async () => {
-		if (currentStep !== 'reviewPersonality' || summary) {
-			if (isComponentMounted.current) {
-				setIsLoading(false);
-			}
-			return;
-		}
-
-		try {
-			setLoadingMessage('Fetching personality data...');
-			const onboardingData = {
-				questions,
-				answers,
-				domain: domain || '',
-				emailRatings,
-				ratedEmails: ratedEmails || [],
-			};
-
-			const response = await OnboardingService.submitOnboardingData(onboardingData);
-			if (response.data && isComponentMounted.current) {
-				setSummary(response.data.personalitySummary ?? 'Personality Summary');
-				setNewSummary(response.data.personalitySummary ?? 'Personality Summary');
-			}
-		} catch (error) {
-			console.error('Error fetching personality data:', error);
-			toast.error('Failed to load personality data');
-		} finally {
-			if (isComponentMounted.current) {
-				setIsLoading(false);
-			}
-		}
-	}, [answers, currentStep, domain, emailRatings, questions, ratedEmails, setSummary, summary]);
 
 	const handleStatusUpdate = useCallback(
 		(data: OnboardingStatusEvent) => {
@@ -176,47 +144,25 @@ export function ReviewPersonalityStep() {
 		}
 	}, [handleStatusUpdate, redirectToDashboard]);
 
-	const checkOnboardingStatus = useCallback(async () => {
-		if (!isComponentMounted.current || isCheckingRef.current) return;
+	// Check status on initial load if we're in task_generation step
+	useEffect(() => {
+		isComponentMounted.current = true;
 
-		try {
-			isCheckingRef.current = true;
-			setLoadingMessage('Checking onboarding status...');
-
-			const result = await OnboardingService.checkOnboardingStatus();
-
-			if (result.data?.success && isComponentMounted.current) {
-				// If onboarding is complete, redirect to dashboard
-				if (result.data.onboarding && !result.data.task_gen) {
-					redirectToDashboard();
-					return;
-				}
-
-				// If we're in task_generation step or tasks are being generated, show the loading screen
-				if (currentStep === 'task_generation' || result.data.in_progress) {
-					setIsProcessing(true);
-					setLoadingMessage('Extracting Tasks...');
-
-					// Only start a new SSE stream if one doesn't already exist
-					if (!eventSourceRef.current) {
-						await startStatusStream();
-					}
-					return;
-				}
-
-				// Otherwise, fetch personality data if needed
-				await fetchPersonalityData();
-			}
-		} catch (error) {
-			console.error('Error checking onboarding status:', error);
-			if (isComponentMounted.current) {
-				toast.error('Failed to check onboarding status');
-				setIsLoading(false);
-			}
-		} finally {
-			isCheckingRef.current = false;
+		// If we're already in task_generation step, start the status stream
+		if (currentStep === 'task_generation') {
+			setIsProcessing(true);
+			setLoadingMessage('Extracting Tasks...');
+			startStatusStream();
 		}
-	}, [redirectToDashboard, startStatusStream, fetchPersonalityData, currentStep]);
+
+		return () => {
+			isComponentMounted.current = false;
+			if (eventSourceRef.current) {
+				eventSourceRef.current.close();
+				eventSourceRef.current = null;
+			}
+		};
+	}, [currentStep, startStatusStream]);
 
 	const onComplete = useCallback(async () => {
 		if (!isComponentMounted.current) return;
@@ -227,7 +173,7 @@ export function ReviewPersonalityStep() {
 
 		try {
 			// First update the personality if needed
-			if (newSummary !== summary) {
+			if (newSummary !== personalitySummary) {
 				setSummary(newSummary);
 				await UserService.updateUserPersonality([newSummary]);
 			}
@@ -261,23 +207,7 @@ export function ReviewPersonalityStep() {
 				setCurrentStep('reviewPersonality');
 			}
 		}
-	}, [newSummary, summary, setSummary, startStatusStream, setCurrentStep]);
-
-	// Initialize component - check onboarding status on mount
-	useEffect(() => {
-		isComponentMounted.current = true;
-
-		// Initial load - always check onboarding status first
-		checkOnboardingStatus();
-
-		return () => {
-			isComponentMounted.current = false;
-			if (eventSourceRef.current) {
-				eventSourceRef.current.close();
-				eventSourceRef.current = null;
-			}
-		};
-	}, [checkOnboardingStatus]);
+	}, [newSummary, personalitySummary, setSummary, startStatusStream, setCurrentStep]);
 
 	if (isLoading || isSubmitting || isProcessing) {
 		return <LoadingScreen message={loadingMessage} />;

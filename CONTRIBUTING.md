@@ -32,6 +32,7 @@ If you prefer setting up manually:
 2. **Backend (Server)**
    ```bash
    uv venv
+   source .venv/bin/activate
    uv sync
    fastapi dev
    ```

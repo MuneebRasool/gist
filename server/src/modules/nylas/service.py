@@ -237,7 +237,7 @@ class NylasService:
         email_extractor_agent,
         user_domain: str,
         user_id: str,
-        fetch_limit: int = 150,  # Fetch more emails to find the most relevant ones
+        fetch_limit: int = 50,
         return_limit: int = 5,
         offset: Optional[str] = None,
         query_params: Optional[Dict[str, Any]] = None,

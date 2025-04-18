@@ -1,63 +1,19 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useOnboardingStore } from '@/store/onboarding.store';
-import { AgentService } from '@/services/agent.service';
 import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
 import { QuestionCard } from './QuestionCard';
 import { NavigationButtons } from './NavigationButtons';
 import { ProgressBar } from './ProgressBar';
-import { LoadingScreen } from './LoadingScreen';
+import { QuestionWithOptions } from '@/types/agent';
 
-export const QuestionsStep = () => {
-	const router = useRouter();
+interface QuestionsStepProps {
+	questions: QuestionWithOptions[];
+}
+
+export const QuestionsStep = ({ questions }: QuestionsStepProps) => {
 	const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-	const [isLoading, setIsLoading] = useState(true);
-
-	const {
-		questions,
-		answers,
-		emailRatings,
-		userEmail,
-		setQuestions,
-		currentStep,
-		ratedEmails,
-		setAnswer,
-		setCurrentStep,
-	} = useOnboardingStore();
-
-	const fetchDomainInference = useCallback(async () => {
-		console.log('fetchDomainInference', questions.length);
-		if (!userEmail || questions.length > 0 || currentStep !== 'questions') {
-			setIsLoading(false);
-			return;
-		}
-		setIsLoading(true);
-		try {
-			const response = await AgentService.inferDomain(userEmail, ratedEmails, emailRatings);
-
-			if (response.error) {
-				console.error('Domain inference error:', response.error);
-				toast.error('Failed to load onboarding questions. Please try again.');
-				router.push('/app/dashboard');
-				return;
-			}
-
-			if (response.data) {
-				setQuestions(response.data.questions || []);
-			}
-		} catch (error) {
-			console.error('Error fetching domain inference:', error);
-			toast.error('Failed to load onboarding questions. Please try again.');
-			router.push('/app');
-		} finally {
-			setIsLoading(false);
-		}
-	}, [currentStep, emailRatings, ratedEmails, router, setQuestions, userEmail, questions.length]);
-
-	useEffect(() => {
-		fetchDomainInference();
-	}, [fetchDomainInference]);
+	const { answers, setAnswer, setCurrentStep } = useOnboardingStore();
 
 	const handleOptionSelect = (question: string, option: string) => {
 		setAnswer(question, option);
@@ -97,8 +53,14 @@ export const QuestionsStep = () => {
 		}
 	};
 
-	if (isLoading) {
-		return <LoadingScreen message={'Creating your personalized dashboard...'} />;
+	if (questions.length === 0) {
+		return (
+			<div className="flex min-h-screen items-center justify-center">
+				<div className="rounded-xl bg-background/80 p-6 shadow-sm backdrop-blur-sm">
+					<p className="text-center text-lg text-muted-foreground">No questions available.</p>
+				</div>
+			</div>
+		);
 	}
 
 	return (
