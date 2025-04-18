@@ -55,9 +55,9 @@ export const QuestionsStep = ({ questions }: QuestionsStepProps) => {
 
 	if (questions.length === 0) {
 		return (
-			<div className="flex min-h-screen items-center justify-center">
-				<div className="rounded-xl bg-background/80 p-6 shadow-sm backdrop-blur-sm">
-					<p className="text-center text-lg text-muted-foreground">No questions available.</p>
+			<div className='flex min-h-screen items-center justify-center'>
+				<div className='rounded-xl bg-background/80 p-6 shadow-sm backdrop-blur-sm'>
+					<p className='text-center text-lg text-muted-foreground'>No questions available.</p>
 				</div>
 			</div>
 		);

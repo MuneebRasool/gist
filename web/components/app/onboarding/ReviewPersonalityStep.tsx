@@ -16,16 +16,8 @@ interface ReviewPersonalityStepProps {
 }
 
 export function ReviewPersonalityStep({ personalitySummary }: ReviewPersonalityStepProps) {
-	const {
-		setSummary,
-		currentStep,
-		setCurrentStep,
-		questions,
-		answers,
-		domain,
-		emailRatings,
-		ratedEmails,
-	} = useOnboardingStore();
+	const { setSummary, currentStep, setCurrentStep, questions, answers, domain, emailRatings, ratedEmails } =
+		useOnboardingStore();
 	const { update } = useSession();
 	const [isLoading, setIsLoading] = useState(false); // Start with not loading since we get summary from props
 	const [newSummary, setNewSummary] = useState(personalitySummary);

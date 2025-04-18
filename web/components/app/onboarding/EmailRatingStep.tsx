@@ -16,12 +16,7 @@ interface EmailRatingStepProps {
 
 export const EmailRatingStep = ({ emails }: EmailRatingStepProps) => {
 	const [currentEmailIndex, setCurrentEmailIndex] = useState(0);
-	const {
-		emailRatings,
-		setEmailRatings,
-		setRatedEmails,
-		setCurrentStep,
-	} = useOnboardingStore();
+	const { emailRatings, setEmailRatings, setRatedEmails, setCurrentStep } = useOnboardingStore();
 
 	// Initialize email ratings if needed
 	useEffect(() => {

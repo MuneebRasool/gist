@@ -18,20 +18,20 @@ export default function OnboardingPage() {
 	const searchParams = useSearchParams();
 	const router = useRouter();
 	const {
-		currentStep, 
-		setUserEmail, 
-		topEmails, 
+		currentStep,
+		setUserEmail,
+		topEmails,
 		setTopEmails,
-		questions, 
-		setQuestions, 
-		summary, 
+		questions,
+		setQuestions,
+		summary,
 		setSummary,
-		emailRatings, 
-		ratedEmails, 
+		emailRatings,
+		ratedEmails,
 		userEmail,
-		setEmailRatings, 
-		answers, 
-		domain
+		setEmailRatings,
+		answers,
+		domain,
 	} = useOnboardingStore();
 	const [isLoading, setIsLoading] = useState(true);
 	const [fetchError, setFetchError] = useState<string | null>(null);
@@ -49,26 +49,26 @@ export default function OnboardingPage() {
 		const fetchData = async () => {
 			setIsLoading(true);
 			setFetchError(null);
-			
+
 			try {
 				if (currentStep === 'email-rating' && topEmails.length === 0) {
 					console.log('Fetching emails for onboarding');
 					const response = await EmailService.getOnboardingEmails({ limit: 5, in_folder: 'INBOX' });
-					
+
 					if (response.error) {
 						setFetchError('Failed to load emails. Please try again.');
 						toast.error('Failed to load emails. Please try again.');
 						return;
 					}
-					
+
 					if (response.data?.data) {
 						const transformedEmails = response.data.data.map((email) => ({
 							...email,
 							date: typeof email.date === 'string' ? new Date(email.date).getTime() / 1000 : Number(email.date),
 						}));
-						
+
 						setTopEmails(transformedEmails);
-						
+
 						// Initialize ratings
 						const initialRatings: Record<string, number> = {};
 						transformedEmails.forEach((email) => {
@@ -77,7 +77,7 @@ export default function OnboardingPage() {
 						setEmailRatings(initialRatings);
 					}
 				}
-				
+
 				// Questions step data
 				else if (currentStep === 'questions' && questions.length === 0) {
 					console.log('Fetching domain inference for onboarding');
@@ -86,9 +86,9 @@ export default function OnboardingPage() {
 						toast.error('User email is missing. Please try again.');
 						return;
 					}
-					
+
 					const response = await AgentService.inferDomain(userEmail, ratedEmails, emailRatings);
-					
+
 					if (response.error) {
 						console.error('Domain inference error:', response.error);
 						setFetchError('Failed to load onboarding questions. Please try again.');
@@ -96,31 +96,31 @@ export default function OnboardingPage() {
 						router.push('/app/dashboard');
 						return;
 					}
-					
+
 					if (response.data) {
 						setQuestions(response.data.questions || []);
 					}
 				}
-				
+
 				// Personality data
 				else if (currentStep === 'reviewPersonality' && !summary) {
 					console.log('Fetching personality data for onboarding');
 					const onboardingData = {
-						questions, 
-						answers, 
-						domain: domain || '', 
-						emailRatings, 
-						ratedEmails: ratedEmails || []
+						questions,
+						answers,
+						domain: domain || '',
+						emailRatings,
+						ratedEmails: ratedEmails || [],
 					};
-					
+
 					const response = await OnboardingService.submitOnboardingData(onboardingData);
-					
+
 					if (response.error) {
 						setFetchError('Failed to load personality data. Please try again.');
 						toast.error('Failed to load personality data. Please try again.');
 						return;
 					}
-					
+
 					if (response.data) {
 						setSummary(response.data.personalitySummary ?? 'Personality Summary');
 					}
@@ -141,7 +141,23 @@ export default function OnboardingPage() {
 		};
 
 		fetchData();
-	}, [currentStep, topEmails.length, questions.length, summary, emailRatings, ratedEmails, userEmail, answers, domain, router, setEmailRatings, setQuestions, setTopEmails, setSummary]);
+	}, [
+		currentStep,
+		topEmails.length,
+		questions.length,
+		summary,
+		emailRatings,
+		ratedEmails,
+		userEmail,
+		answers,
+		domain,
+		router,
+		setEmailRatings,
+		setQuestions,
+		setTopEmails,
+		setSummary,
+		questions,
+	]);
 
 	if (isLoading) {
 		let message = 'Loading...';
@@ -149,17 +165,17 @@ export default function OnboardingPage() {
 		if (currentStep === 'questions') message = 'Creating your personalized dashboard...';
 		if (currentStep === 'reviewPersonality') message = 'Fetching personality data...';
 		if (currentStep === 'task_generation') message = 'Extracting Tasks...';
-		
+
 		return <LoadingScreen message={message} />;
 	}
 
 	if (fetchError) {
 		// Handle error state - could be more sophisticated in a real app
 		return (
-			<div className="flex flex-col items-center justify-center min-h-screen p-4">
-				<div className="bg-red-50 border border-red-300 text-red-700 px-4 py-3 rounded relative" role="alert">
-					<strong className="font-bold">Error: </strong>
-					<span className="block sm:inline">{fetchError}</span>
+			<div className='flex min-h-screen flex-col items-center justify-center p-4'>
+				<div className='relative rounded border border-red-300 bg-red-50 px-4 py-3 text-red-700' role='alert'>
+					<strong className='font-bold'>Error: </strong>
+					<span className='block sm:inline'>{fetchError}</span>
 				</div>
 			</div>
 		);
