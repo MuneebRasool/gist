@@ -14,8 +14,6 @@ WORKDIR /app
 RUN pip install --no-cache-dir -e .
 RUN pip install --no-cache-dir uvicorn aerich
 
-RUN aerich migrate
-RUN aerich upgrade
 
 EXPOSE 8000
 
