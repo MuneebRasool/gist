@@ -2,6 +2,7 @@ from src.agents.base_agent import BaseAgent
 from src.utils.file_utils import FileUtils
 from typing import Optional, Dict, Any
 import json
+from langfuse.decorators import observe
 
 
 class FeedbackLearningAgent(BaseAgent):
@@ -20,6 +21,7 @@ class FeedbackLearningAgent(BaseAgent):
             "src/prompts/v1/feedback_learning_agent.md"
         )
 
+    @observe()
     async def analyze_feedback(
         self,
         current_personality: list,

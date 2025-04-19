@@ -5,6 +5,7 @@ import json
 from .base_agent import BaseAgent
 from ..modules.nylas.schemas import EmailData
 from ..utils.file_utils import FileUtils
+from langfuse.decorators import observe
 
 
 class EmailScorerAgent(BaseAgent):
@@ -17,6 +18,7 @@ class EmailScorerAgent(BaseAgent):
             "src/prompts/v1/email_scoring_prompt.md"
         )
 
+    @observe()
     async def score_email(
         self, email: EmailData, user_domain_context: Dict[str, Any]
     ) -> Dict[str, Any]:
@@ -104,6 +106,7 @@ class EmailScorerAgent(BaseAgent):
                 "explanation": f"Error scoring email: {str(e)}",
             }
 
+    @observe()
     def _truncate_body(self, text: str, max_chars: int = 2000) -> str:
         """Truncate email body to avoid token limits."""
         if not text:

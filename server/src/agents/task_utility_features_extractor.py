@@ -3,6 +3,8 @@ from src.agents.base_agent import BaseAgent
 from src.utils.file_utils import FileUtils
 import inspect
 import json
+from langfuse.decorators import observe
+
 
 
 class UtilityFeaturesExtractor(BaseAgent):
@@ -39,6 +41,7 @@ class UtilityFeaturesExtractor(BaseAgent):
             },
         }
 
+    @observe()
     def process(self, task_context: str):
         """
         Calls LLM to extract tasks from an email.

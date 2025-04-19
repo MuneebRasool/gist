@@ -1,7 +1,9 @@
 import datetime
 from typing import Any
+from langfuse.decorators import observe
 
 
+@observe()
 def get_task_deadline(deadline_date: str) -> int | Any:
     try:
         today_date = datetime.datetime.now().date()

@@ -1,5 +1,6 @@
 from src.agents.base_agent import BaseAgent
 from src.utils.file_utils import FileUtils
+from langfuse.decorators import observe
 
 
 class TaskExtractor(BaseAgent):
@@ -17,6 +18,7 @@ class TaskExtractor(BaseAgent):
             "src/prompts/v1/task_extractor.md"
         )
 
+    @observe()
     async def process(self, email_body: str, user_personality: str = None):
         """
         Calls LLM to extract tasks from an email.

@@ -12,6 +12,7 @@ dependencies = [
     "black>=25.1.0",
     "fastapi-mail>=1.4.2",
     "fastapi[standard]>=0.115.8",
+    "langfuse>=2.60.3",
     "langsmith>=0.3.11",
     "neomodel>=5.4.3",
     "nylas>=6.7.0",

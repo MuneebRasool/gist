@@ -1,12 +1,13 @@
 from src.agents.base_agent import BaseAgent
 from src.utils.file_utils import FileUtils
-
+from langfuse.decorators import observe
 
 class CostFeaturesExtractor(BaseAgent):
     """
     Agent to extract action items from emails.
     """
 
+    @observe()
     def __init__(self):
         """
         Initialize the CostFeaturesExtractor agent
@@ -17,6 +18,7 @@ class CostFeaturesExtractor(BaseAgent):
             "src/prompts/v1/task_cost_features_extractor.md"
         )
 
+    @observe()
     def process(self, task_context: str):
         """
         Calls LLM to extract tasks from an email.

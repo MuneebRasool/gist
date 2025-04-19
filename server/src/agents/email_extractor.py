@@ -8,6 +8,8 @@ from .domain_inference_agent import DomainInferenceAgent
 from .email_scorer import EmailScorerAgent
 from ..modules.nylas.schemas import EmailData
 from ..utils.file_utils import FileUtils
+from langfuse.decorators import observe
+
 
 
 class EmailExtractorAgent(BaseAgent):
@@ -22,6 +24,7 @@ class EmailExtractorAgent(BaseAgent):
         self.domain_inference_agent = DomainInferenceAgent()
         self.email_scorer_agent = EmailScorerAgent()
 
+    @observe()
     async def extract_relevant_email(
         self, emails: List[EmailData], user_domain: str
     ) -> Dict[str, Any]:
@@ -72,6 +75,7 @@ class EmailExtractorAgent(BaseAgent):
 
         return response
 
+    @observe()
     async def score_emails_by_domain(
         self, emails: List[EmailData], user_email: str
     ) -> List[Dict[str, Any]]:
@@ -132,6 +136,7 @@ class EmailExtractorAgent(BaseAgent):
 
         return scored_emails
 
+    @observe()
     async def process_email_batches(
         self,
         emails: List[EmailData],

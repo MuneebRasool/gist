@@ -1,8 +1,9 @@
 from src.agents.base_agent import BaseAgent
 from src.utils.file_utils import FileUtils
 from typing import Any, Dict, List, Optional
+from langfuse.decorators import observe
 
-
+@observe()
 class DomainInferenceAgent(BaseAgent):
     """
     Agent to inference domain from email
@@ -22,6 +23,7 @@ class DomainInferenceAgent(BaseAgent):
             "Based on this information, generate relevant questions."
         )
 
+    @observe()
     async def process(
         self,
         email: str,
