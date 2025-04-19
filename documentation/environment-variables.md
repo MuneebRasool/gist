@@ -11,6 +11,7 @@ This document provides detailed information about all environment variables used
 - [Nylas Configuration](#nylas-configuration)
 - [LLM Configuration](#llm-configuration)
 - [LangChain Configuration](#langchain-configuration)
+- [Langfuse Configuration](#langfuse-configuration)
 
 ## Authentication & OAuth
 
@@ -116,6 +117,24 @@ To obtain OpenAI credentials:
 2. Generate an API key in your account settings
 3. Use the API key as `LLM_API_KEY`
 
+## Langfuse Configuration
+
+- `LANGFUSE_PUBLIC_KEY`: Public key for Langfuse API authentication
+- `LANGFUSE_SECRET_KEY`: Secret key for Langfuse API authentication
+- `LANGFUSE_HOST`: Host URL for Langfuse service (default: `https://cloud.langfuse.com`)
+
+To obtain Langfuse credentials:
+1. Sign up for [Langfuse](https://langfuse.com/)
+2. Create a new project
+3. Navigate to "API Keys" in your project settings
+4. Copy the generated Public and Secret keys
+5. Use these keys in your configuration
+
+Langfuse is used for monitoring and observing LLM operations, helping with:
+- Tracking token usage and costs
+- Monitoring LLM performance metrics
+- Debugging complex AI workflows
+- Optimizing prompts and model selection
 
 ## Environment Setup Steps
 

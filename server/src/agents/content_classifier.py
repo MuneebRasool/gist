@@ -1,7 +1,9 @@
 from src.agents.base_agent import BaseAgent
 from src.utils.file_utils import FileUtils
+from langfuse.decorators import observe
 
 
+@observe()
 class ContentClassifier(BaseAgent):
     """
     Agent to classify content by type and usefulness.
@@ -17,6 +19,7 @@ class ContentClassifier(BaseAgent):
             "src/prompts/v1/content_classifier.md"
         )
 
+    @observe()
     async def process(self, content: str):
         """
         Calls LLM to classify content.

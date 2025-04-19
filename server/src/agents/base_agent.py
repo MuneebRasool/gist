@@ -1,7 +1,11 @@
-from openai import AsyncOpenAI
+from langfuse.openai import AsyncOpenAI
 from src.config import settings
 import json
 from src.tools.get_task_deadline import get_task_deadline
+from langfuse import Langfuse
+from langfuse.decorators import langfuse_context, observe
+
+langfuse = Langfuse()
 
 
 class BaseAgent:
@@ -21,6 +25,7 @@ class BaseAgent:
             api_key=api_key,
         )
 
+    @observe()
     async def execute(
         self,
         system_prompt: str,
@@ -126,6 +131,7 @@ class BaseAgent:
                 return {"error": f"API error: {str(e)}"}
             return f"Error: {str(e)}"
 
+    @observe()
     async def _execute_tool_function(self, function_name, function_args):
         """
         Execute a tool function with the given arguments

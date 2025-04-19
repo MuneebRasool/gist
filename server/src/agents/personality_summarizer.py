@@ -1,5 +1,6 @@
 from src.agents.base_agent import BaseAgent
 from src.utils.file_utils import FileUtils
+from langfuse.decorators import observe
 
 
 class PersonalitySummarizer(BaseAgent):
@@ -17,6 +18,7 @@ class PersonalitySummarizer(BaseAgent):
             "src/prompts/v1/onboarding_personality_summarizer.md"
         )
 
+    @observe()
     async def process_onboarding(self, onboarding_data: str):
         """
         Calls LLM to summarize user personality based on onboarding data

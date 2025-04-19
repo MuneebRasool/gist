@@ -3,7 +3,7 @@
 from typing import Dict, Any
 from .base_agent import BaseAgent
 from ..utils.file_utils import FileUtils
-
+from langfuse.decorators import observe
 
 class DomainInferenceAgent(BaseAgent):
     """Agent for inferring a user's professional domain from their email."""
@@ -13,6 +13,7 @@ class DomainInferenceAgent(BaseAgent):
         super().__init__()
         self.SYSTEM_PROMPT = FileUtils.read_file_content("src/prompts/v1/domain_inf.md")
 
+    @observe()
     async def infer_domain(self, user_email: str) -> Dict[str, Any]:
         """
         Infer the user's professional domain based on their email domain.

@@ -1,5 +1,6 @@
 from src.agents.base_agent import BaseAgent
 from src.utils.file_utils import FileUtils
+from langfuse.decorators import observe
 
 
 class ContentSummarizer(BaseAgent):
@@ -17,6 +18,7 @@ class ContentSummarizer(BaseAgent):
             "src/prompts/v1/content_summarizer.md"
         )
 
+    @observe()
     def process(self, user_emails: list):
         """
         Calls LLM to summarize user emails
@@ -31,6 +33,7 @@ class ContentSummarizer(BaseAgent):
         result = self.execute(self.system_prompt, email_content)
         return result
 
+    @observe()
     async def process_content(self, content: str):
         """
         Calls LLM to summarize Content

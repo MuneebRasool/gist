@@ -1,6 +1,6 @@
 from src.agents.base_agent import BaseAgent
 from src.utils.file_utils import FileUtils
-
+from langfuse.decorators import observe
 
 class SpamClassifier(BaseAgent):
     """
@@ -17,6 +17,7 @@ class SpamClassifier(BaseAgent):
             "src/prompts/v1/spam_classifier.md"
         )
 
+    @observe()
     async def process(self, email_body: str, user_personality: str = None):
         """
         Calls LLM to classify spam.
