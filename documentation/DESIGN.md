@@ -1,6 +1,6 @@
 # 🚀 GIST: Where Magic Meets Mathematics
 
-Welcome to the engine room of GIST - where we turn information chaos into digital harmony! This isn't just another design doc; it's the blueprint of a revolution in task management. Buckle up, because we're about to dive deep into how we're reshaping the future of productivity!
+Welcome to the engine room of GIST - This isn't just another design doc; it's the blueprint of a revolution in task management. Buckle up, because we're about to dive deep into how we're reshaping the future of productivity!
 
 ## 📚 What's Inside?
 - [1. The Big Picture](#1-the-big-picture)
