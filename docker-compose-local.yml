@@ -12,6 +12,9 @@ services:
       - NODE_ENV=production
       - HOSTNAME=0.0.0.0
     restart: on-failure:5
+    depends_on:
+      - postgres
+      - neo4j
     networks:
       - app_network
 

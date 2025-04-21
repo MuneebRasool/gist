@@ -75,24 +75,6 @@ To set up Neo4j:
   - Development: `["*"]`
   - Production: `["https://your-domain.com"]`
 
-## Email Configuration
-
-### SMTP Settings
-- `SMTP_USERNAME`: Email account username
-- `SMTP_PASSWORD`: Email account password/app password
-- `SMTP_FROM`: Sender email address
-- `SMTP_SERVER`: SMTP server address
-- `SMTP_PORT`: SMTP port (default: 587)
-
-To set up Gmail SMTP:
-1. Use a Gmail account
-2. Enable 2-factor authentication
-3. Generate an App Password:
-   - Go to Google Account > Security
-   - Under "2-Step Verification", click "App passwords"
-   - Generate a new app password for "Mail"
-4. Use the generated password as `SMTP_PASSWORD`
-
 ## Nylas Configuration
 
 - `NYLAS_CLIENT_ID`: Nylas API client ID
@@ -119,7 +101,7 @@ To obtain OpenAI credentials:
 
 ## Langfuse Configuration
 
-- `LANGFUSE_PUBLIC_KEY`: Public key for Langfuse API authentication
+- `LANGFUSE_PUBLIC_KEY`: Public key for Langfuse API authentication, you can find it on langfuse dashboard after creating a project
 - `LANGFUSE_SECRET_KEY`: Secret key for Langfuse API authentication
 - `LANGFUSE_HOST`: Host URL for Langfuse service (default: `https://cloud.langfuse.com`)
 
