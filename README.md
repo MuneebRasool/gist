@@ -1,12 +1,12 @@
 <h1 align="center" style="border-bottom: none">
     <div>
-        GIST
+        Gist
     </div>
     AI-powered task management that works with your brain, not against it<br>
 </h1>
 
 <p align="center">
-Turn information chaos into digital harmony. GIST extracts, prioritizes, and surfaces the right tasks at the right time, helping you overcome information overload and achieve focused productivity.
+Turn information chaos into digital harmony. Gist extracts, prioritizes, and surfaces the right tasks at the right time, helping you overcome information overload and achieve focused productivity.
 </p>
 
 <div align="center">
@@ -18,28 +18,29 @@ Turn information chaos into digital harmony. GIST extracts, prioritizes, and sur
 
 </div>
 
-![GIST thumbnail](web/public/logo.png)
+![Gist thumbnail](web/public/logo.png)
 
-## What is GIST?
 
-GIST is an intelligent task management system that solves the problem of digital overwhelm by using AI to extract, prioritize, and present tasks when you need them most.
+## 🚀 What is Gist?
+
+Gist is an intelligent task management system that solves the problem of digital overwhelm by using AI to extract, prioritize, and present tasks when you need them most.
 
 <br>
 
-You can use GIST for:
+You can use Gist for:
 * **Smart Task Management:**
 
-  * **Task Extraction:** GIST automatically discovers tasks from your digital communications, eliminating the need for manual entry
+  * **Task Extraction:** Gist automatically discovers tasks from your digital communications, eliminating the need for manual entry
   
   * **Intelligent Prioritization:** Tasks are scored and prioritized based on their relevance to you, considering both utility and cognitive cost
 
-  * **Temporal Sequencing:** Information flows through time - GIST presents what you need, when you need it, and gracefully defers what can wait
+  * **Temporal Sequencing:** Information flows through time - Gist presents what you need, when you need it, and gracefully defers what can wait
 
 * **AI-powered Organization:**
 
-  * **Dynamic Relevance Scoring:** GIST uses AI models to calculate task relevance in real-time based on user feedback
+  * **Dynamic Relevance Scoring:** Gist uses AI models to calculate task relevance in real-time based on user feedback
   
-  * **Automated Email Processing:** Integration with Nylas allows GIST to analyze your email communications and extract actionable items
+  * **Automated Email Processing:** Integration with Nylas allows Gist to analyze your email communications and extract actionable items
 
   * **Personalized Experience:** The system learns your preferences and adapts to your unique work patterns over time
 
@@ -47,12 +48,12 @@ You can use GIST for:
 
   * **Emergent Actionability:** Tasks are surfaced at the optimal moment, maintaining your cognitive balance
   
-  * **Domain-Aware Analysis:** GIST understands your professional context and the relationships between different tasks
+  * **Domain-Aware Analysis:** Gist understands your professional context and the relationships between different tasks
 
   * **Reduced Digital Friction:** Stop juggling between different apps and systems - everything important is in one place
 
-> [!TIP]
-> GIST becomes more effective with continued use. Your feedback and interactions help the system learn and adapt to your specific needs.
+
+> Gist gets smarter the more you use it. Your feedback and interactions help the system learn and adapt to your specific needs.
 
 <br>
 
@@ -61,7 +62,7 @@ You can use GIST for:
 Manual Method:
 
 ```bash
-# Clone the GIST repository
+# Clone the Gist repository
 git clone https://github.com/opengig/gist.git
 
 # Navigate to the repository
@@ -78,7 +79,7 @@ fastapi dev
 
 Alternative Method:
 
-GIST can be self-hosted using Docker Compose, making it easy to set up your own instance:
+Gist can be self-hosted using Docker Compose, making it easy to set up your own instance:
 
 ```bash
 git clone https://github.com/opengig/gist.git
@@ -90,17 +91,18 @@ Once all is up and running, you can visit [localhost:3000](http://localhost:3000
 
 ## Getting Started
 
-To start using GIST, follow these steps:
+
+To start using Gist, follow these simple steps:
 
 1. **Create an account** by signing up with your email
 2. **Connect your email accounts** through our secure Nylas integration
-3. **Answer a few questions** to help GIST understand your work context
+3. **Answer a few questions** to help Gist understand your work context
 4. **Review your personalized profile** and make any necessary adjustments
-5. **Start managing tasks** with GIST's intelligent prioritization
+5. **Start managing tasks** with Gist's intelligent prioritization
 
-### How GIST Prioritizes Your Tasks
+### 📈 How Gist Prioritizes Your Tasks
 
-GIST uses a sophisticated mathematical model to score and prioritize tasks:
+Gist uses a sophisticated mathematical model to score and prioritize tasks:
 
 ```math
 R_i(t) = α·U_i(t) - β·C_i(t)
@@ -116,15 +118,15 @@ This approach ensures that tasks with high utility and low cognitive cost are su
 
 ### Key Features
 
-* **Email Integration:** GIST connects to your email accounts via Nylas to extract tasks automatically
+* **Email Integration:** Gist connects to your email accounts via Nylas to extract tasks automatically
 * **Domain Inference:** The system analyzes your professional context to understand the importance of different tasks
 * **Dynamic Scoring:** Tasks are continuously reprioritized based on changing circumstances and deadlines
-* **Personalized Experience:** GIST learns from your interactions to better serve your specific needs
+* **Personalized Experience:** Gist learns from your interactions to better serve your specific needs
 * **Graph-Based Task Model:** Tasks and their relationships are modeled as a dynamic graph, allowing for complex dependencies
 
 ## Environment Setup
 
-GIST requires several environment variables to be set for proper functionality. Key configurations include:
+Gist requires several environment variables to be set for proper functionality. Key configurations include:
 
 * Authentication & OAuth settings
 * Database connection parameters (PostgreSQL and Neo4j)
@@ -135,18 +137,19 @@ For detailed instructions, see the [environment variables documentation](Documen
 
 ## Contributing
 
-There are many ways to contribute to GIST:
+There are many ways to contribute to Gist:
 
 * Submit bug reports and feature requests
 * Review the documentation and submit Pull Requests to improve it
-* Share your experience using GIST with others
+* Share your experience using Gist with others
 * Suggest improvements to the task scoring models
 
 To learn more about how to contribute, please see our contributing guidelines.
 
 ## Future Development Plans
 
-We are continuously improving GIST with new features and capabilities:
+
+We're continuously improving Gist with new features and capabilities:
 
 * Mobile applications for on-the-go task management
 * Enhanced collaboration features
@@ -163,3 +166,4 @@ We are continuously improving GIST with new features and capabilities:
 * [Scoring Models](documentation/Scoring_models.md)
 * [Environment Variables](documentation/environment-variables.md)
 * [Webhook](documentation/webhook.md)
+
