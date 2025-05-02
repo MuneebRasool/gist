@@ -1,4 +1,3 @@
-
 <h1 align="center" style="border-bottom: none">
     <div>
         Gist
@@ -20,6 +19,7 @@ Turn information chaos into digital harmony. Gist extracts, prioritizes, and sur
 </div>
 
 ![Gist thumbnail](web/public/logo.png)
+
 
 ## 🚀 What is Gist?
 
@@ -46,20 +46,20 @@ You can use Gist for:
 
 * **Cognitive Load Management:**
 
-  * **Emergent Actionability:** Tasks are surfaced at the perfect moment, maintaining your cognitive balance
+  * **Emergent Actionability:** Tasks are surfaced at the optimal moment, maintaining your cognitive balance
   
   * **Domain-Aware Analysis:** Gist understands your professional context and the relationships between different tasks
 
   * **Reduced Digital Friction:** Stop juggling between different apps and systems - everything important is in one place
 
-> [!TIP]
+
 > Gist gets smarter the more you use it. Your feedback and interactions help the system learn and adapt to your specific needs.
 
 <br>
 
-## 🛠️ Installation
+## Installation
 
-Mannual Method :
+Manual Method:
 
 ```bash
 # Clone the Gist repository
@@ -75,9 +75,9 @@ uv venv
 source .venv/bin/activate
 uv sync
 fastapi dev
-
 ```
-OR 
+
+Alternative Method:
 
 Gist can be self-hosted using Docker Compose, making it easy to set up your own instance:
 
@@ -87,9 +87,10 @@ chmod +x start-local.sh
 ./start-local.sh
 ```
 
-Once all is up and running, you can visit [localhost:3000](http://localhost:3000) on your browser!
+Once all is up and running, you can visit [localhost:3000](http://localhost:3000) on your browser.
 
-## 🏁 Get Started
+## Getting Started
+
 
 To start using Gist, follow these simple steps:
 
@@ -115,7 +116,7 @@ Where:
 
 This approach ensures that tasks with high utility and low cognitive cost are surfaced first, helping you work with your brain's natural tendencies rather than against them.
 
-### 🧠 Key Features
+### Key Features
 
 * **Email Integration:** Gist connects to your email accounts via Nylas to extract tasks automatically
 * **Domain Inference:** The system analyzes your professional context to understand the importance of different tasks
@@ -123,7 +124,7 @@ This approach ensures that tasks with high utility and low cognitive cost are su
 * **Personalized Experience:** Gist learns from your interactions to better serve your specific needs
 * **Graph-Based Task Model:** Tasks and their relationships are modeled as a dynamic graph, allowing for complex dependencies
 
-## ⚙️ Environment Setup
+## Environment Setup
 
 Gist requires several environment variables to be set for proper functionality. Key configurations include:
 
@@ -134,7 +135,7 @@ Gist requires several environment variables to be set for proper functionality. 
 
 For detailed instructions, see the [environment variables documentation](Documentation/environment-variables.md).
 
-## 🤝 Contributing
+## Contributing
 
 There are many ways to contribute to Gist:
 
@@ -145,7 +146,8 @@ There are many ways to contribute to Gist:
 
 To learn more about how to contribute, please see our contributing guidelines.
 
-## 🔮 Future Plans
+## Future Development Plans
+
 
 We're continuously improving Gist with new features and capabilities:
 
@@ -155,11 +157,13 @@ We're continuously improving Gist with new features and capabilities:
 * Additional third-party integrations
 * Real-time collaboration tools
 * Reinforcement Learning for task extraction and prioritization
-* More ways to get the user feedback to improve personalization
+* More ways to gather user feedback to improve personalization
 
-## 📚 Learn More
+## Additional Resources
 
 * [System Design](documentation/DESIGN.md)
 * [Our Mission](documentation/Mission.md)
 * [Scoring Models](documentation/Scoring_models.md)
 * [Environment Variables](documentation/environment-variables.md)
+* [Webhook](documentation/webhook.md)
+
