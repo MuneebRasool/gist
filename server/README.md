@@ -1,7 +1,3 @@
-# FastAPI Template
-
-A production-ready FastAPI template with best practices, proper error handling, and database integration.
-
 ## Features
 
 - 🚀 FastAPI for high-performance API development

@@ -1,19 +1,30 @@
 # Environment Variables Documentation
 
-This document provides detailed information about all environment variables used in the GIST project, including how to obtain them and their purposes.
+This document provides detailed information about all environment variables used in the GIST project, clearly separated between frontend and backend requirements.
 
 ## Table of Contents
-- [Authentication & OAuth](#authentication--oauth)
-- [Database Configuration](#database-configuration)
-- [Neo4j Configuration](#neo4j-configuration)
-- [API Configuration](#api-configuration)
-- [Email Configuration](#email-configuration)
-- [Nylas Configuration](#nylas-configuration)
-- [LLM Configuration](#llm-configuration)
-- [LangChain Configuration](#langchain-configuration)
-- [Langfuse Configuration](#langfuse-configuration)
+- [Frontend Environment Variables](#frontend-environment-variables)
+- [Backend Environment Variables](#backend-environment-variables)
+- [Environment Setup Steps](#environment-setup-steps)
+- [Security Best Practices](#security-best-practices)
 
-## Authentication & OAuth
+## Frontend Environment Variables
+
+### Authentication & OAuth
+```
+NEXTAUTH_SECRET="super-secret"
+NEXTAUTH_URL="http://localhost:3000"
+NEXT_PUBLIC_APP_URL="http://localhost:3000"   # for local development
+NEXT_PUBLIC_API_URL="http://localhost:8000"   # for local development
+
+# Google OAuth
+GOOGLE_CLIENT_ID=""
+GOOGLE_CLIENT_SECRET=""
+
+# Environment
+ENV=development
+DEBUG=True
+```
 
 ### NextAuth Configuration
 - `NEXTAUTH_SECRET`: A secret key used for NextAuth.js session encryption
@@ -22,6 +33,8 @@ This document provides detailed information about all environment variables used
 - `NEXTAUTH_URL`: The base URL of your application
   - Development: `http://localhost:3000`
   - Production: Your production domain
+- `NEXT_PUBLIC_APP_URL`: Public URL for your frontend application
+- `NEXT_PUBLIC_API_URL`: Public URL for your backend API
 
 ### Google OAuth
 - `GOOGLE_CLIENT_ID`: Google OAuth client ID
@@ -38,9 +51,54 @@ To obtain Google OAuth credentials:
    - Production: `https://your-domain.com/api/auth/callback/google`
 7. Copy the generated Client ID and Client Secret
 
-## Database Configuration
+## Backend Environment Variables
 
-### PostgreSQL
+```
+# Environment
+ENV=development
+DEBUG=True
+
+# Database
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=db_name
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+
+# Neo4j
+NEO4J_URI=bolt://localhost:7687
+NEO4J_USERNAME=neo4j
+NEO4J_PASSWORD=password
+
+# Security
+SECRET_KEY=your-super-duper-secret-key
+
+# API
+API_V1_PREFIX=/api
+
+# CORS
+ALLOWED_HOSTS=["*"]  # In production, replace with specific origins
+
+# LLM Configuration
+LLM_BASE_URL=https://api.openai.com/v1
+LLM_API_KEY="api key"
+
+# Nylas Configuration
+NYLAS_API_URI=https://api.us.nylas.com
+NYLAS_CALLBACK_URI=http://localhost:3000/oauth/exchange    # for local development
+NYLAS_CLIENT_ID="client id"
+NYLAS_API_KEY="api key"
+
+# Langfuse Configuration
+LANGFUSE_PUBLIC_KEY="get it from langfuse dashboard"
+LANGFUSE_SECRET_KEY="get it from langfuse dashboard"
+LANGFUSE_HOST="https://cloud.langfuse.com"
+```
+
+### Database Configuration
+
+#### PostgreSQL
 - `POSTGRES_USER`: Database username
 - `POSTGRES_PASSWORD`: Database password
 - `POSTGRES_DB`: Database name
@@ -50,23 +108,22 @@ To obtain Google OAuth credentials:
   - Format: `postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}`
 
 To set up PostgreSQL:
-1. Install PostgreSQL locally or use a cloud provider (e.g., AWS RDS), supabase, neon.
+1. Install PostgreSQL locally or use a cloud provider (e.g., AWS RDS, Supabase, Neon)
 2. Create a new database and user
 3. Note down the credentials and connection details
 
-## Neo4j Configuration
+### Neo4j Configuration
 
-- `NEO4J_HOST`: Neo4j database host URL
+- `NEO4J_URI`: Neo4j database connection URI
 - `NEO4J_USERNAME`: Neo4j username
 - `NEO4J_PASSWORD`: Neo4j password
-- `NEO4J_URL`: Full Neo4j connection string
 
 To set up Neo4j:
 1. Sign up for [Neo4j Aura](https://neo4j.com/cloud/platform/aura-graph-database/) or install locally
 2. Create a new database instance
 3. Note down the connection details and credentials
 
-## API Configuration
+### API Configuration
 
 - `API_V1_PREFIX`: API version prefix (default: `/api`)
 - `SECRET_KEY`: Application secret key for encryption
@@ -75,13 +132,12 @@ To set up Neo4j:
   - Development: `["*"]`
   - Production: `["https://your-domain.com"]`
 
-## Nylas Configuration
+### Nylas Configuration
 
 - `NYLAS_CLIENT_ID`: Nylas API client ID
 - `NYLAS_API_KEY`: Nylas API key
 - `NYLAS_API_URI`: Nylas API endpoint
 - `NYLAS_CALLBACK_URI`: OAuth callback URL
-- `NYLAS_WEBHOOK_SECRE`: Webhook secret for Nylas
 
 To obtain Nylas credentials:
 1. Sign up for [Nylas](https://www.nylas.com/)
@@ -89,7 +145,7 @@ To obtain Nylas credentials:
 3. Configure OAuth settings with your callback URL
 4. Note down the client ID and API key
 
-## LLM Configuration
+### LLM Configuration
 
 - `LLM_BASE_URL`: Base URL for LLM API
 - `LLM_API_KEY`: API key for LLM service
@@ -99,9 +155,9 @@ To obtain OpenAI credentials:
 2. Generate an API key in your account settings
 3. Use the API key as `LLM_API_KEY`
 
-## Langfuse Configuration
+### Langfuse Configuration
 
-- `LANGFUSE_PUBLIC_KEY`: Public key for Langfuse API authentication, you can find it on langfuse dashboard after creating a project
+- `LANGFUSE_PUBLIC_KEY`: Public key for Langfuse API authentication
 - `LANGFUSE_SECRET_KEY`: Secret key for Langfuse API authentication
 - `LANGFUSE_HOST`: Host URL for Langfuse service (default: `https://cloud.langfuse.com`)
 
@@ -120,7 +176,9 @@ Langfuse is used for monitoring and observing LLM operations, helping with:
 
 ## Environment Setup Steps
 
-1. Copy `.env.example` to `.env`
+1. Create two separate `.env` files:
+   - `.env.local` for frontend (Next.js)
+   - `.env` for backend
 2. Fill in all required variables following the instructions above
 3. For development:
    - Use localhost URLs
@@ -141,4 +199,4 @@ Langfuse is used for monitoring and observing LLM operations, helping with:
 4. Use environment-specific configurations
 5. Keep sensitive data encrypted
 6. Use secure protocols (HTTPS) in production
-7. Implement proper access controls for all services 
+7. Implement proper access controls for all services
