@@ -2,11 +2,11 @@
     <div>
         Gist
     </div>
-    AI-powered task management that works with your brain, not against it<br>
+    AI-powered task management System<br>
 </h1>
 
 <p align="center">
-Turn information chaos into digital harmony. Gist extracts, prioritizes, and surfaces the right tasks at the right time, helping you overcome information overload and achieve focused productivity.
+The goal og Gist is to reduce cognitive overload and make sure daily life task management easy.
 </p>
 
 <div align="center">
