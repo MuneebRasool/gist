@@ -30,11 +30,9 @@ Gist is an intelligent task management system that solves the problem of digital
 You can use Gist for:
 * **Smart Task Management:**
 
-  * **Task Extraction:** Gist automatically discovers tasks from your digital communications, eliminating the need for manual entry
+  * **Task Extraction:** Gist automatically discovers tasks from your digital communications like emails, eliminating the need for manual entry
   
-  * **Intelligent Prioritization:** Tasks are scored and prioritized based on their relevance to you, considering both utility and cognitive cost
-
-  * **Temporal Sequencing:** Information flows through time - Gist presents what you need, when you need it, and gracefully defers what can wait
+  * **Intelligent Prioritization:** Tasks are scored and prioritized based on their relevance to you
 
 * **AI-powered Organization:**
 
@@ -46,11 +44,11 @@ You can use Gist for:
 
 * **Cognitive Load Management:**
 
-  * **Emergent Actionability:** Tasks are surfaced at the optimal moment, maintaining your cognitive balance
+  * Tasks are surfaced at the optimal moment, maintaining your cognitive balance
   
-  * **Domain-Aware Analysis:** Gist understands your professional context and the relationships between different tasks
+  * Gist understands your professional context and the relationships between different tasks
 
-  * **Reduced Digital Friction:** Stop juggling between different apps and systems - everything important is in one place
+  * Stop juggling between different apps and systems - everything important is in one place
 
 
 > Gist gets smarter the more you use it. Your feedback and interactions help the system learn and adapt to your specific needs.
