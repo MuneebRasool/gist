@@ -34,5 +34,29 @@ POSTGRES_PASSWORD=postgres
 POSTGRES_DB=db_name
 POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
-DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:$
+DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+
+NEO4J_URI=bolt://localhost:7687
+NEO4J_USERNAME=neo4j
+NEO4J_PASSWORD=password
+
+SECRET_KEY=your-super-duper-secret-key
+
+API_V1_PREFIX=/api
+
+ALLOWED_HOSTS=["*"]
+
+LLM_BASE_URL=https://api.openai.com/v1
+LLM_API_KEY="api key"
+
+NYLAS_API_URI=https://api.us.nylas.com
+NYLAS_CALLBACK_URI=http://localhost:3000/oauth/exchange
+
+NYLAS_CLIENT_ID="client id"
+NYLAS_API_KEY="api key"
+
+LANGFUSE_PUBLIC_KEY="get it from langfuse dashboard"
+LANGFUSE_SECRET_KEY="get it from langfuse dashboard"
+LANGFUSE_HOST="https://cloud.langfuse.com"
+
 ```
