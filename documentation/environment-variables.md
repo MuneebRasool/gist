@@ -5,14 +5,16 @@ This document lists the key environment variables for GIST.
 ## Frontend Variables
 
 ```env
-NEXTAUTH_SECRET=
-NEXTAUTH_URL=http://localhost:3000
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXTAUTH_SECRET="super-secret"
+NEXTAUTH_URL="http://localhost:3000"
+NEXT_PUBLIC_APP_URL="http://localhost:3000"   # for local development
+NEXT_PUBLIC_API_URL="http://localhost:8000"   # for local development
 
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
+# Google OAuth
+GOOGLE_CLIENT_ID=""
+GOOGLE_CLIENT_SECRET=""
 
+# Environment
 ENV=development
 DEBUG=True
 ```
