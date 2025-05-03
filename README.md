@@ -72,7 +72,7 @@ To start using Gist, follow these simple steps:
 4. **Review your personalized profile** and make any necessary adjustments
 5. **Start managing tasks** with Gist's intelligent prioritization
 
-### 📈 How Gist Prioritizes Your Tasks
+### How Gist Prioritizes Your Tasks
 
 Gist uses a sophisticated mathematical model to score and prioritize tasks:
 
@@ -96,16 +96,6 @@ This approach ensures that tasks with high utility and low cognitive cost are su
 * **Personalized Experience:** Gist learns from your interactions to better serve your specific needs
 * **Graph-Based Task Model:** Tasks and their relationships are modeled as a dynamic graph, allowing for complex dependencies
 
-## Environment Setup
-
-Gist requires several environment variables to be set for proper functionality. Key configurations include:
-
-* Authentication & OAuth settings
-* Database connection parameters (PostgreSQL and Neo4j)
-* Email integration via Nylas
-* LLM API credentials for AI-powered features
-
-For detailed instructions, see the [environment variables documentation](Documentation/environment-variables.md).
 
 ## Contributing
 
