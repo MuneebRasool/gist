@@ -36,5 +36,3 @@ Bug reports help make Gist better for everyone! When reporting issues, please in
 ## Contribution Agreement
 
 By submitting a pull request, you agree that your contributions will be licensed under the same license as the project.
-
-Remember: Contributing to Gist isn't just about writing code - it's about being part of a community that's shaping something meaningful. Let's build something amazing together! 🚀 
