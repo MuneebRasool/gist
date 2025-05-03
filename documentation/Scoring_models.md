@@ -2,7 +2,7 @@
 
 ## Overview
 
-The GIST platform utilizes a machine learning approach to score tasks based on utility and cost factors. This document describes our task scoring system, which employs Stochastic Gradient Descent (SGD) regression models to learn from user interactions and provide personalized task prioritization.
+The Gist platform utilizes a machine learning approach to score tasks based on utility and cost factors. This document describes our task scoring system, which employs Stochastic Gradient Descent (SGD) regression models to learn from user interactions and provide personalized task prioritization.
 
 ## Approach
 
