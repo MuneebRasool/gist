@@ -1,4 +1,4 @@
-# GIST Project Setup Guide
+# Gist Project Setup Guide
 
 ## Run with Docker
 
@@ -6,7 +6,7 @@
 
    ```bash
    git clone <repository-url>
-   cd GIST
+   cd Gist
    ```
 
 2. **Setup env files:**
