@@ -57,7 +57,7 @@ You can use Gist for:
 
 ## Installation
 
-For installation and setup instructions, see the [Setup Guide](documentation/setup.md).
+For installation and setup instructions, see the [Setup Guide](SETUP.md).
 
 Once running, visit [localhost:3000](http://localhost:3000) in your browser.
 
