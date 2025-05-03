@@ -21,9 +21,17 @@ else
     exit 1
 fi
 
-# Free common dev ports (basic method)
 for port in 3000 5432 7474 7687 8000; do
     echo "🔍 Checking port $port..."
+
+    # Stop any docker container binding this port
+    container_id=$(docker ps -q --filter "publish=$port")
+    if [ -n "$container_id" ]; then
+        echo "   🛑 Stopping container using port $port (Container ID: $container_id)"
+        docker stop $container_id || echo "   ❌ Failed to stop container $container_id"
+    fi
+
+    # Kill any local process binding this port
     pid=$(lsof -ti tcp:$port) || true
     if [ -n "$pid" ]; then
         echo "   🔥 Killing process on port $port (PID: $pid)"
