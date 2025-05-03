@@ -102,24 +102,9 @@ This approach ensures that tasks with high utility and low cognitive cost are su
 There are many ways to contribute to Gist:
 
 * Submit bug reports and feature requests
-* Review the documentation and submit Pull Requests to improve it
-* Share your experience using Gist with others
-* Suggest improvements to the task scoring models
+* Submit Pull Requests to improve it
 
-To learn more about how to contribute, please see our contributing guidelines.
-
-## Future Development Plans
-
-
-We're continuously improving Gist with new features and capabilities:
-
-* Mobile applications for on-the-go task management
-* Enhanced collaboration features
-* More advanced ML models for task prediction
-* Additional third-party integrations
-* Real-time collaboration tools
-* Reinforcement Learning for task extraction and prioritization
-* More ways to gather user feedback to improve personalization
+To learn more about how to contribute, please see our [contributing guidelines](CONTRIBUTING.md)
 
 ## Additional Resources
 
