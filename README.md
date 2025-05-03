@@ -55,6 +55,15 @@ You can use Gist for:
 
 <br>
 
+## Product Demo
+
+Watch Gist in action: [Product Demo Video](https://drive.google.com/file/d/1BkQGVtxdQBgCZuvNychpjkI-XIWlxWDu/view)
+
+This video shows:
+- How tasks are extracted from emails
+- How Gist prioritizes tasks
+- How you can manage tasks in the app
+
 ## Installation
 
 For installation and setup instructions, see the [Setup Guide](SETUP.md).
