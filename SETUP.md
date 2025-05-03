@@ -11,8 +11,8 @@
 
 2. **Setup env files:**
 
-   * Copy `web/.env.local.example` → `web/.env.local`
-   * Copy `server/.env.local.example` → `server/.env.local`
+   * Copy `web/.env.example` → `web/.env.local`
+   * Copy `server/.env.example` → `server/.env.local`
    * Setup all the environment variables to make the app work:
       For detailed instructions, see the [environment variables documentation](documentation/environment-variables.md).
 
