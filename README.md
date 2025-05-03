@@ -21,7 +21,7 @@ The goal og Gist is to reduce cognitive overload and make sure daily life task m
 ![Gist thumbnail](web/public/logo.png)
 
 
-## 🚀 What is Gist?
+## What is Gist?
 
 Gist is an intelligent task management system that solves the problem of digital overwhelm by using AI to extract, prioritize, and present tasks when you need them most.
 
