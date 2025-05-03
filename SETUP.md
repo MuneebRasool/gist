@@ -6,7 +6,7 @@
 
    ```bash
    git clone <repository-url>
-   cd Gist
+   cd gist
    ```
 
 2. **Setup env files:**
