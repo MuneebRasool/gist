@@ -49,12 +49,6 @@ Gist protects your focus.
 It holds back tasks that would interrupt.
 It surfaces tasks that fit your current work.
 
-## Why It Matters
-
-Gist isn’t just another tool.
-It’s a new way to work with information—
-helping your brain, not fighting it.
-
 It’s for:
 
 * Professionals overwhelmed by info
