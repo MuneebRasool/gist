@@ -57,38 +57,12 @@ You can use Gist for:
 
 ## Installation
 
-Manual Method:
+For installation and setup instructions, see the [Setup Guide](Documentation/setup.md).
 
-```bash
-# Clone the Gist repository
-git clone https://github.com/opengig/gist.git
+Once running, visit [localhost:3000](http://localhost:3000) in your browser.
 
-# Navigate to the repository
-cd web 
-pnpm i
-pnpm dev
-
-cd server
-uv venv
-source .venv/bin/activate
-uv sync
-fastapi dev
-```
-
-Alternative Method:
-
-Gist can be self-hosted using Docker Compose, making it easy to set up your own instance:
-
-```bash
-git clone https://github.com/opengig/gist.git
-chmod +x start-local.sh
-./start-local.sh
-```
-
-Once all is up and running, you can visit [localhost:3000](http://localhost:3000) on your browser.
 
 ## Getting Started
-
 
 To start using Gist, follow these simple steps:
 
