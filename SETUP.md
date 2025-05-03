@@ -13,6 +13,8 @@
 
    * Copy `web/.env.local.example` → `web/.env.local`
    * Copy `server/.env.local.example` → `server/.env.local`
+   * Setup all the environment variables to make the app work:
+      For detailed instructions, see the [environment variables documentation](Documentation/environment-variables.md).
 
 3. **Start services:**
 
