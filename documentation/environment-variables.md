@@ -1,6 +1,6 @@
 # Environment Variables
 
-This document lists the key environment variables for GIST.
+This document lists the key environment variables for Gist.
 
 ## Frontend Variables
 
