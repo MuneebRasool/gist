@@ -3,7 +3,7 @@
 set -e  # Exit on error
 trap 'echo "Error at line $LINENO: $BASH_COMMAND"' ERR
 
-echo "🚀 Starting GIST local development environment..."
+echo "🚀 Starting Gist local development environment..."
 
 # Check for Docker
 if ! command -v docker &> /dev/null; then
@@ -53,7 +53,7 @@ $docker_compose -f docker-compose-local.yml exec -T api aerich migrate || echo "
 $docker_compose -f docker-compose-local.yml exec -T api aerich upgrade || echo "⚠️ Upgrade failed"
 
 # Success message
-echo "✅ GIST environment is running!"
+echo "✅ Gist environment is running!"
 echo "🌐 Web:     http://localhost:3000"
 echo "📦 API:     http://localhost:8000/"
 echo "🧠 Neo4j:   http://localhost:7474"
