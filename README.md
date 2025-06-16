@@ -6,7 +6,7 @@
 </h1>
 
 <p align="center">
-The goal og Gist is to reduce cognitive overload and make sure daily life task management easy.
+The goal of Gist is to reduce cognitive overload and make sure daily life task management easy.
 </p>
 
 <div align="center">
@@ -23,7 +23,7 @@ The goal og Gist is to reduce cognitive overload and make sure daily life task m
 
 ## What is Gist?
 
-Gist is an intelligent task management system that solves the problem of digital overwhelm by using AI to extract, prioritize, and present tasks when you need them most.
+Gist is an agentic task management system that solves the problem of cognitive overload by using AI to extract, prioritize, and present actionable information.
 
 <br>
 
